@@ -5,18 +5,20 @@ import numpy as np
 # Convert orbital elements to cartesian coordinates
 #################################################################
 def aei_to_xv(GM=1.,a=1,e=0.,inc=0.,node=0.,argperi=0.,ma=0.):
-    # inputs:
-    # GM the value of GM for the orbit (sets the units)
-    # a = semimajor axis
-    # e = eccentricity
-    # inc = inclination in radians
-    # node = long. of ascending node in radians
-    # argperi = argument of perihelion in radians
-    # ma = mean anomaly in radians
-    # outputs:
-    # flag (integer: 0 if failed, 1 if succeeded)
-    # x, y, z = cartesian positions (units set by GM)
-    # vx, vy, vz = cartesian velocities (units set by GM)
+    '''
+    inputs:
+        GM the value of GM for the orbit (sets the units)
+        a = semimajor axis
+        e = eccentricity
+        inc = inclination in radians
+        node = long. of ascending node in radians
+        argperi = argument of perihelion in radians
+        ma = mean anomaly in radians
+    outputs:
+        flag (integer: 0 if failed, 1 if succeeded)
+        x, y, z = cartesian positions (units set by GM)
+        vx, vy, vz = cartesian velocities (units set by GM)
+    '''
 
     #based on M. Duncan's routines in swift
     if(e >= 1. or e<0. or a<0.):
@@ -65,11 +67,13 @@ def aei_to_xv(GM=1.,a=1,e=0.,inc=0.,node=0.,argperi=0.,ma=0.):
 # Convert Mean anomaly M to Eccentric anomaly E
 #################################################################
 def M_to_E_reb(M=0.,e=0.):
-    #inputs:
-    # M = Mean anomaly in radians
-    # e = eccentricity
-    # returns:
-    # eccentric anomaly in radians
+    '''
+    inputs:
+        M = Mean anomaly in radians
+        e = eccentricity
+    returns:
+        eccentric anomaly in radians
+    '''
 
     #borrowed from rebound tools.c
     M = mod2pi(M)
@@ -103,10 +107,13 @@ def M_to_E_reb(M=0.,e=0.):
 # returns an angle between 0 and 2pi
 #################################################################
 def mod2pi(x):
-    # input:
-    # x = any angle in radians
-    # output"
-    # returns an angle in radians re-centered from 0-2pi
+    '''
+    input:
+        x = any angle in radians
+    output
+        an angle in radians re-centered from 0-2pi
+    '''
+    
     while(x>2.*np.pi):
         x+=-2.*np.pi
     while(x<0.):

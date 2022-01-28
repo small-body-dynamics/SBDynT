@@ -13,16 +13,18 @@ import tools
 ###################################################################################################
 # Get the position and velocity of a major planet from JPL Horizons via web API request
 ###################################################################################################
-def query_horizons_api_planets(obj='',epoch=2455000):
-    # inputs:
-    # major planet name (not case sensitive)
-    # epoch = JD date, defaults to sometime in 2009
-    # outputs:
-    # flag (integer: 0 if nothing was queried, 1 if horizons was successfully queried)
-    # an object mass (in solar masses)
-    # an object radius (in au)
-    # an array of three heliocentric positions (in au)
-    # an array of three heliocentric velocities (in au/time unit where 2pi time units is 1 year)
+def query_horizons_planets(obj='',epoch=2455000):
+    '''
+    inputs:
+        major planet name (not case sensitive)
+        epoch = JD date, defaults to sometime in 2009
+    outputs:
+        flag (integer: 0 if nothing was queried, 1 if horizons was successfully queried)
+        an object mass (in solar masses)
+        an object radius (in au)
+        an array of three heliocentric positions (in au)
+        an array of three heliocentric velocities (in au/year)
+    '''
 
     #define the planet-id numbers used by Horizons for the barycenters of each
     #major planet in the solar system
@@ -61,7 +63,7 @@ def query_horizons_api_planets(obj='',epoch=2455000):
 
     #array of physical radius values queried January 2022
     #(not possible to pull directly via API)
-    kmtoau = 6.68459e-9
+    kmtoau = (1./149597870700.) #6.68459e-9
     SS_r = np.zeros(9)
     SS_r[0] = 695700.*kmtoau #Sun
     SS_r[1] = 2440.53*kmtoau #Mercury
@@ -97,7 +99,8 @@ def query_horizons_api_planets(obj='',epoch=2455000):
         data = json.loads(response.text)
     except ValueError:
         print("Unable to decode JSON results from Horizons API request")
-        return 0, mass, x, v
+        return 0, mass, rad, x, v
+
 
 
     #pull the lines we need from the resulting plain text return
@@ -107,22 +110,22 @@ def query_horizons_api_planets(obj='',epoch=2455000):
         print("Unable to find \"X =\" in Horizons API request result")
         return 0, mass, rad, x, v
 
+
     try:
         #heliocentric positions:
         x[0] = float(xvline[0].split()[0])
         x[1] = float(xvline[0].split("Y =")[1].split()[0])
         x[2] = float(xvline[0].split("Z =")[1].split()[0])
 
-        #heliocentric velocities converted to the units we want
-        v[0] = float(xvline[1].split("VX=")[1].split()[0])*365.25/(2.*np.pi)
-        v[1] = float(xvline[1].split("VY=")[1].split()[0])*365.25/(2.*np.pi)
-        v[2] = float(xvline[1].split("VZ=")[1].split()[0])*365.25/(2.*np.pi)
+        #heliocentric velocities converted from au/d to au/yr
+        v[0] = float(xvline[1].split("VX=")[1].split()[0])*365.25
+        v[1] = float(xvline[1].split("VY=")[1].split()[0])*365.25
+        v[2] = float(xvline[1].split("VZ=")[1].split()[0])*365.25
     except:
         print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API request result")
         return 0, mass, rad, x, v
 
     return 1, mass, rad, x, v
-
 ###################################################################################################
 
 
@@ -133,13 +136,15 @@ def query_horizons_api_planets(obj='',epoch=2455000):
 # and clones (if desired) to heliocentric cartesian positions and velocities
 ###################################################################################################
 def query_sb_from_jpl(des='',clones=0):
-    # inputs:
-    # des = the designation for the object in the SBDB
-    # clones = number of times to clone using the covariance matrix
-    # outputs:
-    # flag (integer: 1 if query worked, 0 otherwise)
-    # x, y, z: arrays of size clones+1 with cartesian heliocentric position (au)
-    # vx, vy, vz: arrays of size clones+1 with cartesian heliocentric velocity (au/time unit (2pi=1year))
+    '''
+    inputs:
+        des = the designation for the object in the SBDB
+        clones = number of times to clone using the covariance matrix
+    outputs:
+        flag (integer: 1 if query worked, 0 otherwise)
+        x, y, z: arrays of size clones+1 with cartesian heliocentric position (au)
+        vx, vy, vz: arrays of size clones+1 with cartesian heliocentric velocity (au/time unit (2pi=1year))
+    '''
 
     try:
         #query the JPL small body database browser for the best-fit orbit
@@ -185,11 +190,11 @@ def query_sb_from_jpl(des='',clones=0):
     try:
         gm = np.float64(data["result"].split("Keplerian GM")[1].split("\n")[0].split()[1])
     except:
-        print("unable to pull the GM value from the horizons results")
+        print("unable to pull the GM value from the horizons results, which are:\n")
+        print(data["result"])
         return 0, 0.,0.,0.,0.,0.,0.,0.
     
     #calculate the more standard orbital elements for the best-fit orbit
-    print(bfq, bfecc)
     a0 = bfq/(1.-bfecc)
     i0 = bfinc*deg2rad
     O0 = bfnode*deg2rad
@@ -198,7 +203,6 @@ def query_sb_from_jpl(des='',clones=0):
     mm = np.sqrt(mm)
     ma0 = mm*(epoch-bftp) #translate time of perihelion to mean anomaly
     
-    print("best fit: ", a0,bfecc,i0,O0,w0,ma0)
     
     i, x0,y0,z0,vx0,vy0,vz0 = tools.aei_to_xv(GM=gm,a=a0,e=bfecc,inc=i0,node=O0,argperi=w0,ma=ma0)
     if(i<1):
@@ -226,21 +230,22 @@ def query_sb_from_jpl(des='',clones=0):
             mm = gm/(a*a*a) #mean motion
             mm = np.sqrt(mm)
             ma = mm*(epoch-tp[j]) #translate time of perihelion to mean anomaly
-            print("clones ",a,ecc[j],inc[j],node[j] ,argperi[j],ma)
             i, x[j+1],y[j+1],z[j+1],vx[j+1],vy[j+1],vz[j+1] = tools.aei_to_xv(GM=gm,a=a,e=ecc[j],
                                         inc=inc[j],node=node[j],argperi=argperi[j],ma=ma)
             if(i<1):
                 print("failed to convert to cartesian inside cloning part of query_sb_from_jpl")
                 return 0, 0., 0.,0.,0.,0.,0.,0.
-        vx = vx*365.25/(2.*np.pi)
-        vy = vy*365.25/(2.*np.pi)
-        vz = vz*365.25/(2.*np.pi)       
+        #convert from au/d to au/yr
+        vx = vx*365.25
+        vy = vy*365.25
+        vz = vz*365.25       
         return 1, epoch, x,y,z,vx,vy,vz
     else:
         #send back just the best-fit
-        #after converting to correct units
-        vx0 = vx0*365.25/(2.*np.pi)
-        vy0 = vy0*365.25/(2.*np.pi)
-        vz0 = vz0*365.25/(2.*np.pi)
+        #after converting from au/d to au/yr
+        vx0 = vx0*365.25
+        vy0 = vy0*365.25
+        vz0 = vz0*365.25
         return 1, epoch, x0,y0,z0,vx0,vy0,vz0
+###################################################################################################
     
