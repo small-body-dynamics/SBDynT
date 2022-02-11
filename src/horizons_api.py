@@ -11,7 +11,8 @@ import tools
 
 ###################################################################################################
 ###################################################################################################
-# Get the position and velocity of a major planet from JPL Horizons via web API request
+# Get the heliocentric position and velocity of a major planet from JPL Horizons 
+# via web API request
 ###################################################################################################
 def query_horizons_planets(obj='',epoch=2455000):
     '''
@@ -155,14 +156,20 @@ def query_sb_from_jpl(des='',clones=0):
         return 0, 0,0,0,0,0,0,0
         
     deg2rad = np.pi/180.
-    
-    epoch = np.float64(str(obj['orbit']['covariance']['epoch']).split()[0])
-    bfecc = np.float64(str(obj['orbit']['covariance']['elements']['e']).split()[0])
-    bfq = np.float64(str(obj['orbit']['covariance']['elements']['q']).split()[0])
-    bfinc = np.float64(str(obj['orbit']['covariance']['elements']['i']).split()[0])
-    bfnode = np.float64(str(obj['orbit']['covariance']['elements']['om']).split()[0])
-    bfargperi = np.float64(str(obj['orbit']['covariance']['elements']['w']).split()[0])
-    bftp = np.float64(str(obj['orbit']['covariance']['elements']['tp']).split()[0])
+
+
+    try:
+        epoch = np.float64(str(obj['orbit']['covariance']['epoch']).split()[0])
+        bfecc = np.float64(str(obj['orbit']['covariance']['elements']['e']).split()[0])
+        bfq = np.float64(str(obj['orbit']['covariance']['elements']['q']).split()[0])
+        bfinc = np.float64(str(obj['orbit']['covariance']['elements']['i']).split()[0])
+        bfnode = np.float64(str(obj['orbit']['covariance']['elements']['om']).split()[0])
+        bfargperi = np.float64(str(obj['orbit']['covariance']['elements']['w']).split()[0])
+        bftp = np.float64(str(obj['orbit']['covariance']['elements']['tp']).split()[0])
+    except:
+        print("JPL small body database browser query did not return the expected data")
+        return 0, 0,0,0,0,0,0,0
+
     
     if(bfecc >= 1. or bfecc < 0.):
         print("orbital eccentricity not between 0 and 1, cannot proceed")

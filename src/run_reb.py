@@ -17,10 +17,14 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         flag (integer: 0 if failed, 1 if successful)
         epoch of the simulation start (JD)
         rebound simulation instance with planets and test particles added
+        adjusting the simulation for missing major perturbers
     '''
     
     #make all planet names lowercase
     planets = [pl.lower() for pl in planets]
+    #create an array of planets not included in the simulation
+    #will be used to correct the simulation's barycenter for their absence
+    notplanets = []
 
 
     # initialize simulation variable
@@ -77,20 +81,50 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     for i in range(1,9):
         if (not(planet_id[i] in planets )):
             msun+=SS_GM[i]
+            notplanets.append(planet_id[i])
             #make the timestep bigger
             sim.dt = dt[i]
 
     #sun's augmented mass in solar masses
     msun = msun/SS_GM[0]
     radius = 695700.*6.68459e-9
-    sim.add(m=msun,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,hash='sun')
-    
+    sim.add(m=msun,r=radius,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.,hash='sun')
+
+
+    #set the initial correction for the included planets'
+    #position and velocities to zero
+    sx = 0.;sy = 0.;sz=0.; svx = 0;svy = 0.;svz = 0.;
+
+    #calculate the correction
+    if(len(notplanets)>0):
+        #create a temporary simulation to calculate the barycenter of the sun+not
+        #included planets so their mass can be added to the sun in the 
+        #simulation
+        tsim = rebound.Simulation()
+        tsim.units = ('yr', 'AU', 'Msun')
+        tsim.add(m=1.0,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.)
+        for pl in notplanets:
+            flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
+            if(flag<1):
+                print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
+                return 0, 0., sim
+            tsim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz)
+        #calculate the barycenter of the sun + missing planets
+        com = tsim.calculate_com()
+        #reset the corrections to the positions and velocities
+        sx = -com.x; sy = -com.y; sz = -com.z; 
+        svx = -com.vx; svy = -com.vy; svz = -com.vz;
+
+
+    #add each included planet to the simulation and correct for the missing planets
     for pl in planets:
         flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
         if(flag<1):
             print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
             return 0, 0., sim
-        sim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz,hash=rebound.hash(pl))
+        #correct for the missing planets
+        x+=sx;y+=sy;z+=sz; vx+=svx;vy+=svy;vz+=svz;
+        sim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz,hash=pl)
 
     sim.N_active = npl
 
@@ -100,8 +134,11 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
                 sbhash = des + '_bf'
             else:
                 sbhash = str(des) + '_' + str(i)
+            #correct for the missing planets
+            sbx[i]+=sx;sby[i]+=sy;sbz[i]+=sz; sbvx[i]+=svx;sbvy[i]+=svy;sbvz[i]+=svz;
             sim.add(m=0.,x=sbx[i],y=sby[i],z=sbz[i],vx=sbvx[i],vy=sbvy[i],vz=sbvz[i],hash=sbhash)
     else:
+        sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
         sbhash = des + '_bf'
         sim.add(m=0.,x=sbx,y=sby,z=sbz,vx=sbvx,vy=sbvy,vz=sbvz,hash=sbhash)
 
@@ -110,12 +147,15 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     return 1, epoch, sim
 
+   
 
 
 
 def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,maxdist=1500,mindist=4.):
     '''
     run a mercurius simulation saving to a simulation archive every tout
+    removing particles if they exceed the maximum distance or go below
+    the minumum distance
     '''
     sim.automateSimulationArchive("archive.bin",interval=tout,deletefile=deletefile)
     sim.integrator = 'mercurius'
