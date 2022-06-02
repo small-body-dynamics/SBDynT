@@ -9,3 +9,4 @@ We are in the very early stages of development, primarily focusing on adding ind
 
 ### Funding Acknowledgements 
 This work is supported in part by the Preparing for Astrophysics with LSST Program, funded by the Heising Simons Foundation through grant 2021-2975, and administered by Las Cumbres Observatory.
+This work is supported by NASA grant 80NSSC22K0512.
