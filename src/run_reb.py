@@ -191,7 +191,7 @@ void heartbeat(struct reb_simulation* r){
         if(rh > '''+str(maxdist)+''' || rh < '''+str(mindist)+'''){
             reb_remove(r, i, 1);
 	        FILE* of = fopen("removal-log.txt","a"); 
-            fprintf(of,"removing particle %d at time %e\\n",i, r->t);
+            fprintf(of,"removing particle %d at time %e and heliocentric distance %e\\n",i, r->t, rh);
             fclose(of);
         }
     }
