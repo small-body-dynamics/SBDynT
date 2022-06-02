@@ -131,7 +131,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     if(clones>0):
         for i in range(0,ntp):
             if(i==0):
-                sbhash = des + '_bf'
+                sbhash = str(des) + '_bf'
             else:
                 sbhash = str(des) + '_' + str(i)
             #correct for the missing planets
@@ -151,7 +151,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
 
 
-def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,maxdist=1500,mindist=4.):
+def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,maxdist=1500.,mindist=4.):
     '''
     run a mercurius simulation saving to a simulation archive every tout
     removing particles if they exceed the maximum distance or go below
