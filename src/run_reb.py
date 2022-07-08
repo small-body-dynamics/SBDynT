@@ -157,7 +157,9 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     removing particles if they exceed the maximum distance or go below
     the minumum distance
     '''
-    sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
+    #sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
+    
+    sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
     sim.integrator = 'mercurius'
     sim.collision = "direct"
     sim.ri_mercurius.hillfac = 3.

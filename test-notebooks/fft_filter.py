@@ -9,12 +9,12 @@ import tools
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sbody = 'J99RP3Z'
-objname = 'Borasisi'
+sbody = '2440'
+objname = 'Educatio'
 
 import os
 
-path = 'TNOs/'+objname
+path = 'Asteroids/'+objname
 
 # Check whether the specified path exists or not
 isExist = os.path.exists(path)
@@ -24,7 +24,7 @@ if not isExist:
   os.makedirs(path)
     
 sim= rebound.Simulation()
-flag, epoch, sim = run_reb.initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'],des=sbody,clones=105)
+flag, epoch, sim = run_reb.initialize_simulation(planets=['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune'],des=sbody,clones=105)
 #sim.status()
 #print(epoch)
 com = sim.calculate_com()
@@ -34,17 +34,17 @@ o = p.calculate_orbit(com)
 r2d = 180./np.pi
 print("%20.15E\t%20.15E\t%20.15E\t%20.15E\t%20.15E\t%20.15E\n" % (o.a,o.e,o.inc*r2d, o.Omega*r2d,o.omega*r2d,r2d*o.M))
 
-tmax = 1e7
+tmax = 1e6
 tout = 1e3
 
 import datetime
 start = datetime.datetime.now()
-sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename="TNOs/"+objname+"/archive.bin",deletefile=True,mindist=20.)
+sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename=path+"/archive.bin",deletefile=True,mindist=20.)
 print('Simulation took ', datetime.datetime.now() - start, ' seconds')
 
 a = np.zeros(1);e = np.zeros(1);inc = np.zeros(1);phi = np.zeros(1);omega = np.zeros(1);Omega = np.zeros(1);M = np.zeros(1)
 t = np.zeros(1);
-sa = rebound.SimulationArchive("TNOs/"+objname+"/archive.bin")
+sa = rebound.SimulationArchive(path+"/archive.bin")
 print(sa.tmin)
 print(sa.tmax)
 for i,sim in enumerate(sa):
@@ -87,7 +87,7 @@ final['Omega'] = Omega
 final['M'] = M
 final['phi'] = phi
 
-final.to_csv('TNOs/'+objname+'/series.csv')
+final.to_csv(path+'/series.csv')
 
 new_Xph = 1
 def filter_signal(th):
@@ -158,6 +158,6 @@ final['ecc'] = finals[1]
 final['inc'] = finals[2]
 final['phi'] = finals[3]
 
-final.to_csv('TNOs/'+objname+'/prop_elem.csv')
+final.to_csv(path+'/prop_elem.csv')
 
                             
