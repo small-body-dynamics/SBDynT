@@ -167,9 +167,42 @@ def query_sb_from_jpl(des='',clones=0):
         bfargperi = np.float64(str(obj['orbit']['covariance']['elements']['w']).split()[0])
         bftp = np.float64(str(obj['orbit']['covariance']['elements']['tp']).split()[0])
     except:
-        print("JPL small body database browser query did not return the expected data")
-        return 0, 0,0,0,0,0,0,0
-
+        try:
+            cepoch = np.float64(str(obj['orbit']['covariance']['epoch']).split()[0])
+            oepoch = np.float64(str(obj['orbit']['epoch']).split()[0])
+            if(cepoch != oepoch):
+                print("JPL small body database browser query did not return a best fit orbit\
+                        at the same epoch as the covariance matrix")
+                return 0, 0,0,0,0,0,0,0
+            arc = np.float64(str(obj['orbit']['data_arc'].split()[0]))
+            if(arc < 30. and clones==0):
+                warningstring="WARNING!!! The observational arc on this object is less than "\
+                             +"30 days which almost certainly means the orbit is of too "\
+                             +"low quality for useful dynamical classification and it is "\
+                             +"not possible to produce useful clones for the uncertainty\n"\
+                             +"This best-fit orbit will still be run, but "\
+                             +"the results should be used with caution"
+                print(warningstring)
+            elif(arc < 30.):
+                warningstring="WARNING!!! The observational arc on this object is less than "\
+                             +"30 days which almost certainly means the orbit is of too "\
+                             +"low quality for useful dynamical classification and it is "\
+                             +"not possible to produce useful clones for the uncertainty\n"\
+                             +"This object can be re-run, but only for clones=0, and even then "\
+                             +"the results should be used with caution"
+                print(warningstring)
+                return 0, 0,0,0,0,0,0,0
+            epoch = oepoch
+            bfecc = np.float64(str(obj['orbit']['elements']['e']).split()[0])
+            bfq = np.float64(str(obj['orbit']['elements']['q']).split()[0])
+            bfinc = np.float64(str(obj['orbit']['elements']['i']).split()[0])
+            bfnode = np.float64(str(obj['orbit']['elements']['om']).split()[0])
+            bfargperi = np.float64(str(obj['orbit']['elements']['w']).split()[0])
+            bftp = np.float64(str(obj['orbit']['elements']['tp']).split()[0])
+        except:
+            print("JPL small body database browser query did not return \
+                    the expected data for the orbit and covariance matrix")
+            return 0, 0,0,0,0,0,0,0
     
     if(bfecc >= 1. or bfecc < 0.):
         print("orbital eccentricity not between 0 and 1, cannot proceed")
