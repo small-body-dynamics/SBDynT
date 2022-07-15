@@ -177,6 +177,8 @@ def mpc_designation_translation(obj):
             des += hex_list[j] + nchars[2]
         elif (len(nchars) == 1):
             des += '0' + number
+        elif (len(nchars) == 0):
+            des += '00' + number
         else:
             des += number
         des += lchars[1]
