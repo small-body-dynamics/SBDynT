@@ -52,10 +52,10 @@ def query_horizons_planets(obj='', epoch=2455000):
     # G = 6.6743015e-20 #in km^3 kg^–1 s^–2
     SS_GM = np.zeros(9)
     SS_GM[0] = 132712440041.93938  # Sun
-    SS_GM[1] = 22031.86855  # Mercury
+    SS_GM[1] = 22031.868551  # Mercury
     SS_GM[2] = 324858.592  # Venus
-    SS_GM[3] = 403503.235502  # Earth-Moon
-    SS_GM[4] = 42828.375214  # Mars
+    SS_GM[3] = 398600.435507 + 4902.800118  # Earth + Moon
+    SS_GM[4] = 42828.375816  # Mars system
     SS_GM[5] = 126712764.10  # Jupiter system
     SS_GM[6] = 37940584.8418  # Saturn system
     SS_GM[7] = 5794556.4  # Uranus system
@@ -63,12 +63,12 @@ def query_horizons_planets(obj='', epoch=2455000):
 
     # array of physical radius values queried January 2022
     # (again, not possible to pull directly via API)
-    kmtoau = (1./149597870700.)  # 6.68459e-9
+    kmtoau = (1000./149597870700.)  # 1000m/(jpl's au in m) = 6.68459e-9
     SS_r = np.zeros(9)
     SS_r[0] = 695700.*kmtoau  # Sun
     SS_r[1] = 2440.53*kmtoau  # Mercury
     SS_r[2] = 6051.8*kmtoau  # Venus
-    SS_r[3] = 66378.136*kmtoau  # Earth
+    SS_r[3] = 6378.136*kmtoau  # Earth
     SS_r[4] = 3396.19*kmtoau  # Mars
     SS_r[5] = 71492.*kmtoau  # Jupiter system
     SS_r[6] = 60268.*kmtoau  # Saturn system
@@ -99,12 +99,12 @@ def query_horizons_planets(obj='', epoch=2455000):
     except ValueError:
         print("Unable to decode JSON results from Horizons API request")
         return 0, mass, rad, x, v
-
     # pull the lines we need from the resulting plain text return
     try:
         xvline = data["result"].split("X =")[1].split("\n")
     except:
-        print("Unable to find \"X =\" in Horizons API request result")
+        print("Unable to find \"X =\" in Horizons API request result:")
+        print(data["result"])
         return 0, mass, rad, x, v
 
     try:
@@ -322,4 +322,3 @@ def query_sb_from_jpl(des='', clones=0):
         vy0 = vy0*365.25
         vz0 = vz0*365.25
         return 1, epoch, x0, y0, z0, vx0, vy0, vz0
-
