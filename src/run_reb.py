@@ -200,10 +200,10 @@ void heartbeat(struct reb_simulation* r){
 }
 '''
 
-    with open('heartbeat.c', mode='a') as file:
-        file.write(heartbeat_file)
-    os.system("gcc -c -O3 -fPIC heartbeat.c -o heartbeat.o")
-    os.system("gcc -L. -shared heartbeat.o -o heartbeat.so -lrebound")
+    #with open('heartbeat.c', mode='a') as file:
+    #    file.write(heartbeat_file)
+    #os.system("gcc -c -O3 -fPIC heartbeat.c -o heartbeat.o")
+    #os.system("gcc -L. -shared heartbeat.o -o heartbeat.so -lrebound")
     from ctypes import cdll
     #clibheartbeat = cdll.LoadLibrary("heartbeat.so")
     #sim.heartbeat = clibheartbeat.heartbeat

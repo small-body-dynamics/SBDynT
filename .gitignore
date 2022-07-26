@@ -131,4 +131,5 @@ dmypy.json
 #Large data files
 archive.bin
 *.pdf
-series_new.csv
+*series_new.csv
+*series.csv
