@@ -203,8 +203,8 @@ void heartbeat(struct reb_simulation* r){
     os.system("gcc -c -O3 -fPIC heartbeat.c -o heartbeat.o")
     os.system("gcc -L. -shared heartbeat.o -o heartbeat.so -lrebound")
     from ctypes import cdll
-    clibheartbeat = cdll.LoadLibrary("heartbeat.so")
-    sim.heartbeat = clibheartbeat.heartbeat
+    #clibheartbeat = cdll.LoadLibrary("heartbeat.so")
+    #sim.heartbeat = clibheartbeat.heartbeat
 
     sim.integrate(tmax)
     return sim
