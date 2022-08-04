@@ -133,3 +133,4 @@ archive.bin
 *.pdf
 *series_new.csv
 *series.csv
+*.h5
