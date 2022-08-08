@@ -129,6 +129,11 @@ dmypy.json
 .pyre/
 .DS_Store
 
+# local testing
+KV-local-development-test-notebooks
+.idea/
+
 #Large files
 *series.csv
 *.bin
+*.h5

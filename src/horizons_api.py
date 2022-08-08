@@ -322,3 +322,93 @@ def query_sb_from_jpl(des='', clones=0):
         vy0 = vy0*365.25
         vz0 = vz0*365.25
         return 1, epoch, x0, y0, z0, vx0, vy0, vz0
+
+
+def query_sb_from_horizons(des=[''], epoch=2459580.5):
+    """
+    Get the orbit of a small body (or list of small bodies) from
+    Horizons at a specific epoch, returning heliocentric cartesian
+    positions and velocities
+
+    inputs:
+    :param des: string or list of strings, the designation for the
+                object or list of objects
+    :param (optional) epoch: (JD) defaults to Jan 1, 2022
+
+    outputs:
+    :return flag: integer, 1 if query worked, 0 otherwise)
+    :return x: np array (size=len(des)), cartesian heliocentric x (au)
+            y: np array (size=len(des)), cartesian heliocentric y (au)
+            z: np array (size=len(des)), cartesian heliocentric z (au)
+    :return vx: np array (size=len(des)), cartesian heliocentric vx (au)
+            vy: np array (size=len(des)), cartesian heliocentric vy (au)
+            vz: np array (size=len(des)), cartesian heliocentric vz (au)
+    all return values set to 0 if unsuccessful
+    """
+
+    # if the user provided just a single string as the designation
+    # turn it into a list
+    if not (type(des) is list):
+        des = [des]
+    ntp = len(des)
+    # initialize the position
+    x = np.zeros(ntp)
+    y = np.zeros(ntp)
+    z = np.zeros(ntp)
+    vx = np.zeros(ntp)
+    vy = np.zeros(ntp)
+    vz = np.zeros(ntp)
+
+    for n in range(0,ntp):
+        # build the url to query horizons
+        # if the designation being used is a provisional one, we will
+        # translate it to a packed designation for cleaner searching
+        pdes = tools.mpc_designation_translation(des[n])
+        start_time = 'JD' + str(epoch)
+        stop_time = 'JD' + str(epoch + 1)
+        url = ("https://ssd.jpl.nasa.gov/api/horizons.api"
+               + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER="
+               + "'@Sun'&OUT_UNITS='AU-D'&COMMAND="
+               + pdes + "&START_TIME=" + start_time + "&STOP_TIME=" + stop_time)
+
+        # run the query and exit if it fails
+        response = requests.get(url)
+        try:
+            data = json.loads(response.text)
+        except ValueError:
+            print("Unable to decode JSON results from Horizons API request for %s"
+                  % (des[n]))
+            return 0, x, y, z, vx, vy, vz
+
+        try:
+            data = json.loads(response.text)
+        except ValueError:
+            print("Unable to decode JSON results from Horizons API request for %s"
+                   % (des[n]))
+            return 0, x, y, z, vx, vy, vz
+
+        # pull the lines we need from the resulting plain text return
+        try:
+            xvline = data["result"].split("X =")[1].split("\n")
+        except:
+            print("Unable to find \"X =\" in Horizons API request result for %s:"
+                  % (des[n]))
+            print(data["result"])
+            return 0, x, y, z, vx, vy, vz
+
+        try:
+            # heliocentric positions:
+            x[n] = float(xvline[0].split()[0])
+            y[n] = float(xvline[0].split("Y =")[1].split()[0])
+            z[n] = float(xvline[0].split("Z =")[1].split()[0])
+
+            # heliocentric velocities converted from au/d to au/yr
+            vx[n] = float(xvline[1].split("VX=")[1].split()[0]) * 365.25
+            vy[n] = float(xvline[1].split("VY=")[1].split()[0]) * 365.25
+            vz[n] = float(xvline[1].split("VZ=")[1].split()[0]) * 365.25
+        except:
+            print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API "
+                  "request result for %s" %(des[n]))
+            return 0, x, y, z, vx, vy, vz
+
+    return 1, x, y, z, vx, vy, vz
