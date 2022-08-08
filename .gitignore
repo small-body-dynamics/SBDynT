@@ -132,3 +132,5 @@ dmypy.json
 #Large files
 *series.csv
 *.bin
+
+KV-local-development-test-notebooks
