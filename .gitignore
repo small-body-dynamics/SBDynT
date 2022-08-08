@@ -128,3 +128,10 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .DS_Store
+
+#Large files
+*series.csv
+*.bin
+
+KV-local-development-test-notebooks
+.idea/
