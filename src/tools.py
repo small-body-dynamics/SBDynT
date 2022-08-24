@@ -186,13 +186,14 @@ def split(word):
 
 def mpc_designation_translation(obj):
     """
-    if an unpacked provisional MPC designation is input, this routine
-    outputs a packed version of that designation to make the Horizons
-    query function more robust. Otherwise it returns the same string
-    that was input
-
+    If an unpacked provisional MPC designation is input, this routine
+    outputs a packed version of that designation. If a packed number
+    is input, the unpacked number is returned. Otherwise it returns 
+    the same string that was input. This makes the Horizons query 
+    function more robust. 
     :param obj: string, minor planet designation
-    :returns des: string, obj or packed provisional MPC designation
+    :returns des: string, obj, packed provisional MPC designation, or
+                          unpacked number
     """
     num = {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5",
            "6": "6", "7": "7", "8": "8", "9": "9", "A": "10", "B": "11",
@@ -210,7 +211,10 @@ def mpc_designation_translation(obj):
     num_list = list(num.values())
 
     regex_provis = re.compile(r"\b(\d{4})([- _]?)([a-zA-Z]{2})(\d*)\b")
+    regex_packednum = re.compile(r"\b([a-zA-Z]{1})(\d{4})\b")
+    
     provis = regex_provis.findall(obj)
+    packednum = regex_packednum.findall(obj)
     if (provis):
         if (len(provis[0]) == 4):
             year = provis[0][0]
@@ -236,6 +240,9 @@ def mpc_designation_translation(obj):
         else:
             des += number
         des += lchars[1]
+    elif(packednum):
+        j = hex_list.index(packednum[0][0])
+        des = str(num_list[j]) + str(packednum[0][1])
     else:
         des = obj
 
