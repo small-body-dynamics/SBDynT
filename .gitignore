@@ -136,3 +136,4 @@ KV-local-development-test-notebooks
 #Large files
 *series.csv
 *.bin
+*.h5
