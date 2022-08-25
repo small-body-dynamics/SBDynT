@@ -233,13 +233,17 @@ def query_sb_from_jpl(des='', clones=0):
     # build the url to query horizons
     # if the designation being used is a provisional one, we will
     # translate it to a packed designation for cleaner searching
-    pdes = tools.mpc_designation_translation(des)
+    pdes, destype = tools.mpc_designation_translation(des)
     url = 'https://ssd.jpl.nasa.gov/api/horizons.api'
     start_time = 'JD'+str(epoch)
     stop_time = 'JD'+str(epoch+1)
     url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'"
-    url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+    if(destype == 'provisional'):
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+    else:
+        url += "&OUT_UNITS='AU-D'&COMMAND='"
     url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+
     
     # run the query and exit if it fails
     response = requests.get(url)
@@ -363,13 +367,17 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
         # build the url to query horizons
         # if the designation being used is a provisional one, we will
         # translate it to a packed designation for cleaner searching
-        pdes = tools.mpc_designation_translation(des[n])
+
+        pdes, destype = tools.mpc_designation_translation(des[n])
         start_time = 'JD' + str(epoch)
         stop_time = 'JD' + str(epoch + 1)
         url = ("https://ssd.jpl.nasa.gov/api/horizons.api"
-               + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER="
-               + "'@Sun'&OUT_UNITS='AU-D'&COMMAND='DES="
-               + pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time)
+               + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER=")
+        if(destype == 'provisional'):
+            url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='DES="
+        else:
+            url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='"
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
         # run the query and exit if it fails
         response = requests.get(url)

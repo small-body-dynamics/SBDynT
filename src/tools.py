@@ -194,6 +194,8 @@ def mpc_designation_translation(obj):
     :param obj: string, minor planet designation
     :returns des: string, obj, packed provisional MPC designation, or
                           unpacked number
+             type: string, type of designation "number" 
+                   or "provisional" or "other"
     """
     num = {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5",
            "6": "6", "7": "7", "8": "8", "9": "9", "A": "10", "B": "11",
@@ -209,6 +211,7 @@ def mpc_designation_translation(obj):
            }
     hex_list = list(num.keys())
     num_list = list(num.values())
+    destype = 'other'
 
     regex_provis = re.compile(r"\b(\d{4})([- _]?)([a-zA-Z]{2})(\d*)\b")
     regex_packednum = re.compile(r"\b([a-zA-Z]{1})(\d{4})\b")
@@ -216,6 +219,7 @@ def mpc_designation_translation(obj):
     provis = regex_provis.findall(obj)
     packednum = regex_packednum.findall(obj)
     if (provis):
+        destype = 'provisional'
         if (len(provis[0]) == 4):
             year = provis[0][0]
             letters = provis[0][2]
@@ -241,9 +245,10 @@ def mpc_designation_translation(obj):
             des += number
         des += lchars[1]
     elif(packednum):
+        destype = 'number'
         j = hex_list.index(packednum[0][0])
         des = str(num_list[j]) + str(packednum[0][1])
     else:
         des = obj
 
-    return des
+    return des, destype
