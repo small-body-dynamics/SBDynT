@@ -148,11 +148,12 @@ def query_sb_from_jpl(des='', clones=0):
             vz: np array (size clones+1), cartesian heliocentric vz (au)
     all return values set to 0 if unsuccessful
     """
+    pdes, destype = tools.mpc_designation_translation(des)
 
     try:
         # query the JPL small body database browser for the best-fit
         # orbit and associated covariance matrix
-        obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
+        obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
     except:
         print("JPL small body database browser query failed")
         return 0, 0., 0., 0., 0., 0., 0., 0.
@@ -233,7 +234,6 @@ def query_sb_from_jpl(des='', clones=0):
     # build the url to query horizons
     # if the designation being used is a provisional one, we will
     # translate it to a packed designation for cleaner searching
-    pdes, destype = tools.mpc_designation_translation(des)
     url = 'https://ssd.jpl.nasa.gov/api/horizons.api'
     start_time = 'JD'+str(epoch)
     stop_time = 'JD'+str(epoch+1)
