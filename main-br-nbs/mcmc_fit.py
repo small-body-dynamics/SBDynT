@@ -48,11 +48,12 @@ if __name__ == '__main__':
    # objname = '2004KF19'
     
     sbody = '2004 PY107'
-    objname = '2004PY107'
+    objname = '2004PY107_2'
     
             #path = 'Asteroids/'+objname
     path = 'TNOs/'+objname
     series = pd.read_csv(path+'/series.csv')
+    #series = pd.read_csv(path+'/series_2.csv')
     
     t = series['t'].values
     a = series['a'].values
@@ -190,8 +191,8 @@ plt.yscale('log')
         str3 = "p"
         str4 = "q"
     
-        nwalkers = 80
-        nburnin = 800
+        nwalkers = 100
+        nburnin = 1000
         nsteps = 1000
         run = [True,True,True,True]
         mean1 = np.array([0,0,0,0,1/freqs[hmax],0,0,0])
@@ -209,7 +210,11 @@ plt.yscale('log')
             ch_filename = path + '/chain_h.h5'
             sampler_h = 0
             if os.path.exists(ch_filename):
-                sampler_h = emcee.backends.HDFBackend(path + '/chain_h.h5')
+                backend_h = emcee.backends.HDFBackend(path + '/chain_h.h5')
+                moveset = [(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                moveset = [(emcee.moves.StretchMove(), 1.0),]
+                sampler_h = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend_h, pool=pool, args = (str1) ,moves = moveset)
+            
             else:
                 backend = emcee.backends.HDFBackend(ch_filename)
                 backend.reset(nwalkers, ndim)
@@ -227,7 +232,10 @@ plt.yscale('log')
             
             sampler_k = 0
             if os.path.exists(ch_filename):
-                sampler_k = emcee.backends.HDFBackend(path + '/chain_k.h5')
+                backend = emcee.backends.HDFBackend(path + '/chain_k.h5') 
+                moveset = [(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                moveset = [(emcee.moves.StretchMove(), 1.0),]
+                sampler_k = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str2) ,moves = moveset)
             else:
                 backend = emcee.backends.HDFBackend(ch_filename)
                 backend.reset(nwalkers, ndim)
@@ -244,7 +252,10 @@ plt.yscale('log')
             ch_filename = path + '/chain_p.h5'
             sampler_p = 0
             if os.path.exists(ch_filename):
-                sampler_p = emcee.backends.HDFBackend(path + '/chain_p.h5')
+                backend = emcee.backends.HDFBackend(path + '/chain_p.h5')
+                moveset = [(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                moveset = [(emcee.moves.StretchMove(), 1.0),]
+                sampler_p = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str3) ,moves = moveset)
             else:
                 backend = emcee.backends.HDFBackend(ch_filename)
                 backend.reset(nwalkers, ndim)
@@ -261,7 +272,11 @@ plt.yscale('log')
             ch_filename = path + '/chain_q.h5'
             sampler_q = 0
             if os.path.exists(ch_filename):
-                sampler_q = emcee.backends.HDFBackend(path + '/chain_q.h5')
+                backend = emcee.backends.HDFBackend(path + '/chain_q.h5')
+                moveset = [(emcee.moves.DEMove(), 0.8), (emcee.moves.DESnookerMove(), 0.2),]
+                moveset = [(emcee.moves.StretchMove(), 1.0),]
+                sampler_q = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str4) ,moves = moveset)
+
             else:
                 backend = emcee.backends.HDFBackend(ch_filename)
                 backend.reset(nwalkers, ndim)

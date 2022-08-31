@@ -5,11 +5,11 @@ import emcee
 import h5py
 import corner
 
-def plot_data():
-    objname = '2004PY107'
+def plot_data(objfile, objname):
+    #objname = '2004PY107'
     burnin = 800
     
-    path = 'TNOs/' + objname
+    path = 'TNOs/' + objfile
     series = pd.read_csv(path + '/series.csv')
     t = series['t'].values
     e = series['e'].values
@@ -65,6 +65,9 @@ def plot_data():
     params_q = flatchain_q[ind_q,:].flatten()
     
     print(params_h)
+    print(params_k)
+    print(params_p)
+    print(params_q)
     
     c1_h = params_h[0]
     c2_h = params_h[1]
@@ -188,6 +191,73 @@ def plot_data():
     omega_new2 = pomega_new2 - Omega_new2
     ecc_new2 = np.arcsin(guess_h/np.sin(pomega_new2))
     
+    
+    plt.figure()
+    plt.plot(inc_n,'b')
+    plt.plot(inc_new,c='g')
+    fname = path+"/inc_new_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+    plt.figure()
+    plt.plot(h,'b')
+    plt.plot(h_rem,c='g')
+    fname = path+"/h_rem_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+    plt.figure()
+    plt.plot(k,'b')
+    plt.plot(k_rem,c='g')
+    fname = path+"/k_rem_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+    plt.figure()
+    plt.plot(ecc_n,'b')
+    plt.plot(ecc_new,c='g')
+    fname = path+"/ecc_new_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+    plt.figure()
+    plt.axes().set_aspect('equal')
+    plt.scatter(h,k)
+    plt.scatter(h_rem,k_rem, s=0.01)
+    plt.xlim([-0.12,0.12]);
+    plt.ylim([-0.12,0.12]);
+    
+    fname = path+"/hk_mcmc.png"       
+    plt.savefig(fname, format = 'png')
+    plt.close("all")
+    
+    plt.figure()
+    plt.axes().set_aspect('equal')
+    plt.scatter(p,q)
+    plt.scatter(p_rem,q_rem, s=0.01)
+    plt.xlim([-0.12,0.12]);
+    plt.ylim([-0.12,0.12]);
+    
+    fname = path+"/pq_mcmc.png"       
+    plt.savefig(fname, format = 'png')
+    plt.close("all")
+    
+    
+    plt.figure()
+    plt.plot(p,'b')
+    plt.plot(p_rem,c='g')
+    fname = path+"/p_rem_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+    plt.figure()
+    plt.plot(q,'b')
+    plt.plot(q_rem,c='g')
+    fname = path+"/q_rem_mcmc.pdf"       
+    plt.savefig(fname, format = 'pdf')
+    plt.close("all")
+    
+
     fig = corner.corner(flatchain_h, bins = 40, show_titles = True, 
     plot_datapoints = False, color = "blue", fill_contours = True,
     title_fmt = ".3f", truths = params_h, label_kwargs=dict(fontsize=20))
@@ -221,7 +291,7 @@ def plot_data():
     if objname == '2004PY107':
         print('AstDys:', np.arcsin(0.0112290))
     #print('AstDys:',np.arcsin(0.0891079))
-    if objname == '2004KY19':
+    if objname == '2004KF19':
         print('AstDys:',np.arcsin(0.0344540))
     print( 'Unfiltered:',np.mean(inc))
     print()
@@ -232,10 +302,12 @@ def plot_data():
 
     if objname == '2004PY107':
         print('AstDys:', 0.0891079)
-    if objname == '2004KY19':
+    if objname == '2004KF19':
         print('AstDys:', 0.0578858)
 
     print('Unfiltered:', np.mean(e))
 
-    
-plot_data()
+
+objfile = '2004PY107_2'
+objname = '2004PY107'
+plot_data(objfile, objname)
