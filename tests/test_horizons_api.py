@@ -33,6 +33,7 @@ sys.path.insert(0, '../src')
             KeyError,
         ),
     ])
+
 def test_query_horizons_planets(test, expected, expect_raises):
     from horizons_api import query_horizons_planets
     xe = np.zeros(3)
@@ -57,3 +58,5 @@ def test_query_horizons_planets(test, expected, expect_raises):
         npt.assert_almost_equal(me, mt, decimal=3)
         npt.assert_almost_equal(re, rt, decimal=3)
     return
+
+

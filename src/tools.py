@@ -177,6 +177,44 @@ def mod2pi(x):
     return x
 
 
+#################################################################
+#################################################################
+# returns an angle between 0 and 2pi
+#################################################################
+def arraymod2pi(x):
+    """
+    input:
+        x = array of angles in radians
+    output
+        array of angles in radians re-centered from 0-2pi
+    """
+    imax = len(x)
+    for i in range (0,imax):
+        while (x[i] > 2. * np.pi):
+            x[i] += -2. * np.pi
+        while (x[i] < 0.):
+            x[i] += 2. * np.pi
+
+    return x
+
+
+def arraymod360(x):
+    """
+    input:
+        x = array of angles in degrees
+    output
+        array of angles in degrees recentered 0-360
+    """
+    imax = len(x)
+    for i in range(0, imax):
+        while (x[i] > 360):
+            x[i] += -360
+        while (x[i] < 0.):
+            x[i] += 360
+
+    return x
+
+
 ##############################
 # translate MPC designations to packed designations
 #####################

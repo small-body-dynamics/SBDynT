@@ -1,13 +1,11 @@
 import rebound
 import numpy as np
-from pathlib import Path
-import os
-
 # local
 import horizons_api
 
 
-def initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
+def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
+                                   'jupiter', 'saturn', 'uranus', 'neptune'],
                           des='', clones=0):
     """
     inputs:
@@ -163,7 +161,8 @@ def initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
 
 
 def initialize_simulation_at_epoch(
-        planets=['jupiter', 'saturn', 'uranus', 'neptune'],
+        planets=['mercury', 'venus', 'earth', 'mars',
+                 'jupiter', 'saturn', 'uranus', 'neptune'],
         des=[''], epoch=2459580.5):
     """
     inputs:
@@ -316,7 +315,7 @@ def initialize_simulation_at_epoch(
 
 
 def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
-                   deletefile=True, maxdist=1500., mindist=4.):
+                   deletefile=False):
     """
     run a mercurius simulation saving to a simulation archive every tout
     removing particles if they exceed the maximum distance or go below
@@ -328,48 +327,6 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
     sim.collision = "direct"
     sim.ri_mercurius.hillfac = 3.
     sim.collision_resolve = "merge"
-
-    # set up a c-based heartbeat function
-    path1 = str(rebound.__libpath__)
-    path2 = str(Path(rebound.__file__).parent / "rebound.h")
-    com = 'cp ' + path1 + ' librebound.so'
-    os.system(com)
-    com = 'cp ' + path2 + ' rebound.h'
-    os.system(com)
-
-    if(os.path.exists('heartbeat.c')):
-        os.system('rm heartbeat.c')
-    if(os.path.exists('heartbeat.o')):
-        os.system('rm heartbeat.o')
-    if(os.path.exists('heartbeat.so')):
-        os.system('rm heartbeat.so')
-    
-    heartbeat_file = '''
-#include "rebound.h"
-void heartbeat(struct reb_simulation* r){
-	int N = r->N;
-	for (int i=N-1;i>=r->N_active;i+=-1){
-        double rh = r->particles[i].x*r->particles[i].x;
-        rh+= r->particles[i].y*r->particles[i].y;
-        rh+=r->particles[i].z*r->particles[i].z;
-        rh = sqrt(rh);
-        if(rh > '''+str(maxdist)+''' || rh < '''+str(mindist)+'''){
-            reb_remove(r, i, 1);
-	        FILE* of = fopen("removal-log.txt","a"); 
-            fprintf(of,"removing particle %d at time %e and heliocentric distance %e\\n",i, r->t, rh);
-            fclose(of);
-        }
-    }
-}
-'''
-
-    with open('heartbeat.c', mode='a') as file:
-        file.write(heartbeat_file)
-    os.system("gcc -c -O3 -fPIC heartbeat.c -o heartbeat.o")
-    os.system("gcc -L. -shared heartbeat.o -o heartbeat.so -lrebound")
-    from ctypes import cdll
-    clibheartbeat = cdll.LoadLibrary("heartbeat.so")
-    sim.heartbeat = clibheartbeat.heartbeat
 
     sim.integrate(tmax)
     return sim

@@ -29,7 +29,7 @@ def query_horizons_planets(obj='', epoch=2455000):
     """
 
     obj = obj.lower()
-    # define the planet-id numbers used by Horizons for the barycenters
+    # define the planet-id numbers used by Horizons for the barycenter
     # of each major planet in the solar system
     planet_id = {'sun': 0, 'mercury': 1, 'venus': 2, 'earth': 3, 'mars': 4,
                  'jupiter': 5, 'saturn': 6, 'uranus': 7, 'neptune': 8}
@@ -366,7 +366,9 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
     for n in range(0,ntp):
         # build the url to query horizons
         # if the designation being used is a provisional one, we will
-        # translate it to a packed designation for cleaner searching
+        # translate it to a packed designation for cleaner searching.
+        # Numbered objects and temporary designation objects have to
+        # be searched slightly differently
 
         pdes, destype = tools.mpc_designation_translation(des[n])
         start_time = 'JD' + str(epoch)
@@ -377,7 +379,8 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='DES="
         else:
             url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='"
-        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        url += pdes + "%3B'&START_TIME=" + start_time
+        url += "&STOP_TIME=" + stop_time
 
         # run the query and exit if it fails
         response = requests.get(url)
