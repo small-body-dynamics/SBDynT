@@ -2,7 +2,7 @@ import rebound
 import numpy as np
 from pathlib import Path
 import os
-
+import pandas as pd
 
 #local 
 import horizons_api
@@ -42,8 +42,21 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     #get the small body's position and velocity
     flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
-    print(flag)
-    print(des)
+    filename = 'TNOs/'+des
+    horizons_data = pd.read_csv(filename+'/horizon_data.csv')
+    horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
+    print(filename)
+    flag = horizons_data['flag'][0]
+    epoch = horizons_data['epoch'][0]    
+    sbx = horizons_data['sbx'].values
+    sby = horizons_data['sby'].values
+    sbz = horizons_data['sbz'].values
+    sbvx = horizons_data['sbvx'].values
+    sbvy = horizons_data['sbvy'].values
+    sbvz = horizons_data['sbvz'].values
+
+
+
     if(flag<1):
         print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim
@@ -59,8 +72,8 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     #(there isn't a way to get this from Horizons, so we just have to hard code it)
     #values for giant planet systems are from Park et al. 2021 DE440 and DE441, 
     #https://doi.org/10.3847/1538-3881/abd414
-    #all in km^3 kg^–1 s^–2
-    #G = 6.6743015e-20 #in km^3 kg^–1 s^–2
+    #all in km^3 kg^1 s^2
+    #G = 6.6743015e-20 #in km^3 kg^1 s^2
     SS_GM = np.zeros(9)
     SS_GM[0] = 132712440041.93938 #Sun
     SS_GM[1] = 22031.86855 #Mercury
@@ -105,8 +118,19 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         tsim = rebound.Simulation()
         tsim.units = ('yr', 'AU', 'Msun')
         tsim.add(m=1.0,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.)
-        for pl in notplanets:
-            flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
+        for pl1 in notplanets:
+            pl = [t for t in planet_id if planet_id[t]==pl1]
+            mass = horizons_planets['mass_'+str(pl[0])][0]
+            radius = horizons_planets['radius_'+str(pl[0])][0]
+            x = horizons_planets['x_'+str(pl[0])][0]
+            y = horizons_planets['y_'+str(pl[0])][0]
+            z = horizons_planets['z_'+str(pl[0])][0]
+            vx = horizons_planets['vx_'+str(pl[0])][0]
+            vy = horizons_planets['vy_'+str(pl[0])][0]
+            vz = horizons_planets['vz_'+str(pl[0])][0]
+
+
+            #flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
             if(flag<1):
                 print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
                 return 0, 0., sim
@@ -119,14 +143,24 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
 
     #add each included planet to the simulation and correct for the missing planets
-    for pl in planets:
-        flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
+    for pl1 in planets:
+        pl = [t for t in planet_id if planet_id[t]==pl1]
+        #flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
+        mass = horizons_planets['mass_'+str(pl[0])][0]
+        radius = horizons_planets['radius_'+str(pl[0])][0]
+        x = horizons_planets['x_'+str(pl[0])][0]
+        y = horizons_planets['y_'+str(pl[0])][0]
+        z = horizons_planets['z_'+str(pl[0])][0]
+        vx = horizons_planets['vx_'+str(pl[0])][0]
+        vy = horizons_planets['vy_'+str(pl[0])][0]
+        vz = horizons_planets['vz_'+str(pl[0])][0]
+
         if(flag<1):
             print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
             return 0, 0., sim
         #correct for the missing planets
         x+=sx;y+=sy;z+=sz; vx+=svx;vy+=svy;vz+=svz;
-        sim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz,hash=pl)
+        sim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz,hash=pl1)
 
     sim.N_active = npl
 
@@ -142,7 +176,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     else:
         sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
         sbhash = des + '_bf'
-        sim.add(m=0.,x=sbx,y=sby,z=sbz,vx=sbvx,vy=sbvy,vz=sbvz,hash=sbhash)
+        sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)
 
     sim.move_to_com()
 
