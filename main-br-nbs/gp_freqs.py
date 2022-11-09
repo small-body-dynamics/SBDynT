@@ -41,7 +41,7 @@ for i in range(len(astdys)):
     series = pd.read_csv(filename+'/series.csv')
     t = series['t'].values
     a = series['a'].values
-    e = series['e'].values
+    e = series['ecc'].values
     inc = series['inc'].values
     #omega = series['omega'].values
     #Omega = series['Omega'].values
@@ -70,7 +70,9 @@ for i in range(len(astdys)):
     kn = series['kn'].values
     pn = series['pn'].values
     qn = series['qn'].values
-
+    
+    dt = t[1]
+    n = len(h)
     freq = np.fft.rfftfreq(n,d=dt)
 
     #particle eccentricity vectors
