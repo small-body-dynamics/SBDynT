@@ -27,9 +27,9 @@ pe_cols = ['calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
 gp_vals = np.zeros((len(astdys),4))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
-for i in range(len(astdys)):
-    print(i)
-    objname = astdys['Name'].iloc[i]
+for j in range(len(astdys)):
+    print(j)
+    objname = astdys['Name'].iloc[j]
     filename = 'TNOs/' + objname
 
     series = pd.read_csv(filename+'/series.csv')
@@ -203,17 +203,16 @@ for i in range(len(astdys)):
     i_h = np.fft.irfft(test_3,len(h))
     i_k = np.fft.irfft(test_4,len(k))
     '''
+    #print(astdys['sinI'],j)
     sini_f = np.sqrt(p_f*p_f + q_f*q_f)
     ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
+    astsinI = astdys['sinI'][j]
+    astecc = astdys['sinI'][j]    
     
-    pe_df['calc_sinI'][i] = sini_f
-    pe_df['calc_ecc'][i] = ecc_f
-    pe_df['ast_sinI'][i] = astdys['sinI'][i]
-    pe_df['ast_ecc'][i] = astdys['ecc'][i]
+    #print(astecc)
+    pe_df['calc_sinI'][j] = np.mean(sini_f)
+    pe_df['calc_ecc'][j] = np.mean(ecc_f)
+    pe_df['ast_sinI'][j] = astsinI
+    pe_df['ast_ecc'][j] = astecc
     
 pe_df.to_csv('prop_elem.csv')
-
-    
-    
-    
-        
