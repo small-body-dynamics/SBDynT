@@ -12,6 +12,7 @@ def plot_data(objfile, objname):
     path = 'TNOs/' + objfile
     series = pd.read_csv(path + '/series.csv')
     t = series['t'].values
+    t = t-t[0]
     e = series['e'].values
     inc = series['inc'].values
     h = series['h'].values
@@ -308,6 +309,6 @@ def plot_data(objfile, objname):
     print('Unfiltered:', np.mean(e))
 
 
-objfile = '2004PY107_2'
+objfile = '2004PY107_5e8'
 objname = '2004PY107'
 plot_data(objfile, objname)

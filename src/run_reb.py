@@ -42,6 +42,8 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     #get the small body's position and velocity
     flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
+    print(flag)
+    print(des)
     if(flag<1):
         print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim
@@ -78,7 +80,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     msun = SS_GM[0]
     #start with shortest timestep
     sim.dt = dt[0]
-    for i in range(1,9):
+    for i in range(1,8):
         if (not(planet_id[i] in planets )):
             msun+=SS_GM[i]
             notplanets.append(planet_id[i])
@@ -157,9 +159,9 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     removing particles if they exceed the maximum distance or go below
     the minumum distance
     '''
-    #sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
+    sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
-    sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
+    #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
     sim.integrator = 'mercurius'
     sim.collision = "direct"
     sim.ri_mercurius.hillfac = 3.
@@ -207,6 +209,11 @@ void heartbeat(struct reb_simulation* r){
     from ctypes import cdll
     #clibheartbeat = cdll.LoadLibrary("heartbeat.so")
     #sim.heartbeat = clibheartbeat.heartbeat
+    print('Starting Integration')
+    import datetime
 
+    time0 = datetime.datetime.now()
     sim.integrate(tmax)
+    
+    print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim

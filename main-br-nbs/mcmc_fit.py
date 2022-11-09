@@ -48,7 +48,7 @@ if __name__ == '__main__':
    # objname = '2004KF19'
     
     sbody = '2004 PY107'
-    objname = '2004PY107_2'
+    objname = '2004PY107_5e8'
     
             #path = 'Asteroids/'+objname
     path = 'TNOs/'+objname
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     #series = pd.read_csv(path+'/series_2.csv')
     
     t = series['t'].values
+    t = t - t[0]
     a = series['a'].values
     e = series['e'].values
     inc = series['inc'].values/180*np.pi
@@ -192,11 +193,11 @@ plt.yscale('log')
         str4 = "q"
     
         nwalkers = 100
-        nburnin = 1000
+        nburnin = 4000
         nsteps = 1000
         run = [True,True,True,True]
         mean1 = np.array([0,0,0,0,1/freqs[hmax],0,0,0])
-        stdev1 = np.array([0.1,0.1,0.1,0.1,100,0.1,np.pi,0.1])
+        stdev1 = np.array([0.1,0.1,0.1,0.1,400,0.2,np.pi,0.1])
         ndim = len(mean1)
         
         for i in range(ndim):
@@ -245,6 +246,13 @@ plt.yscale('log')
                 sampler_k = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str2) ,moves = moveset)
             
             #state = sampler_k.run_mcmc(p0, nburnin, progress = True, store = True)
+            mean1 = np.array([0,0,0,0,1/freqs[kmax],0,0,0])
+            for i in range(ndim):
+                if i == 0:
+                    dist_arr = np.random.normal(mean1[i],stdev1[i],nwalkers)
+                else:
+                    dist_arr = np.vstack((dist_arr,np.random.normal(mean1[i],stdev1[i],nwalkers)))
+            p0 = np.transpose(dist_arr)
             state2 = sampler_k.run_mcmc(p0, nsteps, progress = True, store = True)
 
 #===================================================P vector==============================================================
@@ -265,6 +273,13 @@ plt.yscale('log')
                 sampler_p = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str3) ,moves = moveset)
             
             #state = sampler_p.run_mcmc(p0, nburnin, progress = True, store = True)
+            mean1 = np.array([0,0,0,0,1/freqs[pmax],0,0,0])
+            for i in range(ndim):
+                if i == 0:
+                    dist_arr = np.random.normal(mean1[i],stdev1[i],nwalkers)
+                else:
+                    dist_arr = np.vstack((dist_arr,np.random.normal(mean1[i],stdev1[i],nwalkers)))
+            p0 = np.transpose(dist_arr)
             state2 = sampler_p.run_mcmc(p0, nsteps, progress = True, store = True)
 
 #===================================================Q vector==============================================================        
@@ -286,6 +301,13 @@ plt.yscale('log')
                 sampler_q = emcee.EnsembleSampler(nwalkers, ndim, MLE_Norm, backend=backend, pool=pool, args = (str4) ,moves = moveset)
             
             #state = sampler_q.run_mcmc(p0, nburnin, progress = True, store = True)
+            mean1 = np.array([0,0,0,0,1/freqs[qmax],0,0,0])
+            for i in range(ndim):
+                if i == 0:
+                    dist_arr = np.random.normal(mean1[i],stdev1[i],nwalkers)
+                else:
+                    dist_arr = np.vstack((dist_arr,np.random.normal(mean1[i],stdev1[i],nwalkers)))
+            p0 = np.transpose(dist_arr)
             state2 = sampler_q.run_mcmc(p0, nsteps, progress = True, store = True)
 
         import plot_fit
