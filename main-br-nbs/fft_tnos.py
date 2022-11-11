@@ -23,9 +23,9 @@ plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
-pe_cols = ['calc_ecc','calc_sinI','ast_ecc','ast_sinI']
+pe_cols = ['Name','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
-gp_vals = np.zeros((len(astdys),4))
+gp_vals = np.zeros((len(astdys),5))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 for j in range(len(astdys)):
     print(j)
@@ -207,9 +207,10 @@ for j in range(len(astdys)):
     sini_f = np.sqrt(p_f*p_f + q_f*q_f)
     ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
     astsinI = astdys['sinI'][j]
-    astecc = astdys['sinI'][j]    
+    astecc = astdys['e'][j]    
     
     #print(astecc)
+    pe_df['Name'][j] = objname
     pe_df['calc_sinI'][j] = np.mean(sini_f)
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
     pe_df['ast_sinI'][j] = astsinI
