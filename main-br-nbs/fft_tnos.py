@@ -27,12 +27,17 @@ pe_cols = ['Name','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
 gp_vals = np.zeros((len(astdys),5))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
+#arange = range(600,625)
 for j in range(len(astdys)):
+#for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
     filename = 'TNOs/' + objname
 
     series = pd.read_csv(filename+'/series.csv')
+    horizon = pd.read_csv(filename+'/horizon_data.csv')
+    if horizon['flag'][0] == 0:
+        continue
     t = series['t'].values
     a = series['a'].values
     e = series['ecc'].values
@@ -132,30 +137,32 @@ for j in range(len(astdys)):
     qsmax = pYqs[1:].max()
     qjmax = pYqj[1:].max()
 
-    ihmax = np.argmax(pYh[1:]+1)
-    ikmax = np.argmax(pYk[1:]+1)
-    ipmax = np.argmax(pYp[1:]+1)
-    iqmax = np.argmax(pYq[1:]+1)
+    ihmax = np.argmax(pYh[1:])+1
+    ikmax = np.argmax(pYk[1:])+1
+    ipmax = np.argmax(pYp[1:])+1
+    iqmax = np.argmax(pYq[1:])+1
     
-    ihjmax = np.argmax(pYhj[1:]+1)
-    ikjmax = np.argmax(pYkj[1:]+1)
-    ipjmax = np.argmax(pYpj[1:]+1)
-    iqjmax = np.argmax(pYqj[1:]+1)
+    ihjmax = np.argmax(pYhj[1:])+1
+    ikjmax = np.argmax(pYkj[1:])+1
+    ipjmax = np.argmax(pYpj[1:])+1
+    iqjmax = np.argmax(pYqj[1:])+1
     
-    ihsmax = np.argmax(pYhs[1:]+1)
-    iksmax = np.argmax(pYks[1:]+1)
-    ipsmax = np.argmax(pYps[1:]+1)
-    iqsmax = np.argmax(pYqs[1:]+1)
+    ihsmax = np.argmax(pYhs[1:])+1
+    iksmax = np.argmax(pYks[1:])+1
+    ipsmax = np.argmax(pYps[1:])+1
+    iqsmax = np.argmax(pYqs[1:])+1
     
-    ihumax = np.argmax(pYhu[1:]+1)
-    ikumax = np.argmax(pYku[1:]+1)
-    ipumax = np.argmax(pYpu[1:]+1)
-    iqumax = np.argmax(pYqu[1:]+1)
+    ihumax = np.argmax(pYhu[1:])+1
+    ikumax = np.argmax(pYku[1:])+1
+    ipumax = np.argmax(pYpu[1:])+1
+    iqumax = np.argmax(pYqu[1:])+1
     
-    ihnmax = np.argmax(pYhn[1:]+1)
-    iknmax = np.argmax(pYkn[1:]+1)
-    ipnmax = np.argmax(pYpn[1:]+1)
-    iqnmax = np.argmax(pYqn[1:]+1)
+    ihnmax = np.argmax(pYhn[1:])+1
+    iknmax = np.argmax(pYkn[1:])+1
+    ipnmax = np.argmax(pYpn[1:])+1
+    iqnmax = np.argmax(pYqn[1:])+1
+
+    print(ihjmax,pjmax)
     #(these need the plus 1 to account for neglecting the f=0 term)
     #make copies of the FFT outputs
     Yp_f = Yp.copy()
@@ -212,11 +219,16 @@ for j in range(len(astdys)):
     astsinI = astdys['sinI'][j]
     astecc = astdys['e'][j]    
     
-    #print(astecc)
+    #print('Objname: ', objname)
+    #print('Cal sinI: ' , np.mean(sini_f))
+    #print('Cal e: ', np.mean(ecc_f))
     pe_df['Name'][j] = objname
     pe_df['calc_sinI'][j] = np.mean(sini_f)
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
     pe_df['ast_sinI'][j] = astsinI
     pe_df['ast_ecc'][j] = astecc
+    #plt.figure()
+    #plt.scatter(t,inc)
+    #plt.savefig(filename+'/inc.png')
     
 pe_df.to_csv('prop_elem.csv')
