@@ -23,9 +23,9 @@ plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
-pe_cols = ['Name','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
+pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
-gp_vals = np.zeros((len(astdys),5))
+gp_vals = np.zeros((len(astdys),7))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 #arange = range(600,625)
 for j in range(len(astdys)):
@@ -42,7 +42,7 @@ for j in range(len(astdys)):
     a = series['a'].values
     e = series['ecc'].values
     inc = series['inc'].values
-
+    
     h = series['h'].values
     k = series['k'].values
     p = series['p'].values
@@ -223,6 +223,9 @@ for j in range(len(astdys)):
     #print('Cal sinI: ' , np.mean(sini_f))
     #print('Cal e: ', np.mean(ecc_f))
     pe_df['Name'][j] = objname
+    pe_df['obs_ecc'][j] = np.mean(e)
+    pe_df['obs_sinI'][j] = np.mean(np.sin(inc))
+
     pe_df['calc_sinI'][j] = np.mean(sini_f)
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
     pe_df['ast_sinI'][j] = astsinI
