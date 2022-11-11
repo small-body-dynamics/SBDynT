@@ -37,9 +37,7 @@ for j in range(len(astdys)):
     a = series['a'].values
     e = series['ecc'].values
     inc = series['inc'].values
-    #omega = series['omega'].values
-    #Omega = series['Omega'].values
-    #M = series['M'].values
+
     h = series['h'].values
     k = series['k'].values
     p = series['p'].values
@@ -93,6 +91,11 @@ for j in range(len(astdys)):
     Yqu = (np.fft.rfft(qu))
     Yqn = (np.fft.rfft(qn))
     
+    pYh = np.abs(Yh)
+    pYk = np.abs(Yk)
+    pYp = np.abs(Yp)
+    pYq = np.abs(Yq)
+    
     pYpj = np.abs(Ypj)
     pYqj = np.abs(Yqj)
     pYhj = np.abs(Yhj)
@@ -112,47 +115,47 @@ for j in range(len(astdys)):
     
     #find the max power and indexes of that max power
     #(disregarding the frequency=0 terms)
-    kumax = Yku[1:].max()
-    knmax = Ykn[1:].max()
-    ksmax = Yks[1:].max()
-    kjmax = Ykj[1:].max()
-    humax = Yhu[1:].max()
-    hnmax = Yhn[1:].max()
-    hsmax = Yhs[1:].max()
-    hjmax = Yhj[1:].max()
-    pumax = Ypu[1:].max()
-    pnmax = Ypn[1:].max()
-    psmax = Yps[1:].max()
-    pjmax = Ypj[1:].max()
-    qumax = Yqu[1:].max()
-    qnmax = Yqn[1:].max()
-    qsmax = Yqs[1:].max()
-    qjmax = Yqj[1:].max()
+    kumax = pYku[1:].max()
+    knmax = pYkn[1:].max()
+    ksmax = pYks[1:].max()
+    kjmax = pYkj[1:].max()
+    humax = pYhu[1:].max()
+    hnmax = pYhn[1:].max()
+    hsmax = pYhs[1:].max()
+    hjmax = pYhj[1:].max()
+    pumax = pYpu[1:].max()
+    pnmax = pYpn[1:].max()
+    psmax = pYps[1:].max()
+    pjmax = pYpj[1:].max()
+    qumax = pYqu[1:].max()
+    qnmax = pYqn[1:].max()
+    qsmax = pYqs[1:].max()
+    qjmax = pYqj[1:].max()
 
-    ihmax = np.argmax(Yh[1:]+1)
-    ikmax = np.argmax(Yk[1:]+1)
-    ipmax = np.argmax(Yp[1:]+1)
-    iqmax = np.argmax(Yq[1:]+1)
+    ihmax = np.argmax(pYh[1:]+1)
+    ikmax = np.argmax(pYk[1:]+1)
+    ipmax = np.argmax(pYp[1:]+1)
+    iqmax = np.argmax(pYq[1:]+1)
     
-    ihjmax = np.argmax(Yhj[1:]+1)
-    ikjmax = np.argmax(Ykj[1:]+1)
-    ipjmax = np.argmax(Ypj[1:]+1)
-    iqjmax = np.argmax(Yqj[1:]+1)
+    ihjmax = np.argmax(pYhj[1:]+1)
+    ikjmax = np.argmax(pYkj[1:]+1)
+    ipjmax = np.argmax(pYpj[1:]+1)
+    iqjmax = np.argmax(pYqj[1:]+1)
     
-    ihsmax = np.argmax(Yhs[1:]+1)
-    iksmax = np.argmax(Yks[1:]+1)
-    ipsmax = np.argmax(Yps[1:]+1)
-    iqsmax = np.argmax(Yqs[1:]+1)
+    ihsmax = np.argmax(pYhs[1:]+1)
+    iksmax = np.argmax(pYks[1:]+1)
+    ipsmax = np.argmax(pYps[1:]+1)
+    iqsmax = np.argmax(pYqs[1:]+1)
     
-    ihumax = np.argmax(Yhu[1:]+1)
-    ikumax = np.argmax(Yku[1:]+1)
-    ipumax = np.argmax(Ypu[1:]+1)
-    iqumax = np.argmax(Yqu[1:]+1)
+    ihumax = np.argmax(pYhu[1:]+1)
+    ikumax = np.argmax(pYku[1:]+1)
+    ipumax = np.argmax(pYpu[1:]+1)
+    iqumax = np.argmax(pYqu[1:]+1)
     
-    ihnmax = np.argmax(Yhn[1:]+1)
-    iknmax = np.argmax(Ykn[1:]+1)
-    ipnmax = np.argmax(Ypn[1:]+1)
-    iqnmax = np.argmax(Yqn[1:]+1)
+    ihnmax = np.argmax(pYhn[1:]+1)
+    iknmax = np.argmax(pYkn[1:]+1)
+    ipnmax = np.argmax(pYpn[1:]+1)
+    iqnmax = np.argmax(pYqn[1:]+1)
     #(these need the plus 1 to account for neglecting the f=0 term)
     #make copies of the FFT outputs
     Yp_f = Yp.copy()
