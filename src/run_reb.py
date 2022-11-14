@@ -41,7 +41,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     sbvz = np.zeros(ntp)
 
     #get the small body's position and velocity
-    flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
+    #flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
     filename = 'TNOs/'+des
     horizons_data = pd.read_csv(filename+'/horizon_data.csv')
     horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
