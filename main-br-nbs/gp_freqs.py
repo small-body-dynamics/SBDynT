@@ -23,7 +23,7 @@ plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
-gp_cols = ['h_j_max','k_j_max','p_j_max','q_j_max','h_s_max','k_s_max','p_s_max','q_s_max','h_u_max','k_u_max','p_u_max','q_u_max','h_n_max','k_n_max','p_n_max','q_n_max']
+gp_cols = ['h_j_amp','k_j_amp','p_j_amp','q_j_amp','h_s_amp','k_s_amp','p_s_amp','q_s_amp','h_u_amp','k_u_amp','p_u_amp','q_u_amp','h_n_amp','k_n_amp','p_n_amp','q_n_amp']
 freq_cols = ['h_j_freq','k_j_freq','p_j_freq','q_j_freq','h_s_freq','k_s_freq','p_s_freq','q_s_freq','h_u_freq','k_u_freq','p_u_freq','q_u_freq','h_n_freq','k_n_freq','p_n_freq','q_n_freq']
 
 for i in range(16):
@@ -101,7 +101,27 @@ for i in range(len(astdys)):
     
     #find the max power and indexes of that max power
     #(disregarding the frequency=0 terms)
-    kumax = Yku[1:].max()
+    kumax = Yk[np.argmax(Yku[1:])+1]
+    knmax = Yk[np.argmax(Ykn[1:])+1]
+    kjmax = Yk[np.argmax(Ykj[1:])+1]
+    ksmax = Yk[np.argmax(Yks[1:])+1]
+
+    humax = Yh[np.argmax(Yhu[1:])+1]
+    hnmax = Yh[np.argmax(Yhn[1:])+1]
+    hjmax = Yh[np.argmax(Yhj[1:])+1]
+    hsmax = Yh[np.argmax(Yhs[1:])+1]
+
+    pumax = Yp[np.argmax(Ypu[1:])+1]
+    pnmax = Yp[np.argmax(Ypn[1:])+1]
+    pjmax = Yp[np.argmax(Ypj[1:])+1]
+    psmax = Yp[np.argmax(Yps[1:])+1]
+
+    qumax = Yq[np.argmax(Yqu[1:])+1]
+    qnmax = Yq[np.argmax(Yqn[1:])+1]
+    qjmax = Yq[np.argmax(Yqj[1:])+1]
+    qsmax = Yq[np.argmax(Yqs[1:])+1]
+
+    '''
     knmax = Ykn[1:].max()
     ksmax = Yks[1:].max()
     kjmax = Ykj[1:].max()
@@ -117,6 +137,7 @@ for i in range(len(astdys)):
     qnmax = Yqn[1:].max()
     qsmax = Yqs[1:].max()
     qjmax = Yqj[1:].max()
+    '''
 
     ihmax = freq[np.argmax(Yh[1:]+1)]
     ikmax = freq[np.argmax(Yk[1:]+1)]
@@ -143,22 +164,22 @@ for i in range(len(astdys)):
     ipnmax = freq[np.argmax(Ypn[1:]+1)]
     iqnmax = freq[np.argmax(Yqn[1:]+1)]
     #(these need the plus 1 to account for neglecting the f=0 term)
-    gp_freqs['h_j_max'][i] = hjmax
-    gp_freqs['k_j_max'][i] = kjmax
-    gp_freqs['p_j_max'][i] = pjmax
-    gp_freqs['q_j_max'][i] = qjmax
-    gp_freqs['h_s_max'][i] = hsmax
-    gp_freqs['k_s_max'][i] = ksmax
-    gp_freqs['p_s_max'][i] = psmax
-    gp_freqs['q_s_max'][i] = qsmax
-    gp_freqs['h_u_max'][i] = humax
-    gp_freqs['k_u_max'][i] = kumax
-    gp_freqs['p_u_max'][i] = pumax
-    gp_freqs['q_u_max'][i] = qumax
-    gp_freqs['h_n_max'][i] = hnmax
-    gp_freqs['k_n_max'][i] = knmax
-    gp_freqs['p_n_max'][i] = pnmax
-    gp_freqs['q_n_max'][i] = qnmax
+    gp_freqs['h_j_amp'][i] = hjmax
+    gp_freqs['k_j_amp'][i] = kjmax
+    gp_freqs['p_j_amp'][i] = pjmax
+    gp_freqs['q_j_amp'][i] = qjmax
+    gp_freqs['h_s_amp'][i] = hsmax
+    gp_freqs['k_s_amp'][i] = ksmax
+    gp_freqs['p_s_amp'][i] = psmax
+    gp_freqs['q_s_amp'][i] = qsmax
+    gp_freqs['h_u_amp'][i] = humax
+    gp_freqs['k_u_amp'][i] = kumax
+    gp_freqs['p_u_amp'][i] = pumax
+    gp_freqs['q_u_amp'][i] = qumax
+    gp_freqs['h_n_amp'][i] = hnmax
+    gp_freqs['k_n_amp'][i] = knmax
+    gp_freqs['p_n_amp'][i] = pnmax
+    gp_freqs['q_n_amp'][i] = qnmax
     
     gp_freqs['h_j_freq'][i] = ihjmax
     gp_freqs['k_j_freq'][i] = ikjmax
