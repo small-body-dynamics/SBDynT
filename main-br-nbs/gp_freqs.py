@@ -118,30 +118,30 @@ for i in range(len(astdys)):
     qsmax = Yqs[1:].max()
     qjmax = Yqj[1:].max()
 
-    ihmax = freq[np.argmax(Yh[1:]+1)]
-    ikmax = freq[np.argmax(Yk[1:]+1)]
-    ipmax = freq[np.argmax(Yp[1:]+1)]
-    iqmax = freq[np.argmax(Yq[1:]+1)]
+    ihmax = freq[np.argmax(Yh[1:])+1]
+    ikmax = freq[np.argmax(Yk[1:])+1]
+    ipmax = freq[np.argmax(Yp[1:])+1]
+    iqmax = freq[np.argmax(Yq[1:])+1]
     
-    ihjmax = freq[np.argmax(Yhj[1:]+1)]
-    ikjmax = freq[np.argmax(Ykj[1:]+1)]
-    ipjmax = freq[np.argmax(Ypj[1:]+1)]
-    iqjmax = freq[np.argmax(Yqj[1:]+1)]
+    ihjmax = freq[np.argmax(Yhj[1:])+1]
+    ikjmax = freq[np.argmax(Ykj[1:])+1]
+    ipjmax = freq[np.argmax(Ypj[1:])+1]
+    iqjmax = freq[np.argmax(Yqj[1:])+1]
     
-    ihsmax = freq[np.argmax(Yhs[1:]+1)]
-    iksmax = freq[np.argmax(Yks[1:]+1)]
-    ipsmax = freq[np.argmax(Yps[1:]+1)]
-    iqsmax = freq[np.argmax(Yqs[1:]+1)]
+    ihsmax = freq[np.argmax(Yhs[1:])+1]
+    iksmax = freq[np.argmax(Yks[1:])+1]
+    ipsmax = freq[np.argmax(Yps[1:])+1]
+    iqsmax = freq[np.argmax(Yqs[1:])+1]
     
-    ihumax = freq[np.argmax(Yhu[1:]+1)]
-    ikumax = freq[np.argmax(Yku[1:]+1)]
-    ipumax = freq[np.argmax(Ypu[1:]+1)]
-    iqumax = freq[np.argmax(Yqu[1:]+1)]
+    ihumax = freq[np.argmax(Yhu[1:])+1]
+    ikumax = freq[np.argmax(Yku[1:])+1]
+    ipumax = freq[np.argmax(Ypu[1:])+1]
+    iqumax = freq[np.argmax(Yqu[1:])+1]
     
-    ihnmax = freq[np.argmax(Yhn[1:]+1)]
-    iknmax = freq[np.argmax(Ykn[1:]+1)]
-    ipnmax = freq[np.argmax(Ypn[1:]+1)]
-    iqnmax = freq[np.argmax(Yqn[1:]+1)]
+    ihnmax = freq[np.argmax(Yhn[1:])+1]
+    iknmax = freq[np.argmax(Ykn[1:])+1]
+    ipnmax = freq[np.argmax(Ypn[1:])+1]
+    iqnmax = freq[np.argmax(Yqn[1:])+1]
     #(these need the plus 1 to account for neglecting the f=0 term)
     gp_freqs['h_j_max'][i] = hjmax
     gp_freqs['k_j_max'][i] = kjmax
