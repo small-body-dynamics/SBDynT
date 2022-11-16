@@ -27,11 +27,12 @@ pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sin
 
 gp_vals = np.zeros((len(astdys),7))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
-#arange = range(600,625)
+arange = range(250,300)
 for j in range(len(astdys)):
 #for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
+   # print(objname)
     filename = 'TNOs/' + objname
 
     series = pd.read_csv(filename+'/series.csv')
