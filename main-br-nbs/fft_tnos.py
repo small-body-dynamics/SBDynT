@@ -97,27 +97,27 @@ for j in range(len(astdys)):
     Yqu = (np.fft.rfft(qu))
     Yqn = (np.fft.rfft(qn))
     
-    pYh = np.abs(Yh)
-    pYk = np.abs(Yk)
-    pYp = np.abs(Yp)
-    pYq = np.abs(Yq)
+    pYh = np.abs(Yh)**2
+    pYk = np.abs(Yk)**2
+    pYp = np.abs(Yp)**2
+    pYq = np.abs(Yq)**2
     
-    pYpj = np.abs(Ypj)
-    pYqj = np.abs(Yqj)
-    pYhj = np.abs(Yhj)
-    pYkj = np.abs(Ykj)
-    pYps = np.abs(Yps)
-    pYqs = np.abs(Yqs)
-    pYhs = np.abs(Yhs)
-    pYks = np.abs(Yks)
-    pYpu = np.abs(Ypu)
-    pYqu = np.abs(Yqu)
-    pYhu = np.abs(Yhu)
-    pYku = np.abs(Yku)
-    pYpn = np.abs(Ypn)
-    pYqn = np.abs(Yqn)
-    pYhn = np.abs(Yhn)
-    pYkn = np.abs(Ykn)
+    pYpj = np.abs(Ypj)**2
+    pYqj = np.abs(Yqj)**2
+    pYhj = np.abs(Yhj)**2
+    pYkj = np.abs(Ykj)**2
+    pYps = np.abs(Yps)**2
+    pYqs = np.abs(Yqs)**2
+    pYhs = np.abs(Yhs)**2
+    pYks = np.abs(Yks)**2
+    pYpu = np.abs(Ypu)**2
+    pYqu = np.abs(Yqu)**2
+    pYhu = np.abs(Yhu)**2
+    pYku = np.abs(Yku)**2
+    pYpn = np.abs(Ypn)**2
+    pYqn = np.abs(Yqn)**2
+    pYhn = np.abs(Yhn)**2
+    pYkn = np.abs(Ykn)**2
     
     #find the max power and indexes of that max power
     #(disregarding the frequency=0 terms)
