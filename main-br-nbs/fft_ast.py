@@ -69,6 +69,26 @@ for j in range(len(astdys)):
     pn = series['pn'].values
     qn = series['qn'].values
     
+    hmc = series['hmc'].values
+    kmc = series['kmc'].values
+    pmc = series['pmc'].values
+    qmc = series['qmc'].values
+    
+    hv = series['hv'].values
+    kv = series['kv'].values
+    pv = series['pv'].values
+    qv = series['qv'].values
+
+    he = series['he'].values
+    ke = series['ke'].values
+    pe = series['pe'].values
+    qe = series['qe'].values
+    
+    hmr = series['hmr'].values
+    kmr = series['kmr'].values
+    pmr = series['pmr'].values
+    qmr = series['qmr'].values
+    
     dt = t[1]
     n = len(h)
     freq = np.fft.rfftfreq(n,d=dt)
@@ -97,6 +117,24 @@ for j in range(len(astdys)):
     Yqu = (np.fft.rfft(qu))
     Yqn = (np.fft.rfft(qn))
     
+    Yhmc = (np.fft.rfft(hmc))
+    Ykmc = (np.fft.rfft(kmc))
+    Ypmc = (np.fft.rfft(pmc))
+    Yqmc = (np.fft.rfft(qmc))
+    Yhv = (np.fft.rfft(hv))
+    Ykv = (np.fft.rfft(kv))
+    Ypv = (np.fft.rfft(pv))
+    Yqv = (np.fft.rfft(qv))
+    Yhe = (np.fft.rfft(he))
+    Yke = (np.fft.rfft(ke))
+    Ype = (np.fft.rfft(pe))
+    Yqe = (np.fft.rfft(qe))
+    Yhmr = (np.fft.rfft(hmr))
+    Ykmr = (np.fft.rfft(kmr))
+    Ypmr = (np.fft.rfft(pmr))
+    Yqmr = (np.fft.rfft(qmr))
+    
+    
     pYh = np.abs(Yh)**2
     pYk = np.abs(Yk)**2
     pYp = np.abs(Yp)**2
@@ -119,6 +157,26 @@ for j in range(len(astdys)):
     pYhn = np.abs(Yhn)**2
     pYkn = np.abs(Ykn)**2
     
+    pYpmc = np.abs(Ypmc)**2
+    pYqmc = np.abs(Yqmc)**2
+    pYhmc = np.abs(Yhmc)**2
+    pYkmc = np.abs(Ykmc)**2
+    
+    pYpv = np.abs(Ypv)**2
+    pYqv = np.abs(Yqv)**2
+    pYhv = np.abs(Yhv)**2
+    pYkv = np.abs(Ykv)**2
+    
+    pYpe = np.abs(Ype)**2
+    pYqe = np.abs(Yqe)**2
+    pYhe = np.abs(Yhe)**2
+    pYke = np.abs(Yke)**2
+    
+    pYpmr = np.abs(Ypmr)**2
+    pYqmr = np.abs(Yqmr)**2
+    pYhmr = np.abs(Yhmr)**2
+    pYkmr = np.abs(Ykmr)**2
+    
     #find the max power and indexes of that max power
     #(disregarding the frequency=0 terms)
     kumax = pYku[1:].max()
@@ -137,6 +195,26 @@ for j in range(len(astdys)):
     qnmax = pYqn[1:].max()
     qsmax = pYqs[1:].max()
     qjmax = pYqj[1:].max()
+    
+    hmcmax = pYhmc[1:].max()
+    kmcmax = pYkmc[1:].max()
+    pmcmax = pYpmc[1:].max()
+    qmcmax = pYqmc[1:].max()
+    
+    hmrmax = pYhmr[1:].max()
+    kmrmax = pYkmr[1:].max()
+    pmrmax = pYpmr[1:].max()
+    qmrmax = pYqmr[1:].max()
+    
+    hvmax = pYhv[1:].max()
+    kvmax = pYkv[1:].max()
+    pvmax = pYpv[1:].max()
+    qvmax = pYqv[1:].max()
+    
+    hemax = pYhe[1:].max()
+    kemax = pYke[1:].max()
+    pemax = pYpe[1:].max()
+    qemax = pYqe[1:].max()
 
     ihmax = np.argmax(pYh[1:])+1
     ikmax = np.argmax(pYk[1:])+1
@@ -162,6 +240,26 @@ for j in range(len(astdys)):
     iknmax = np.argmax(pYkn[1:])+1
     ipnmax = np.argmax(pYpn[1:])+1
     iqnmax = np.argmax(pYqn[1:])+1
+    
+    ihmcmax = np.argmax(pYhmc[1:])+1
+    ikmcmax = np.argmax(pYkmc[1:])+1
+    ipmcmax = np.argmax(pYpmc[1:])+1
+    iqmcmax = np.argmax(pYqmc[1:])+1
+    
+    ihvmax = np.argmax(pYhv[1:])+1
+    ikvmax = np.argmax(pYkv[1:])+1
+    ipvmax = np.argmax(pYpv[1:])+1
+    iqvmax = np.argmax(pYqv[1:])+1
+    
+    ihemax = np.argmax(pYhe[1:])+1
+    ikemax = np.argmax(pYke[1:])+1
+    ipemax = np.argmax(pYpe[1:])+1
+    iqemax = np.argmax(pYqe[1:])+1
+    
+    ihmrmax = np.argmax(pYhmr[1:])+1
+    ikmrmax = np.argmax(pYkmr[1:])+1
+    ipmrmax = np.argmax(pYpmr[1:])+1
+    iqmrmax = np.argmax(pYqmr[1:])+1
 
     print(ihjmax,pjmax)
     #(these need the plus 1 to account for neglecting the f=0 term)
@@ -190,17 +288,22 @@ for j in range(len(astdys)):
     
     for i in range(0,imax-1):
         if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
-           or pYpn[i]>pth*pnmax or freq[i]>freqlim):
+           or pYpn[i]>pth*pnmax or pYpmc[i]>pth*pmcmax or pYpv[i]>pth*pvmax
+            or pYpe[i]>pth*pemax or pYpmr[i]>pth*pmrmax or freq[i]>freqlim):
             Yp_f[i]=0
         if (pYqu[i]>pth*qumax or pYqj[i]>pth*qjmax or pYqs[i]>pth*qsmax 
-           or pYqn[i]>pth*qnmax or freq[i]>freqlim):
+           or pYqn[i]>pth*qnmax or pYqmc[i]>pth*qmcmax or pYqv[i]>pth*qvmax
+            or pYqe[i]>pth*qemax or pYqmr[i]>pth*qmrmax or  freq[i]>freqlim):
             Yq_f[i]=0
         if (pYhu[i]>pth*humax or pYhj[i]>pth*hjmax or pYhs[i]>pth*hsmax 
-           or pYhn[i]>pth*hnmax or freq[i]>freqlim):
+           or pYhn[i]>pth*hnmax or pYhmc[i]>pth*hmcmax or pYhv[i]>pth*hvmax
+            or pYhe[i]>pth*hemax or pYhmr[i]>pth*hmrmax or freq[i]>freqlim):
             Yh_f[i]=0
         if (pYku[i]>pth*kumax or pYkj[i]>pth*kjmax or pYks[i]>pth*ksmax 
-           or pYkn[i]>pth*knmax or freq[i]>freqlim):
+           or pYkn[i]>pth*knmax or pYkmc[i]>pth*kmcmax or pYkv[i]>pth*kvmax
+            or pYke[i]>pth*kemax or pYkmr[i]>pth*kmrmax or freq[i]>freqlim):
             Yk_f[i]=0
+        
     
     
         
