@@ -7,7 +7,13 @@ import os
 import horizons_api
 import pandas as pd
 
-astdys = pd.read_csv('astdys_tnos.csv')
+filetype = 'Asteroids'
+
+if filetype == 'Asteroids':
+    astdys = pd.read_csv('astdys_ast.csv')
+elif filetype == 'TNOs':
+    astdys = pd.read_csv('astdys_tnos.csv')
+
 clones = 0 
 #for i in range(len(astdys)):
 #for i in range(10):
@@ -33,12 +39,12 @@ horizon_data = pd.DataFrame(vals,columns=['flag','epoch','sbx','sby','sbz','sbvx
 horizon_planets = pd.DataFrame(plan_vals, columns=plan_cols)
 planet_id = {1: 'mercury', 2: 'venus', 3:'earth', 4:'mars', 5: 'jupiter', 6 : 'saturn', 7 : 'uranus', 8 : 'neptune'}
 
-arange = range(300,340)
-#for i in range(len(astdys)):
-for i in arange:
+#arange = range(300,340)
+for i in range(len(astdys)):
+#for i in arange:
     print(i)
     objname = astdys['Name'].iloc[i]
-    filename = 'TNOs/' + objname
+    filename = filetype + '/' + objname
     if not os.path.isdir(filename):
         os.mkdir(filename)
     sbody = objname    

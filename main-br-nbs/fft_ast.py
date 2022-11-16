@@ -22,7 +22,7 @@ plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
-astdys = pd.read_csv('TNOs/astdys_tnos.csv')
+astdys = pd.read_csv('astdys_ast.csv')
 pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
 gp_vals = np.zeros((len(astdys),7))
@@ -33,7 +33,7 @@ for j in range(len(astdys)):
     print(j)
     objname = astdys['Name'].iloc[j]
    # print(objname)
-    filename = 'TNOs/' + objname
+    filename = 'Asteroids/' + objname
 
     series = pd.read_csv(filename+'/series.csv')
     horizon = pd.read_csv(filename+'/horizon_data.csv')
@@ -235,4 +235,4 @@ for j in range(len(astdys)):
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
     
-pe_df.to_csv('prop_elem_tnos.csv')
+pe_df.to_csv('prop_elem_ast.csv')

@@ -150,7 +150,7 @@ def query_sb_from_jpl(des='',clones=0):
     try:
         #query the JPL small body database browser for the best-fit orbit
         #and associated covariance matrix
-        obj= SBDB.query(des,full_precision=True,covariance='mat',phys=True)
+        obj= SBDB.query(des,id_type='search',full_precision=True,covariance='mat',phys=True)
     except:
         print("JPL small body database browser query failed")
         return 0, 0,0,0,0,0,0,0
@@ -183,7 +183,8 @@ def query_sb_from_jpl(des='',clones=0):
     start_time = 'JD'+str(epoch)
     stop_time = 'JD'+str(epoch+1)
     url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'&OUT_UNITS='AU-D'"
-    url += "&COMMAND=" + des + "&START_TIME=" +start_time + "&STOP_TIME=" + stop_time
+    #url += "&COMMAND=" + des + "&START_TIME=" +start_time + "&STOP_TIME=" + stop_time
+    url += "&COMMAND='DES%3D"+str(obj['object']['spkid'])+ "%3B'" +"&START_TIME=" +start_time + "&STOP_TIME=" + stop_time
     
     #run the query and exit if it fails
     response = requests.get(url)
