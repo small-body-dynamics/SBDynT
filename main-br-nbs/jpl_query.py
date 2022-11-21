@@ -43,7 +43,7 @@ planet_id = {1: 'mercury', 2: 'venus', 3:'earth', 4:'mars', 5: 'jupiter', 6 : 's
 for i in range(len(astdys)):
 #for i in arange:
     print(i)
-    objname = astdys['Name'].iloc[i]
+    objname = str(astdys['Name'].iloc[i])
     filename = filetype + '/' + objname
     if not os.path.isdir(filename):
         os.mkdir(filename)

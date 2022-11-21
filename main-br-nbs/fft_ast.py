@@ -22,7 +22,7 @@ plt.rcParams["ytick.labelsize"] = 15
 plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
-astdys = pd.read_csv('astdys_ast.csv')
+astdys = pd.read_csv('data_files/astdys_ast.csv')
 pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
 gp_vals = np.zeros((len(astdys),7))
@@ -31,7 +31,7 @@ arange = range(250,300)
 for j in range(len(astdys)):
 #for j in arange:
     print(j)
-    objname = astdys['Name'].iloc[j]
+    objname = str(astdys['Name'].iloc[j])
    # print(objname)
     filename = 'Asteroids/' + objname
 
@@ -338,4 +338,4 @@ for j in range(len(astdys)):
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
     
-pe_df.to_csv('prop_elem_ast.csv')
+pe_df.to_csv('data_files/prop_elem_ast.csv')

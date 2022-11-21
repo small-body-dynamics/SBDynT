@@ -16,7 +16,7 @@ astdys = pd.read_csv('astdys_tnos.csv')
 #for i in range(10):
 objnum = int(sys.argv[1])
 print(objnum)
-objname = astdys['Name'].iloc[objnum]
+objname = str(astdys['Name'].iloc[objnum])
 
 
 #objname = 'Ceres'

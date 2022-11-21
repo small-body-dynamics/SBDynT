@@ -8,13 +8,13 @@ import tools
 import pandas as pd
 import os
 
-astdys = pd.read_csv('astdys_ast.csv')
+astdys = pd.read_csv('data_files/astdys_ast.csv')
 
 #for i in range(len(astdys)):
 #for i in range(10):
 objnum = int(sys.argv[1])
 print(objnum)
-objname = astdys['Name'].iloc[objnum]
+objname = str(astdys['Name'].iloc[objnum])
 filename = 'Asteroids/' + objname
 if not os.path.isdir(filename):
     os.mkdir(filename)
@@ -26,8 +26,8 @@ p = sim.particles[sbody+"_bf"]
 o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
-tmax = 1e8
-tout = 1e4
+tmax = 5e6
+tout = 1e2
 
 sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename=filename+"/archive.bin",deletefile=True,mindist=20.)
 

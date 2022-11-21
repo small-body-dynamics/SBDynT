@@ -25,13 +25,13 @@ plt.rcParams["figure.titlesize"] = 25
 filetype = 'Asteroids'
 
 if filetype == 'Asteroids':
-    astdys = pd.read_csv('astdys_ast.csv')
-    final_file = 'gp_freqs_ast.csv'
+    astdys = pd.read_csv('data_files/astdys_ast.csv')
+    final_file = 'data_files/gp_freqs_ast.csv'
 elif filetype == 'TNOs':
-    astdys = pd.read_csv('astdys_tnos.csv')
-    final_file = 'gp_freqs_tnos.csv'
+    astdys = pd.read_csv('data_files/astdys_tnos.csv')
+    final_file = 'data_files/gp_freqs_tnos.csv'
     
-astdys = pd.read_csv('TNOs/astdys_tnos.csv')
+#astdys = pd.read_csv('TNOs/astdys_tnos.csv')
 gp_cols = ['h_j_amp','k_j_amp','p_j_amp','q_j_amp','h_s_amp','k_s_amp','p_s_amp','q_s_amp','h_u_amp','k_u_amp','p_u_amp','q_u_amp','h_n_amp','k_n_amp','p_n_amp','q_n_amp']
 freq_cols = ['h_j_freq','k_j_freq','p_j_freq','q_j_freq','h_s_freq','k_s_freq','p_s_freq','q_s_freq','h_u_freq','k_u_freq','p_u_freq','q_u_freq','h_n_freq','k_n_freq','p_n_freq','q_n_freq']
 
