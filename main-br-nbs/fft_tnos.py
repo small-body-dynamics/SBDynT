@@ -25,6 +25,14 @@ plt.rcParams["figure.titlesize"] = 25
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
 pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
 
+filename = astdys['Name'].iloc[0]
+series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
+
+p_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
+q_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
+h_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
+k_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
+
 gp_vals = np.zeros((len(astdys),7))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 arange = range(250,300)
@@ -192,16 +200,23 @@ for j in range(len(astdys)):
         if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
            or pYpn[i]>pth*pnmax or freq[i]>freqlim):
             Yp_f[i]=0
+        else:
+            p_transfer_f[j][i] = 1
         if (pYqu[i]>pth*qumax or pYqj[i]>pth*qjmax or pYqs[i]>pth*qsmax 
            or pYqn[i]>pth*qnmax or freq[i]>freqlim):
             Yq_f[i]=0
+        else:
+            q_transfer_f[j][i] = 1
         if (pYhu[i]>pth*humax or pYhj[i]>pth*hjmax or pYhs[i]>pth*hsmax 
            or pYhn[i]>pth*hnmax or freq[i]>freqlim):
             Yh_f[i]=0
+        else:
+            h_transfer_f[j][i] = 1
         if (pYku[i]>pth*kumax or pYkj[i]>pth*kjmax or pYks[i]>pth*ksmax 
            or pYkn[i]>pth*knmax or freq[i]>freqlim):
             Yk_f[i]=0
-    
+        else:
+            k_transfer_f[j][i] = 1    
     
         
     p_f = np.fft.irfft(Yp_f,len(p))
@@ -236,3 +251,8 @@ for j in range(len(astdys)):
     #plt.savefig(filename+'/inc.png')
     
 pe_df.to_csv('prop_elem_tnos.csv')
+np.savetxt('data_files/p_tnos_transfer.txt',p_transfer_f)
+np.savetxt('data_files/q_tnos_transfer.txt',q_transfer_f)
+np.savetxt('data_files/h_tnos_transfer.txt',h_transfer_f)
+np.savetxt('data_files/k_tnos_transfer.txt',k_transfer_f)
+
