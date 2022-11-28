@@ -35,7 +35,10 @@ for j in range(len(astdys)):
    # print(objname)
     filename = 'Asteroids/' + objname
 
-    series = pd.read_csv(filename+'/series.csv')
+    if os.path.isfile(filename+'/series.csv'):
+        series = pd.read_csv(filename+'/series.csv')
+    else:
+        continue
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
