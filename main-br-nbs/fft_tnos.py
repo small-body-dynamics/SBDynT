@@ -36,7 +36,7 @@ k_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
 gp_vals = np.zeros((len(astdys),7))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 arange = range(250,300)
-for j in range(len(astdys)):
+for j in range(len(astdys)-2):
 #for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
