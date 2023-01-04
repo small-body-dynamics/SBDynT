@@ -27,14 +27,70 @@ pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sin
 
 filename = astdys['Name'].iloc[0]
 series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
+allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
-p_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
-q_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
-h_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
-k_transfer_f = np.zeros((len(astdys),len(series['t'].values)))
+#p_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
+#q_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
+#h_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
+#k_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
 
 gp_vals = np.zeros((len(astdys),7))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
+
+pYpu = np.abs(np.fft.rfft(allplan['pu'].values))**2
+pYpn = np.abs(np.fft.rfft(allplan['pn'].values))**2
+pYpj = np.abs(np.fft.rfft(allplan['pj'].values))**2
+pYps = np.abs(np.fft.rfft(allplan['ps'].values))**2
+pYqu = np.abs(np.fft.rfft(allplan['qu'].values))**2
+pYqn = np.abs(np.fft.rfft(allplan['qn'].values))**2
+pYqj = np.abs(np.fft.rfft(allplan['qj'].values))**2
+pYqs = np.abs(np.fft.rfft(allplan['qs'].values))**2
+pYhu = np.abs(np.fft.rfft(allplan['hu'].values))**2
+pYhn = np.abs(np.fft.rfft(allplan['hn'].values))**2
+pYhj = np.abs(np.fft.rfft(allplan['hj'].values))**2
+pYhs = np.abs(np.fft.rfft(allplan['hs'].values))**2
+pYku = np.abs(np.fft.rfft(allplan['ku'].values))**2
+pYkn = np.abs(np.fft.rfft(allplan['kn'].values))**2
+pYkj = np.abs(np.fft.rfft(allplan['kj'].values))**2
+pYks = np.abs(np.fft.rfft(allplan['ks'].values))**2
+
+pumax = np.max(pYpu[1:])
+pnmax = np.max(pYpn[1:])
+pjmax = np.max(pYpj[1:])
+psmax = np.max(pYps[1:])
+qumax = np.max(pYqu[1:])
+qnmax = np.max(pYqn[1:])
+qjmax = np.max(pYqj[1:])
+qsmax = np.max(pYqs[1:])
+humax = np.max(pYhu[1:])
+hnmax = np.max(pYhn[1:])
+hjmax = np.max(pYhj[1:])
+hsmax = np.max(pYhs[1:])
+kumax = np.max(pYku[1:])
+knmax = np.max(pYkn[1:])
+kjmax = np.max(pYkj[1:])
+ksmax = np.max(pYks[1:])
+
+hj = allplan['hj'].values
+kj = allplan['kj'].values
+pj = allplan['pj'].values
+qj = allplan['qj'].values
+    
+hs = allplan['hs'].values
+ks = allplan['ks'].values
+ps = allplan['ps'].values
+qs = allplan['qs'].values
+
+hu = allplan['hu'].values
+ku = allplan['ku'].values
+pu = allplan['pu'].values
+qu = allplan['qu'].values
+    
+hn = allplan['hn'].values
+kn = allplan['kn'].values
+pn = allplan['pn'].values
+qn = allplan['qn'].values
+
 arange = range(250,300)
 for j in range(len(astdys)-2):
 #for j in arange:
@@ -42,13 +98,14 @@ for j in range(len(astdys)-2):
     objname = astdys['Name'].iloc[j]
    # print(objname)
     filename = 'TNOs/' + objname
-
+    
     series = pd.read_csv(filename+'/series.csv')
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
     t = series['t'].values
     a = series['a'].values
+    #print(a)
     e = series['ecc'].values
     inc = series['inc'].values
     
@@ -57,28 +114,11 @@ for j in range(len(astdys)-2):
     p = series['p'].values
     q = series['q'].values
     
-    hj = series['hj'].values
-    kj = series['kj'].values
-    pj = series['pj'].values
-    qj = series['qj'].values
-    
-    hs = series['hs'].values
-    ks = series['ks'].values
-    ps = series['ps'].values
-    qs = series['qs'].values
-
-    hu = series['hu'].values
-    ku = series['ku'].values
-    pu = series['pu'].values
-    qu = series['qu'].values
-    
-    hn = series['hn'].values
-    kn = series['kn'].values
-    pn = series['pn'].values
-    qn = series['qn'].values
     
     dt = t[1]
     n = len(h)
+    #print('dt = ', dt)
+    #print('n = ', n)
     freq = np.fft.rfftfreq(n,d=dt)
 
     #particle eccentricity vectors
@@ -88,6 +128,7 @@ for j in range(len(astdys)-2):
     Yq = np.fft.rfft(q)
     
     #giant planets
+    '''
     Yhj = (np.fft.rfft(hj))
     Yhs = (np.fft.rfft(hs))
     Yhu = (np.fft.rfft(hu))
@@ -126,7 +167,8 @@ for j in range(len(astdys)-2):
     pYqn = np.abs(Yqn)**2
     pYhn = np.abs(Yhn)**2
     pYkn = np.abs(Ykn)**2
-    
+    '''
+    '''    
     #find the max power and indexes of that max power
     #(disregarding the frequency=0 terms)
     kumax = pYku[1:].max()
@@ -174,50 +216,83 @@ for j in range(len(astdys)-2):
     print(ihjmax,pjmax)
     #(these need the plus 1 to account for neglecting the f=0 term)
     #make copies of the FFT outputs
+    '''  
     Yp_f = Yp.copy()
     Yq_f = Yq.copy()
     Yh_f = Yh.copy()
     Yk_f = Yk.copy()
-    
+  
     imax = len(Yp)
     #disregard antyhing with a period shorter than 5000 years
     freqlim = 1./5000.
     #disregard frequencies for which any planet has power at higher than 10% the max
-    pth = 0.25
+    pth = 0.1
     
     spread = 1
+
     #'''
-    test = np.zeros(len(Yp_f))
-    test[ipmax-spread:ipmax+spread] = Yp[ipmax-spread:ipmax+spread]
-    test_2 = np.zeros(len(Yq_f))
-    test_2[iqmax-spread:iqmax+spread] = Yq[iqmax-spread:iqmax+spread]
-    test_3 = np.zeros(len(Yh_f))
-    test_3[ihmax-spread:ihmax+spread] = Yh[ihmax-spread:ihmax+spread]
-    test_4 = np.zeros(len(Yk_f))
-    test_4[ikmax-spread:ikmax+spread] = Yk[ikmax-spread:ikmax+spread]
-    
+    #test = np.zeros(len(Yp_f))
+    #test[ipmax-spread:ipmax+spread] = Yp[ipmax-spread:ipmax+spread]
+    #test_2 = np.zeros(len(Yq_f))
+    #test_2[iqmax-spread:iqmax+spread] = Yq[iqmax-spread:iqmax+spread]
+    #test_3 = np.zeros(len(Yh_f))
+    #test_3[ihmax-spread:ihmax+spread] = Yh[ihmax-spread:ihmax+spread]
+    #test_4 = np.zeros(len(Yk_f))
+    #test_4[ikmax-spread:ikmax+spread] = Yk[ikmax-spread:ikmax+spread]
+    '''
+    hk_freqs = np.loadtxt('hires_hk_freqs.txt')
+    pq_freqs = np.loadtxt('hires_pq_freqs.txt')
+    hk_ind = []
+    pq_ind = []
+    #print('Length ',len(h))
+    #print(freq,hk_freqs,pq_freqs)
+    for i in hk_freqs:
+        hk_ind.append(np.where(freq >= i)[0][0])
+        #print(np.where(freq >= i)[0])
+    for i in pq_freqs:
+        pq_ind.append(np.where(freq >= i)[0][0])
+        
+    #print(hk_ind,pq_ind)
+    for i in range(0,imax-1):
+        if freq[i] > freqlim:
+            Yp_f[i] = 0
+            Yq_f[i] = 0
+            Yh_f[i] = 0
+            Yk_f[i] = 0
+        for l in pq_ind:
+            if pYp[i]>pth*pYp[l]:
+                Yp_f[i]=0
+            if pYq[i]>pth*pYq[l]:
+                Yq_f[i]=0
+        for l in hk_ind:
+            if pYh[i]>pth*pYh[l]:
+                Yh_f[i]=0
+            if pYk[i]>pth*pYk[l]:
+                Yk_f[i]=0
+
+    '''
     for i in range(0,imax-1):
         if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
            or pYpn[i]>pth*pnmax or freq[i]>freqlim):
             Yp_f[i]=0
-        else:
-            p_transfer_f[j][i] = 1
+#        else:
+#            p_transfer_f[j][i] = 1
         if (pYqu[i]>pth*qumax or pYqj[i]>pth*qjmax or pYqs[i]>pth*qsmax 
            or pYqn[i]>pth*qnmax or freq[i]>freqlim):
             Yq_f[i]=0
-        else:
-            q_transfer_f[j][i] = 1
+#        else:
+#            q_transfer_f[j][i] = 1
         if (pYhu[i]>pth*humax or pYhj[i]>pth*hjmax or pYhs[i]>pth*hsmax 
            or pYhn[i]>pth*hnmax or freq[i]>freqlim):
             Yh_f[i]=0
-        else:
-            h_transfer_f[j][i] = 1
+#        else:
+#            h_transfer_f[j][i] = 1
         if (pYku[i]>pth*kumax or pYkj[i]>pth*kjmax or pYks[i]>pth*ksmax 
            or pYkn[i]>pth*knmax or freq[i]>freqlim):
             Yk_f[i]=0
-        else:
-            k_transfer_f[j][i] = 1    
-    
+#        else:
+#            k_transfer_f[j][i] = 1    
+    #'''
         
     p_f = np.fft.irfft(Yp_f,len(p))
     q_f = np.fft.irfft(Yq_f,len(q))
@@ -251,8 +326,8 @@ for j in range(len(astdys)-2):
     #plt.savefig(filename+'/inc.png')
     
 pe_df.to_csv('prop_elem_tnos.csv')
-np.savetxt('data_files/p_tnos_transfer.txt',p_transfer_f)
-np.savetxt('data_files/q_tnos_transfer.txt',q_transfer_f)
-np.savetxt('data_files/h_tnos_transfer.txt',h_transfer_f)
-np.savetxt('data_files/k_tnos_transfer.txt',k_transfer_f)
+#np.savetxt('data_files/p_tnos_transfer.txt',p_transfer_f)
+#np.savetxt('data_files/q_tnos_transfer.txt',q_transfer_f)
+#np.savetxt('data_files/h_tnos_transfer.txt',h_transfer_f)
+#np.savetxt('data_files/k_tnos_transfer.txt',k_transfer_f)
 
