@@ -135,3 +135,5 @@ archive.bin
 *series.csv
 *.h5
 *transfer.txt
+*.bin
+*.txt
