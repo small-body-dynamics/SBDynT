@@ -180,7 +180,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)
 
     sim.move_to_com()
-
+    sim.init_megno()
 
     return 1, epoch, sim
 
@@ -249,6 +249,7 @@ void heartbeat(struct reb_simulation* r){
 
     time0 = datetime.datetime.now()
     sim.integrate(tmax)
+    megno = sim.calculate_megno()
     
     print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim
