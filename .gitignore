@@ -132,7 +132,7 @@ dmypy.json
 archive.bin
 *.pdf
 *series_new.csv
-*series.csv
+*series*.csv
 *.h5
 *transfer.txt
 *.bin
