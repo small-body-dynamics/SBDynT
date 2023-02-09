@@ -198,8 +198,10 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
+    #sim.integrator = 'mercurius'
     sim.integrator = 'whfast'
     sim.collision = "direct"
+    #sim.ri_mercurius.hillfac = 3.
     sim.ri_whfast.hillfac = 3.
     sim.collision_resolve = "merge"
     
@@ -253,7 +255,10 @@ void heartbeat(struct reb_simulation* r){
     print('calc_megno')
     megno = sim.calculate_megno()
     lyp = sim.calculate_lyapunov()
+<<<<<<< HEAD
+=======
     print('Megno: ', megno)
+>>>>>>> 5e5b301300626b28eb5b7220f80ff0e30df6f807
     print('Lyapunov exponent: ', lyp)
     print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim
