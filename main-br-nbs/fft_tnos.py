@@ -23,7 +23,7 @@ plt.rcParams["legend.fontsize"] = 15
 plt.rcParams["figure.titlesize"] = 25
 
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
-pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
+pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','megno','lyapunov']
 
 filename = astdys['Name'].iloc[0]
 series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
@@ -34,7 +34,7 @@ allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 #h_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
 #k_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
 
-gp_vals = np.zeros((len(astdys),7))
+gp_vals = np.zeros((len(astdys),9))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 
 pYpu = np.abs(np.fft.rfft(allplan['pu'].values))**2
@@ -321,6 +321,8 @@ for j in range(len(astdys)-2):
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
     pe_df['ast_sinI'][j] = astsinI
     pe_df['ast_ecc'][j] = astecc
+    pe_df['megno'][j] = np.mean(series['megno'].values)
+    pe_df['lyapunov'][j] = np.mean(series['lyapunov'].values)
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')

@@ -98,7 +98,7 @@ for j,sim in enumerate(sa):
         ppl[j,i] = ptemp
         qpl[j,i] = qtemp
 
-series = pd.DataFrame(columns=['t','a','ecc','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn'])
+series = pd.DataFrame(columns=['t','a','ecc','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
 
 print(len(hpl),len(hpl[0,:]))
 series['t'] = t
@@ -143,5 +143,6 @@ series['hn'] = hpl[:,3]
 series['kn'] = kpl[:,3]
 series['pn'] = ppl[:,3]
 series['qn'] = qpl[:,3]
-
+series['megno'] = np.ones(len(t))*sa[0].calculate_megno()
+series['lyapunov'] = np.ones(len(t))*sa[0].calculate_lyapunov()
 series.to_csv(filename+'/series.csv')
