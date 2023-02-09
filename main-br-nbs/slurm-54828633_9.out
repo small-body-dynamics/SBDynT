@@ -1,0 +1,10 @@
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+/home/djspenc/.local/lib/python3.7/site-packages/rebound/simulationarchive.py:146: RuntimeWarning: You have to reset function pointers after creating a reb_simulation struct with a binary file.
+  warnings.warn(message, RuntimeWarning)
+9
+0.0
+51840000.1842409
+5185 5
