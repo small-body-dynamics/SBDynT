@@ -96,7 +96,7 @@ for j in range(len(astdys)-2):
 #for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
-   # print(objname)
+#    print(objname)
     filename = 'TNOs/' + objname
     
     series = pd.read_csv(filename+'/series.csv')
@@ -105,7 +105,7 @@ for j in range(len(astdys)-2):
         continue
     t = series['t'].values
     a = series['a'].values
-    #print(a)
+#    print(series)
     e = series['ecc'].values
     inc = series['inc'].values
     
