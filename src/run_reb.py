@@ -42,7 +42,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     #get the small body's position and velocity
     #flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
-    filetype = 'Asteroids/'
+    filetype = 'TNOs/'
     filename = filetype + des
     horizons_data = pd.read_csv(filename+'/horizon_data.csv')
     horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
@@ -197,9 +197,11 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
-    sim.integrator = 'mercurius'
+    #sim.integrator = 'mercurius'
+    sim.integrator = 'whfast'
     sim.collision = "direct"
-    sim.ri_mercurius.hillfac = 3.
+    #sim.ri_mercurius.hillfac = 3.
+    sim.ri_whfast.hillfac = 3.
     sim.collision_resolve = "merge"
     
 
@@ -250,6 +252,7 @@ void heartbeat(struct reb_simulation* r){
     time0 = datetime.datetime.now()
     sim.integrate(tmax)
     megno = sim.calculate_megno()
-    
+    lyp = sim.calculate_lyapunov()
+    print('Lyapunov exponent: ', lyp)
     print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim
