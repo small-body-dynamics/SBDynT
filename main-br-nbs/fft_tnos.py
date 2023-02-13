@@ -321,13 +321,13 @@ for j in range(len(astdys)-2):
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
     pe_df['ast_sinI'][j] = astsinI
     pe_df['ast_ecc'][j] = astecc
-    pe_df['megno'][j] = np.mean(series['megno'].values)
-    pe_df['lyapunov'][j] = np.mean(series['lyapunov'].values)
+    #pe_df['megno'][j] = np.mean(series['megno'].values)
+    #pe_df['lyapunov'][j] = np.mean(series['lyapunov'].values)
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
     
-pe_df.to_csv('prop_elem_tnos.csv')
+pe_df.to_csv('prop_elem_tnos_merc.csv')
 #np.savetxt('data_files/p_tnos_transfer.txt',p_transfer_f)
 #np.savetxt('data_files/q_tnos_transfer.txt',q_transfer_f)
 #np.savetxt('data_files/h_tnos_transfer.txt',h_transfer_f)

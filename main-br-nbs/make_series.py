@@ -143,8 +143,8 @@ series['hn'] = hpl[:,3]
 series['kn'] = kpl[:,3]
 series['pn'] = ppl[:,3]
 series['qn'] = qpl[:,3]
-series['megno'] = np.ones(len(t))*sa[-1].calculate_megno()
-series['lyapunov'] = np.ones(len(t))*sa[-1].calculate_lyapunov()
+#series['megno'] = np.ones(len(t))*sa[-1].calculate_megno()
+#series['lyapunov'] = np.ones(len(t))*sa[-1].calculate_lyapunov()
 #print('Megno Calc: ',sa[-1].calculate_megno())
 #print(sa)
 #print(sa[0])
