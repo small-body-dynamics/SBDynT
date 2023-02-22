@@ -17,7 +17,7 @@ astdys = pd.read_csv('astdys_tnos.csv')
 objnum = int(sys.argv[1])
 print(objnum)
 objname = str(astdys['Name'].iloc[objnum])
-
+print(objname)
 
 #objname = 'Ceres'
 sbody = objname
@@ -31,6 +31,9 @@ planets = ['jupiter','saturn','uranus','neptune']
 
 a = np.zeros(len(sa));
 e = np.zeros(len(sa));
+an = np.zeros(len(sa));
+en = np.zeros(len(sa));
+
 inc = np.zeros(len(sa));
 qp = np.zeros(len(sa),dtype=complex);
 ptp = np.zeros(len(sa));
@@ -58,10 +61,14 @@ qpart = np.zeros(len(sa))
 apl = np.zeros((len(sa),npl))
 for j,sim in enumerate(sa):
     tp = sim.particles[sbody+"_bf"]
+    tpn = sim.particles["neptune"]
     com = sim.calculate_com()
     o = tp.calculate_orbit(com)
+    on = tpn.calculate_orbit(com)
     t[j] = sim.t
     a[j] = o.a
+    an[j] = on.a
+    
     p = np.sin(o.inc)*np.sin(o.Omega)
     q = np.sin(o.inc)*np.cos(o.Omega)
     ptp[j] = p
@@ -78,6 +85,7 @@ for j,sim in enumerate(sa):
     kh[j] = 1j*k + h
     
     e[j] = o.e
+    en[j] = on.e
     inc[j] = o.inc*180/np.pi
     #print(sim.particles[1].inc)
     for i in range (0,npl):
@@ -98,12 +106,14 @@ for j,sim in enumerate(sa):
         ppl[j,i] = ptemp
         qpl[j,i] = qtemp
 
-series = pd.DataFrame(columns=['t','a','ecc','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
+series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
 
 print(len(hpl),len(hpl[0,:]))
 series['t'] = t
 series['a'] = a
 series['ecc'] = e
+series['an'] = an
+series['eccn'] = en
 series['inc'] = inc
 series['p'] = ppart
 series['q'] = qpart

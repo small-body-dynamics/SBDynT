@@ -1,5 +1,6 @@
 import numpy as np
-
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import animation
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
@@ -36,7 +37,6 @@ allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
 gp_vals = np.zeros((len(astdys),9))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
-runprops = {"Close_Neptune": False}
 
 pYpu = np.abs(np.fft.rfft(allplan['pu'].values))**2
 pYpn = np.abs(np.fft.rfft(allplan['pn'].values))**2
@@ -92,9 +92,9 @@ kn = allplan['kn'].values
 pn = allplan['pn'].values
 qn = allplan['qn'].values
 
-arange = range(250,300)
-for j in range(len(astdys)-2):
-#for j in arange:
+arange = range(0,5)
+#for j in range(len(astdys)-2):
+for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
 #    print(objname)
@@ -106,10 +106,8 @@ for j in range(len(astdys)-2):
         continue
     t = series['t'].values
     a = series['a'].values
-    an = series['an'].values
 #    print(series)
     e = series['ecc'].values
-    en = series['eccn'].values
     inc = series['inc'].values
     
     h = series['h'].values
@@ -257,11 +255,6 @@ for j in range(len(astdys)-2):
         
     #print(hk_ind,pq_ind)
     for i in range(0,imax-1):
-        m = 1.02496658e26
-        M = 1.98969175e30
-        if (an*(1+en) - a*(1-e)) < 3*an*(m/3/M):
-            runprops['Close_Neptune'] = True
-
         if freq[i] > freqlim:
             Yp_f[i] = 0
             Yq_f[i] = 0
@@ -334,10 +327,44 @@ for j in range(len(astdys)-2):
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
-    
-pe_df.to_csv('prop_elem_tnos_merc.csv')
 
-import commentjson as json
-runpath = 'TNOs/'+str(filename)+'/runprops.txt'
-with open(runpath, 'w') as file:
-                file.write(json.dumps(runprops, indent = 4))
+    fig, ax = plt.subplots(figsize=(8,8))
+    x1data = np.zeros((1,100))
+    y1data = np.zeros((1,100))
+    x2data = np.zeros((1,100))
+    y2data = np.zeros((1,100))
+
+#    print(len(xdata[0]),len(modelx_1[0][1*100-50:1*100]))
+
+    def update(frame):
+        #print(frame)
+        #-modelx_2[0][frame*100-50:frame*100]
+        #print(len(xdata[0,:]),len(modelx_1[0][frame*100:(frame+1)*100]))
+        x1data[0,:] = e[frame*100:(frame+1)*100]
+        y1data[0,:] = inc[frame*100:(frame+1)*100]
+        x2data[0,:] = ecc_f[frame*100:(frame+1)*100]
+        y2data[0,:] = sini_f[frame*100:(frame+1)*100]
+        
+        ax.clear()
+        ax.set_aspect('equal')
+        ax.clear()
+        ax.set_aspect('equal')
+
+        ax.scatter(xdata[0],ydata[0],s = 1,c='b',label = 'Original Values')
+        #ax[0].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
+        ax.legend()
+        #ax[0].scatter(0,0,c='k')
+        ax.set_xlim(0, np.max(e*1.25))
+        ax.set_ylim(0, np.max(inc*1.25))
+
+        ax.scatter(x2data[0],y2data[0],s = 1,c='b',label='Proper element')
+        #ax[1].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
+        #ax[1].legend()
+        #ax[1].scatter(0,0,c='k')
+        #ax[1].set_xlim(0, np.max(e*1.25))
+        #ax[1].set_ylim(0, np.max(inc*1.25))
+
+    frames = np.arange(0,len(e),10)
+    ani = animation.FuncAnimation(fig, update, frames=int((len(e)-1)/100), interval = 500, repeat=True)
+
+    ani.save('TNOs/'+str(filename)+'/animation.gif', writer='imagemagick', fps=10)
