@@ -1,0 +1,7 @@
+{
+    "objname": "2002 CP154",
+    "objnum": 445,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}

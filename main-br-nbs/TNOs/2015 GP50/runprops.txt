@@ -1,0 +1,7 @@
+{
+    "objname": "2015 GP50",
+    "objnum": 1174,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}

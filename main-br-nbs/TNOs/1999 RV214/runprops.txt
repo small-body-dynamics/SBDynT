@@ -1,0 +1,7 @@
+{
+    "objname": "1999 RV214",
+    "objnum": 317,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}

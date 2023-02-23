@@ -1,0 +1,7 @@
+{
+    "objname": "2014 ST349",
+    "objnum": 1090,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}
