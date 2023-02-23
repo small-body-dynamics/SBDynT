@@ -341,23 +341,27 @@ for j in arange:
         #-modelx_2[0][frame*100-50:frame*100]
         #print(len(xdata[0,:]),len(modelx_1[0][frame*100:(frame+1)*100]))
         x1data[0,:] = e[frame*100:(frame+1)*100]
-        y1data[0,:] = inc[frame*100:(frame+1)*100]
+        y1data[0,:] = np.sin(inc[frame*100:(frame+1)*100]/180*np.pi)
         x2data[0,:] = ecc_f[frame*100:(frame+1)*100]
         y2data[0,:] = sini_f[frame*100:(frame+1)*100]
+        ax.clear()
         
-        ax.clear()
-        ax.set_aspect('equal')
-        ax.clear()
-        ax.set_aspect('equal')
-
-        ax.scatter(xdata[0],ydata[0],s = 1,c='b',label = 'Original Values')
+        ax.scatter(x1data[0],y1data[0],s = 1,c='b',label = 'Original Values')
         #ax[0].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
+        ax.scatter(x2data[0],y2data[0],s = 8,c='g',label='Proper element')
         ax.legend()
         #ax[0].scatter(0,0,c='k')
-        ax.set_xlim(0, np.max(e*1.25))
-        ax.set_ylim(0, np.max(inc*1.25))
+        ax.set_xlim(np.min(e)*0.8, np.max(e)*1.25)
+        ax.set_ylim(np.min(np.sin(inc*np.pi/180))*1.25, np.max(np.sin(inc*np.pi/180))*1.25)
+        ratio = 1.0
+        x_left, x_right = ax.get_xlim()
+        y_low, y_high = ax.get_ylim()
+        ax.set_aspect(abs((x_right-x_left)/(y_low-y_high))*ratio)
+        ax.set_xlabel('Ecc')
+        ax.set_ylabel('Sin(Inc)')
+        ax.set_title('Observed Ecc,Sin(Inc) vs. Proper Ecc,Sin(Inc)')
+        #ax.set_aspect('equal')
 
-        ax.scatter(x2data[0],y2data[0],s = 1,c='b',label='Proper element')
         #ax[1].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
         #ax[1].legend()
         #ax[1].scatter(0,0,c='k')
@@ -366,5 +370,6 @@ for j in arange:
 
     frames = np.arange(0,len(e),10)
     ani = animation.FuncAnimation(fig, update, frames=int((len(e)-1)/100), interval = 500, repeat=True)
-
-    ani.save('TNOs/'+str(filename)+'/animation.gif', writer='imagemagick', fps=10)
+    print(np.mean(e),np.mean(np.sin(inc*np.pi/180)))
+    print(np.mean(ecc_f),np.mean(sini_f))
+    ani.save(str(filename)+'/animation.gif', writer='imagemagick', fps=10)
