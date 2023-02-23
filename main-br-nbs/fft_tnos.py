@@ -99,7 +99,7 @@ pn = allplan['pn'].values
 qn = allplan['qn'].values
 
 #arange = range(1174,1183)
-for j in range(len(astdys)-2):
+for j in range(len(astdys)):
 #for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
@@ -292,6 +292,12 @@ for j in range(len(astdys)-2):
 
     '''
     for i in range(0,imax-1):
+        m = 1.02496658e26
+        M = 1.98969175e30
+        if (an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M):
+            runprops['Close_Neptune'] = True
+
+
         if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
            or pYpn[i]>pth*pnmax or freq[i]>freqlim):
             Yp_f[i]=0
