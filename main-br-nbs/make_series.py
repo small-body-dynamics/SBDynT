@@ -1,9 +1,17 @@
 import pandas as pd
+import commentjson as json
 import numpy as np
 import rebound
 import tools
 import sys
 import os
+
+class ReadJson(object):
+    def __init__(self, filename):
+        print('Read the runprops.txt file')
+        self.data = json.load(open(filename))
+    def outProps(self):
+        return self.data
 
 a = np.zeros(1);e = np.zeros(1);inc = np.zeros(1);phi = np.zeros(1)
 t = np.zeros(1);
@@ -24,6 +32,10 @@ sbody = objname
 
 filename = "TNOs/"+objname
 sa = rebound.SimulationArchive(filename+'/archive.bin')
+
+getData = ReadJson(filename+'/runprops.txt')
+runprops = getData.outProps()
+
 print(sa.tmin)
 print(sa.tmax)
 
@@ -60,7 +72,50 @@ qpart = np.zeros(len(sa))
 
 apl = np.zeros((len(sa),npl))
 for j,sim in enumerate(sa):
-    tp = sim.particles[sbody+"_bf"]
+    #print(sim.particles)
+    #print(sim)
+    #print(sim.particles[0])
+    try:
+        tp = sim.particles[sbody+"_bf"]
+    except:
+        print('Object was ejected from simulation. Setting ejection to True in runprops.')
+        series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
+
+        print(len(hpl),len(hpl[0,:]))
+        series['t'] = t
+        series['a'] = a
+        series['ecc'] = e
+        series['an'] = an
+        series['eccn'] = en
+        series['inc'] = inc
+        series['p'] = ppart
+        series['q'] = qpart
+        series['h'] = hpart
+        series['k'] = kpart
+
+        series['hj'] = hpl[:,0]
+        series['kj'] = kpl[:,0]
+        series['pj'] = ppl[:,0]
+        series['qj'] = qpl[:,0]
+        series['hs'] = hpl[:,1]
+        series['ks'] = kpl[:,1]
+        series['ps'] = ppl[:,1]
+        series['qs'] = qpl[:,1]
+        series['hu'] = hpl[:,2]
+        series['ku'] = kpl[:,2]
+        series['pu'] = ppl[:,2]
+        series['qu'] = qpl[:,2]
+        series['hn'] = hpl[:,3]
+        series['kn'] = kpl[:,3]
+        series['pn'] = ppl[:,3]
+        series['qn'] = qpl[:,3]
+
+        series.to_csv(filename+'/series.csv')
+        runprops['Ejected'] = True
+        
+        break;
+
+    #print(tp)
     tpn = sim.particles["neptune"]
     com = sim.calculate_com()
     o = tp.calculate_orbit(com)

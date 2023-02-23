@@ -1,5 +1,5 @@
 import numpy as np
-
+import commentjson as json
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
@@ -14,6 +14,13 @@ import tools
 
 import scipy.signal as signal
 
+class ReadJson(object):
+    def __init__(self, filename):
+        #print('Read the runprops.txt file')
+        self.data = json.load(open(filename))
+    def outProps(self):
+        return self.data
+
 
 plt.rcParams["figure.figsize"] = (20, 10)
 plt.rcParams["axes.labelsize"] = 20
@@ -24,9 +31,9 @@ plt.rcParams["figure.titlesize"] = 25
 
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
 pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','megno','lyapunov']
-
 filename = astdys['Name'].iloc[0]
 series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
+
 allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
 #p_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
@@ -36,7 +43,6 @@ allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
 gp_vals = np.zeros((len(astdys),9))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
-runprops = {"Close_Neptune": False}
 
 pYpu = np.abs(np.fft.rfft(allplan['pu'].values))**2
 pYpn = np.abs(np.fft.rfft(allplan['pn'].values))**2
@@ -92,7 +98,7 @@ kn = allplan['kn'].values
 pn = allplan['pn'].values
 qn = allplan['qn'].values
 
-arange = range(250,300)
+#arange = range(1174,1183)
 for j in range(len(astdys)-2):
 #for j in arange:
     print(j)
@@ -101,6 +107,12 @@ for j in range(len(astdys)-2):
     filename = 'TNOs/' + objname
     
     series = pd.read_csv(filename+'/series.csv')
+    
+    getData = ReadJson(str(filename)+'/runprops.txt')
+    runprops = getData.outProps()
+    runprops = {"Close_Neptune": False}
+    if runprops.get('run_success') == False:
+        print(Objname +" failed in it's simulation. Will be skipped.")
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
@@ -334,10 +346,10 @@ for j in range(len(astdys)-2):
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
+
+    runpath = str(filename)+'/runprops.txt'
+    with open(runpath, 'w') as file:
+        file.write(json.dumps(runprops, indent = 4))
     
 pe_df.to_csv('prop_elem_tnos_merc.csv')
 
-import commentjson as json
-runpath = 'TNOs/'+str(filename)+'/runprops.txt'
-with open(runpath, 'w') as file:
-                file.write(json.dumps(runprops, indent = 4))
