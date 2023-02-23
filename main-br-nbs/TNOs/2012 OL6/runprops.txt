@@ -1,0 +1,7 @@
+{
+    "objname": "2012 OL6",
+    "objnum": 850,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}

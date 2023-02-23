@@ -1,0 +1,7 @@
+{
+    "objname": "1999 CS153",
+    "objnum": 290,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}

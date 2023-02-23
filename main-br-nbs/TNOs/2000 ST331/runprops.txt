@@ -1,0 +1,7 @@
+{
+    "objname": "2000 ST331",
+    "objnum": 374,
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}
