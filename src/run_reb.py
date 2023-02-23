@@ -255,10 +255,6 @@ void heartbeat(struct reb_simulation* r){
     print('calc_megno')
     megno = sim.calculate_megno()
     lyp = sim.calculate_lyapunov()
-<<<<<<< HEAD
-=======
-    print('Megno: ', megno)
->>>>>>> 5e5b301300626b28eb5b7220f80ff0e30df6f807
     print('Lyapunov exponent: ', lyp)
     print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim
