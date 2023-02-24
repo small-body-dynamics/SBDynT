@@ -271,22 +271,31 @@ for j in range(len(astdys)):
         pq_ind.append(np.where(freq >= i)[0][0])
         
     #print(hk_ind,pq_ind)
+    pYh = np.abs(Yh)**2
+    pYk = np.abs(Yk)**2
+    pYp = np.abs(Yp)**2
+    pYq = np.abs(Yq)**2
     for i in range(0,imax-1):
         m = 1.02496658e26
         M = 1.98969175e30
-        if (an*(1+en) - a*(1-e)) < 3*an*(m/3/M):
-            runprops['Close_Neptune'] = True
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
+            runprops['3_Hill_Neptune'] = True
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
+            #print('Obj ecc: ', e[i])
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 2*an[i]*(m/3/M)**(1/3):
+            runprops['2_Hill_Neptune'] = True
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
+            #print('Obj ecc: ', e[i])
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 1*an[i]*(m/3/M)**(1/3):
+            runprops['1_Hill_Neptune'] = True
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
+            #print('Obj ecc: ', e[i])
 
         if freq[i] > freqlim:
             Yp_f[i] = 0
             Yq_f[i] = 0
             Yh_f[i] = 0
             Yk_f[i] = 0
-            
-        pYh = np.abs(Yh)**2
-        pYk = np.abs(Yk)**2
-        pYp = np.abs(Yp)**2
-        pYq = np.abs(Yq)**2
         for l in pq_ind:
             if pYp[i]>pth*pYp[l]:
                 Yp_f[i]=0
@@ -375,5 +384,5 @@ for j in range(len(astdys)):
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
     
-pe_df.to_csv('prop_elem_tnos_merc.csv')
+pe_df.to_csv('prop_elem_tnos_merc_hires.csv')
 
