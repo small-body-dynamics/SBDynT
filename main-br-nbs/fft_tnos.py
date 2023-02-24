@@ -282,6 +282,11 @@ for j in range(len(astdys)):
             Yq_f[i] = 0
             Yh_f[i] = 0
             Yk_f[i] = 0
+            
+        pYh = np.abs(Yh)**2
+        pYk = np.abs(Yk)**2
+        pYp = np.abs(Yp)**2
+        pYq = np.abs(Yq)**2
         for l in pq_ind:
             if pYp[i]>pth*pYp[l]:
                 Yp_f[i]=0
