@@ -257,7 +257,7 @@ for j in range(len(astdys)):
     #test_3[ihmax-spread:ihmax+spread] = Yh[ihmax-spread:ihmax+spread]
     #test_4 = np.zeros(len(Yk_f))
     #test_4[ikmax-spread:ikmax+spread] = Yk[ikmax-spread:ikmax+spread]
-    '''
+    #'''
     hk_freqs = np.loadtxt('hires_hk_freqs.txt')
     pq_freqs = np.loadtxt('hires_pq_freqs.txt')
     hk_ind = []
@@ -331,7 +331,7 @@ for j in range(len(astdys)):
             Yk_f[i]=0
 #        else:
 #            k_transfer_f[j][i] = 1    
-    #'''
+    '''
         
     p_f = np.fft.irfft(Yp_f,len(p))
     q_f = np.fft.irfft(Yq_f,len(q))
