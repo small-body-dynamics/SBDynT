@@ -294,9 +294,11 @@ for j in range(len(astdys)):
     for i in range(0,imax-1):
         m = 1.02496658e26
         M = 1.98969175e30
-        if (an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
             runprops['Close_Neptune'] = True
-
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en[i])) + ' AU and object at ' + str(a[i]*(1-e[i])) + ' AU')
+            #print('Obj ecc: ', e[i])
+            
 
         if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
            or pYpn[i]>pth*pnmax or freq[i]>freqlim):
