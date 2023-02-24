@@ -110,7 +110,10 @@ for j in range(len(astdys)):
     
     getData = ReadJson(str(filename)+'/runprops.txt')
     runprops = getData.outProps()
-    runprops = {"Close_Neptune": False}
+    runprops = {"3_Hill__Neptune": False}
+    runprops = {"2_Hill__Neptune": False}
+    runprops = {"1_Hill__Neptune": False}
+
     if runprops.get('run_success') == False:
         print(Objname +" failed in it's simulation. Will be skipped.")
     horizon = pd.read_csv(filename+'/horizon_data.csv')
@@ -295,8 +298,16 @@ for j in range(len(astdys)):
         m = 1.02496658e26
         M = 1.98969175e30
         if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
-            runprops['Close_Neptune'] = True
+            runprops['3_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en[i])) + ' AU and object at ' + str(a[i]*(1-e[i])) + ' AU')
+            #print('Obj ecc: ', e[i])
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 2*an[i]*(m/3/M)**(1/3):
+            runprops['2_Hill_Neptune'] = True
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
+            #print('Obj ecc: ', e[i])
+        if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 1*an[i]*(m/3/M)**(1/3):
+            runprops['1_Hill_Neptune'] = True
+            #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
             
 
