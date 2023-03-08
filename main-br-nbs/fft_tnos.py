@@ -378,29 +378,29 @@ for j in range(len(astdys)):
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
             
-
-        if (pYpu[i]>pth*pumax or pYpj[i]>pth*pjmax or pYps[i]>pth*psmax 
-           or pYpn[i]>pth*pnmax or freq[i]>freqlim):
-            Yp_f[i-1:i+1]=0
-#        else:
-#            p_transfer_f[j][i] = 1
-        if (pYqu[i]>pth*qumax or pYqj[i]>pth*qjmax or pYqs[i]>pth*qsmax 
-           or pYqn[i]>pth*qnmax or freq[i]>freqlim):
-            Yq_f[i-1:i+1]=0
-#        else:
-#            q_transfer_f[j][i] = 1
-        if (pYhu[i]>pth*humax or pYhj[i]>pth*hjmax or pYhs[i]>pth*hsmax 
-           or pYhn[i]>pth*hnmax or freq[i]>freqlim):
-            Yh_f[i-1:i+1]=0
-#        else:
-#            h_transfer_f[j][i] = 1
-        if (pYku[i]>pth*kumax or pYkj[i]>pth*kjmax or pYks[i]>pth*ksmax 
-           or pYkn[i]>pth*knmax or freq[i]>freqlim):
-            Yk_f[i-1:i+1]=0
-#        else:
-#            k_transfer_f[j][i] = 1    
-    
+        for j in range(numfreqs):
+            if (pYpu[i]>pth*pumax[j] or pYpj[i]>pth*pjmax[j] or pYps[i]>pth*psmax[j] 
+               or pYpn[i]>pth*pnmax[j] or freq[i]>freqlim):
+                Yp_f[i-1:i+1]=0
+    #        else:
+    #            p_transfer_f[j][i] = 1
+            if (pYqu[i]>pth*qumax[j] or pYqj[i]>pth*qjmax[j] or pYqs[i]>pth*qsmax[j] 
+               or pYqn[i]>pth*qnmax[j] or freq[i]>freqlim):
+                Yq_f[i-1:i+1]=0
+    #        else:
+    #            q_transfer_f[j][i] = 1
+            if (pYhu[i]>pth*humax[j] or pYhj[i]>pth*hjmax[j] or pYhs[i]>pth*hsmax[j] 
+               or pYhn[i]>pth*hnmax[j] or freq[i]>freqlim):
+                Yh_f[i-1:i+1]=0
+    #        else:
+    #            h_transfer_f[j][i] = 1
+            if (pYku[i]>pth*kumax[j] or pYkj[i]>pth*kjmax[j] or pYks[i]>pth*ksmax[j] 
+               or pYkn[i]>pth*knmax[j] or freq[i]>freqlim):
+                Yk_f[i-1:i+1]=0
+    #        else:
+    #            k_transfer_f[j][i] = 1    
         
+            
     p_f = np.fft.irfft(Yp_f,len(p))
     q_f = np.fft.irfft(Yq_f,len(q))
     h_f = np.fft.irfft(Yh_f,len(h))
