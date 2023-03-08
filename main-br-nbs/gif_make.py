@@ -348,18 +348,18 @@ for j in arange:
         
         ax.scatter(x1data[0],y1data[0],s = 1,c='b',label = 'Original Values')
         #ax[0].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
-        ax.scatter(x2data[0],y2data[0],s = 8,c='g',label='Proper element')
+        #ax.scatter(x2data[0],y2data[0],s = 8,c='g',label='Filtered Values')
         ax.legend()
         #ax[0].scatter(0,0,c='k')
         ax.set_xlim(np.min(e)*0.8, np.max(e)*1.25)
-        ax.set_ylim(np.min(np.sin(inc*np.pi/180))*1.25, np.max(np.sin(inc*np.pi/180))*1.25)
+        ax.set_ylim(np.min(np.sin(inc*np.pi/180))*0.8, np.max(np.sin(inc*np.pi/180))*1.25)
         ratio = 1.0
         x_left, x_right = ax.get_xlim()
         y_low, y_high = ax.get_ylim()
         ax.set_aspect(abs((x_right-x_left)/(y_low-y_high))*ratio)
         ax.set_xlabel('Ecc')
         ax.set_ylabel('Sin(Inc)')
-        ax.set_title('Observed Ecc,Sin(Inc) vs. Proper Ecc,Sin(Inc)')
+        ax.set_title('Observed Ecc,Sin(Inc) vs. Filtered Ecc,Sin(Inc)')
         #ax.set_aspect('equal')
 
         #ax[1].scatter(xdata[1],ydata[1], s = 1,c='g',label = '00 - 000')
