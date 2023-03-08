@@ -61,7 +61,7 @@ pYkn = np.abs(np.fft.rfft(allplan['kn'].values))**2
 pYkj = np.abs(np.fft.rfft(allplan['kj'].values))**2
 pYks = np.abs(np.fft.rfft(allplan['ks'].values))**2
 
-numfreqs = 10
+numfreqs = 4
 pumax = np.zeros(numfreqs)
 pnmax = np.zeros(numfreqs)
 pjmax = np.zeros(numfreqs)
