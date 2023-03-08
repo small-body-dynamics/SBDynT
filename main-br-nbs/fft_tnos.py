@@ -61,7 +61,7 @@ pYkn = np.abs(np.fft.rfft(allplan['kn'].values))**2
 pYkj = np.abs(np.fft.rfft(allplan['kj'].values))**2
 pYks = np.abs(np.fft.rfft(allplan['ks'].values))**2
 
-numfreqs = 2
+numfreqs = 10
 pumax = np.zeros(numfreqs)
 pnmax = np.zeros(numfreqs)
 pjmax = np.zeros(numfreqs)
@@ -438,5 +438,5 @@ for j in range(len(astdys)):
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
     
-pe_df.to_csv('prop_elem_tnos_2pk_spread.csv')
+pe_df.to_csv('prop_elem_tnos_10pk_spread.csv')
 
