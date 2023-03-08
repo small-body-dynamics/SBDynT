@@ -378,24 +378,24 @@ for j in range(len(astdys)):
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
             
-        for j in range(numfreqs):
-            if (pYpu[i]>pth*pumax[j] or pYpj[i]>pth*pjmax[j] or pYps[i]>pth*psmax[j] 
-               or pYpn[i]>pth*pnmax[j] or freq[i]>freqlim):
+        for k in range(numfreqs):
+            if (pYpu[i]>pth*pumax[k] or pYpj[i]>pth*pjmax[k] or pYps[i]>pth*psmax[k] 
+               or pYpn[i]>pth*pnmax[k] or freq[i]>freqlim):
                 Yp_f[i-1:i+1]=0
     #        else:
     #            p_transfer_f[j][i] = 1
-            if (pYqu[i]>pth*qumax[j] or pYqj[i]>pth*qjmax[j] or pYqs[i]>pth*qsmax[j] 
-               or pYqn[i]>pth*qnmax[j] or freq[i]>freqlim):
+            if (pYqu[i]>pth*qumax[k] or pYqj[i]>pth*qjmax[k] or pYqs[i]>pth*qsmax[k] 
+               or pYqn[i]>pth*qnmax[k] or freq[i]>freqlim):
                 Yq_f[i-1:i+1]=0
     #        else:
     #            q_transfer_f[j][i] = 1
-            if (pYhu[i]>pth*humax[j] or pYhj[i]>pth*hjmax[j] or pYhs[i]>pth*hsmax[j] 
-               or pYhn[i]>pth*hnmax[j] or freq[i]>freqlim):
+            if (pYhu[i]>pth*humax[k] or pYhj[i]>pth*hjmax[k] or pYhs[i]>pth*hsmax[k] 
+               or pYhn[i]>pth*hnmax[k] or freq[i]>freqlim):
                 Yh_f[i-1:i+1]=0
     #        else:
     #            h_transfer_f[j][i] = 1
-            if (pYku[i]>pth*kumax[j] or pYkj[i]>pth*kjmax[j] or pYks[i]>pth*ksmax[j] 
-               or pYkn[i]>pth*knmax[j] or freq[i]>freqlim):
+            if (pYku[i]>pth*kumax[k] or pYkj[i]>pth*kjmax[k] or pYks[i]>pth*ksmax[k] 
+               or pYkn[i]>pth*knmax[k] or freq[i]>freqlim):
                 Yk_f[i-1:i+1]=0
     #        else:
     #            k_transfer_f[j][i] = 1    
