@@ -290,7 +290,7 @@ for j in range(len(astdys)):
             runprops['1_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
-
+    '''
         if freq[i] > freqlim:
             Yp_f[i] = 0
             Yq_f[i] = 0
@@ -298,14 +298,14 @@ for j in range(len(astdys)):
             Yk_f[i] = 0
         for l in pq_ind:
             if pYp[i]>pth*pYp[l]:
-                Yp_f[i]=0
+                Yp_f[i-1:i+1]=0
             if pYq[i]>pth*pYq[l]:
-                Yq_f[i]=0
+                Yq_f[i-1:i+1]=0
         for l in hk_ind:
             if pYh[i]>pth*pYh[l]:
-                Yh_f[i]=0
+                Yh_f[i-1:i+1]=0
             if pYk[i]>pth*pYk[l]:
-                Yk_f[i]=0
+                Yk_f[i-1:i+1]=0
 
     '''
     for i in range(0,imax-1):
@@ -345,7 +345,7 @@ for j in range(len(astdys)):
             Yk_f[i-1:i+1]=0
 #        else:
 #            k_transfer_f[j][i] = 1    
-    '''
+    
         
     p_f = np.fft.irfft(Yp_f,len(p))
     q_f = np.fft.irfft(Yq_f,len(q))
