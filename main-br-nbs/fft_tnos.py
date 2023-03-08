@@ -114,22 +114,22 @@ for i in range(2):
     kjmax[i] = np.max(pYkjc[1:])
     ksmax[i] = np.max(pYksc[1:])
 
-    pYpuc[1:][np.argmax[pYpuc[1:]] = 0
-    pYpnc[1:][np.argmax[pYpnc[1:]] = 0
-    pYpjc[1:][np.argmax[pYpjc[1:]] = 0
-    pYpsc[1:][np.argmax[pYpsc[1:]] = 0
-    pYquc[1:][np.argmax[pYquc[1:]] = 0
-    pYqnc[1:][np.argmax[pYqnc[1:]] = 0
-    pYqjc[1:][np.argmax[pYqjc[1:]] = 0
-    pYqsc[1:][np.argmax[pYqsc[1:]] = 0
-    pYhuc[1:][np.argmax[pYhuc[1:]] = 0
-    pYhnc[1:][np.argmax[pYhnc[1:]] = 0
-    pYhjc[1:][np.argmax[pYhjc[1:]] = 0
-    pYhsc[1:][np.argmax[pYhsc[1:]] = 0
-    pYkuc[1:][np.argmax[pYkuc[1:]] = 0
-    pYknc[1:][np.argmax[pYknc[1:]] = 0
-    pYkjc[1:][np.argmax[pYkjc[1:]] = 0
-    pYksc[1:][np.argmax[pYksc[1:]] = 0
+    pYpuc[1:][np.argmax(pYpuc[1:]) = 0
+    pYpnc[1:][np.argmax(pYpnc[1:]) = 0
+    pYpjc[1:][np.argmax(pYpjc[1:]) = 0
+    pYpsc[1:][np.argmax(pYpsc[1:]) = 0
+    pYquc[1:][np.argmax(pYquc[1:]) = 0
+    pYqnc[1:][np.argmax(pYqnc[1:]) = 0
+    pYqjc[1:][np.argmax(pYqjc[1:]) = 0
+    pYqsc[1:][np.argmax(pYqsc[1:]) = 0
+    pYhuc[1:][np.argmax(pYhuc[1:]) = 0
+    pYhnc[1:][np.argmax(pYhnc[1:]) = 0
+    pYhjc[1:][np.argmax(pYhjc[1:]) = 0
+    pYhsc[1:][np.argmax(pYhsc[1:]) = 0
+    pYkuc[1:][np.argmax(pYkuc[1:]) = 0
+    pYknc[1:][np.argmax(pYknc[1:]) = 0
+    pYkjc[1:][np.argmax(pYkjc[1:]) = 0
+    pYksc[1:][np.argmax(pYksc[1:]) = 0
 
    
 hj = allplan['hj'].values
