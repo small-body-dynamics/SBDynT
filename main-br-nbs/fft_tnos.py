@@ -438,5 +438,5 @@ for j in range(len(astdys)):
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
     
-pe_df.to_csv('prop_elem_tnos_merc_spread.csv')
+pe_df.to_csv('prop_elem_tnos_2pk_spread.csv')
 
