@@ -61,7 +61,7 @@ pYkn = np.abs(np.fft.rfft(allplan['kn'].values))**2
 pYkj = np.abs(np.fft.rfft(allplan['kj'].values))**2
 pYks = np.abs(np.fft.rfft(allplan['ks'].values))**2
 
-numfreqs = 3
+numfreqs = 6
 pumax = np.zeros(numfreqs)
 pnmax = np.zeros(numfreqs)
 pjmax = np.zeros(numfreqs)
@@ -96,7 +96,7 @@ pYknc = np.copy(pYkn[1:])
 pYkjc = np.copy(pYkj[1:])
 pYksc = np.copy(pYks[1:])
 
-for i in range(2):
+for i in range(numfreqs):
     pumax[i] = np.max(pYpuc)
     pnmax[i] = np.max(pYpnc)
     pjmax[i] = np.max(pYpjc)
@@ -381,22 +381,22 @@ for j in range(len(astdys)):
         for z in range(numfreqs):
             if (pYpu[i]>pth*pumax[z] or pYpj[i]>pth*pjmax[z] or pYps[i]>pth*psmax[z] 
                or pYpn[i]>pth*pnmax[z] or freq[i]>freqlim):
-                Yp_f[i-1:i+1]=0
+                Yp_f[i-3:i+3]=0
     #        else:
     #            p_transfer_f[j][i] = 1
             if (pYqu[i]>pth*qumax[z] or pYqj[i]>pth*qjmax[z] or pYqs[i]>pth*qsmax[z] 
                or pYqn[i]>pth*qnmax[z] or freq[i]>freqlim):
-                Yq_f[i-1:i+1]=0
+                Yq_f[i-3:i+3]=0
     #        else:
     #            q_transfer_f[j][i] = 1
             if (pYhu[i]>pth*humax[z] or pYhj[i]>pth*hjmax[z] or pYhs[i]>pth*hsmax[z] 
                or pYhn[i]>pth*hnmax[z] or freq[i]>freqlim):
-                Yh_f[i-1:i+1]=0
+                Yh_f[i-3:i+3]=0
     #        else:
     #            h_transfer_f[j][i] = 1
             if (pYku[i]>pth*kumax[z] or pYkj[i]>pth*kjmax[z] or pYks[i]>pth*ksmax[z] 
                or pYkn[i]>pth*knmax[z] or freq[i]>freqlim):
-                Yk_f[i-1:i+1]=0
+                Yk_f[i-3:i+3]=0
     #        else:
     #            k_transfer_f[j][i] = 1    
         
@@ -438,5 +438,5 @@ for j in range(len(astdys)):
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
     
-pe_df.to_csv('prop_elem_tnos_3pk_spread.csv')
+pe_df.to_csv('prop_elem_tnos_6_spread.csv')
 
