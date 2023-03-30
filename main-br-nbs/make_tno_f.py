@@ -21,17 +21,18 @@ astdys = pd.read_csv('astdys_tnos.csv')
 
 #for i in range(len(astdys)):
 #for i in range(10):
-objnum = int(sys.argv[1])
+objnum = sys.argv[1]
 print(objnum)
+#Produce tno file based on given filename
+if isinstance(objnum,str):
+    objname = objnum
 
-if isinstance(objnum,int):
 #Produce tno file based on astdys list
+else:
+    objnum = int(objnum)
     astdys = pd.read_csv('astdys_tnos.csv')
     objname = astdys['Name'].iloc[objnum]
 
-#Produce tno file based on given filename
-else if isinstance(objnum,str):
-    objname = objnum
 
 filename = 'TNOs/' + objname
 if not os.path.isdir(filename):
