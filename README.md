@@ -17,7 +17,7 @@ Code has been directly contributed to this repository by:
 
 We have also modified code originally written by [Rachel Smullen](https://github.com/rsmullen) from the [KBO_Classifier](https://github.com/rsmullen/KBO_Classifier) repository
 
-Development of these tools also include contributions from Renu Malhotra, Darin Ragozzine, Federica Spoto, and Severance Graham.
+Development of these tools also include contributions from Renu Malhotra, Darin Ragozzine, Federica Spoto, Severance Graham, Henry Hsieh, and Marco Micheli.
 
 ### Funding Acknowledgements 
-This work is supported in part by the Preparing for Astrophysics with LSST Program, funded by the Heising Simons Foundation through grant 2021-2975, and administered by Las Cumbres Observatory and by NASA grant 80NSSC22K0512.
+This work is supported by NASA grant 80NSSC22K0512. Early development was supported by the Preparing for Astrophysics with LSST Program, funded by the Heising Simons Foundation through grant 2021-2975, and administered by Las Cumbres Observatory.
