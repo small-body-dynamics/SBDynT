@@ -1,0 +1,15 @@
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+284
+TNOs/1999 CM119
+initialize_simulation failed at horizons_api.query_sb_from_jpl
+284
+1999 CM119
+Traceback (most recent call last):
+  File "make_series.py", line 34, in <module>
+    sa = rebound.SimulationArchive(filename+'/archive.bin')
+  File "/home/djspenc/.local/lib/python3.7/site-packages/rebound/simulationarchive.py", line 95, in __init__
+    raise RuntimeError(message)
+RuntimeError: Cannot read binary file. Check filename and file contents.

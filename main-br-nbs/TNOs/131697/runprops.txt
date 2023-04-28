@@ -1,5 +1,8 @@
 {
-    "1_Hill__Neptune": false,
-    "3_Hill_Neptune": true,
-    "2_Hill_Neptune": true
+    "tmax": 100000000.0,
+    "tout": 10000.0,
+    "objname": "131697",
+    "objnum": 92,
+    "objtype": "TNO",
+    "run_success": true
 }

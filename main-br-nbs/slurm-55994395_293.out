@@ -1,0 +1,5 @@
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+slurmstepd: error: *** JOB 55994689 ON m8g-2-3 CANCELLED AT 2023-03-14T14:25:58 ***
