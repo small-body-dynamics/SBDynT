@@ -1,8 +1,4 @@
 {
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1998 HQ151",
-    "objnum": 261,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false,
+    "3_Hill_Neptune": true
 }

@@ -1,8 +1,3 @@
 {
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1999 CU153",
-    "objnum": 291,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false
 }

@@ -1,8 +1,4 @@
 {
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1996 RR20",
-    "objnum": 249,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false,
+    "3_Hill_Neptune": true
 }

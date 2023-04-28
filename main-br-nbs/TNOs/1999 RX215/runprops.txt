@@ -1,8 +1,3 @@
 {
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1999 RX215",
-    "objnum": 322,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false
 }

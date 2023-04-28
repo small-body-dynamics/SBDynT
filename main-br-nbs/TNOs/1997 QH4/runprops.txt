@@ -1,8 +1,3 @@
 {
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1997 QH4",
-    "objnum": 254,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false
 }
