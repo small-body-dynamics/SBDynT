@@ -34,6 +34,8 @@ pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sin
 filename = astdys['Name'].iloc[0]
 series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
 
+series = series[:500]
+
 allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
 #p_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
@@ -438,5 +440,5 @@ for j in range(len(astdys)):
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
     
-pe_df.to_csv('prop_elem_tnos_12_spread.csv')
 
+pe_df.to_csv('prop_elem_tnos_5mil.csv')

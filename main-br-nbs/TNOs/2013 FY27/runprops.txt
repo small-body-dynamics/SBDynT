@@ -1,0 +1,7 @@
+{
+    "objname": "2013 FY27",
+    "objnum": "2013 FY27",
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JP Horizons",
+    "run_success": false
+}
