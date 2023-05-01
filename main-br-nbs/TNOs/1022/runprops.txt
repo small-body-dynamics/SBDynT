@@ -1,0 +1,7 @@
+{
+    "objname": "1022",
+    "objnum": "1022",
+    "objtype": "TNO",
+    "err_message": "Simulation failed during initialization. Might not be findable in JPL Horizons",
+    "run_success": false
+}

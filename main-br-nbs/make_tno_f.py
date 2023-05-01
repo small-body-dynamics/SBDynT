@@ -49,7 +49,7 @@ except:
     runprops['objname'] = sbody
     runprops['objnum'] = objnum
     runprops['objtype'] = 'TNO'
-    runprops['err_message'] = 'Simulation failed during initialization. Might not be findable in JP Horizons'
+    runprops['err_message'] = 'Simulation failed during initialization. Might not be findable in JPL Horizons'
     runprops['run_success'] = False
     runpath = 'TNOs/'+sbody+'/runprops.txt'
     with open(runpath, 'w') as file:
