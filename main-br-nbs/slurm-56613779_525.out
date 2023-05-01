@@ -1,0 +1,23 @@
+
+Activating Modules:
+  1) defaultenv/10     2) lmod/7.5.13
+
+525
+Sim made
+TNOs/2003 QX111
+TNOs/2003 QX111
+Data Read
+Sim starting
+Adding planets
+Move to com
+Init_megno
+Starting Integration
+Simulation integration finished in  0:10:40.140040  seconds.
+/home/djspenc/.local/lib/python3.7/site-packages/rebound/simulationarchive.py:146: RuntimeWarning: You have to reset function pointers after creating a reb_simulation struct with a binary file.
+  warnings.warn(message, RuntimeWarning)
+525
+2003 QX111
+Read the runprops.txt file
+0.0
+100000000.0
+10001 5

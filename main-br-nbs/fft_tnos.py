@@ -163,7 +163,7 @@ for j in range(len(astdys)):
     filename = 'TNOs/' + objname
     
     series = pd.read_csv(filename+'/series.csv')
-    #series = series[:500]
+    series = series[:4000]
     getData = ReadJson(str(filename)+'/runprops.txt')
     runprops = getData.outProps()
     runprops = {"3_Hill__Neptune": False}
@@ -441,4 +441,4 @@ for j in range(len(astdys)):
         file.write(json.dumps(runprops, indent = 4))
     
 
-pe_df.to_csv('data_files/prop_elem_tnos_wh.csv')
+pe_df.to_csv('data_files/prop_elem_tnos_40mil.csv')

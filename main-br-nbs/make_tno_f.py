@@ -23,15 +23,16 @@ astdys = pd.read_csv('astdys_tnos.csv')
 #for i in range(10):
 objnum = sys.argv[1]
 print(objnum)
-#Produce tno file based on given filename
-if isinstance(objnum,str):
-    objname = objnum
 
 #Produce tno file based on astdys list
-else:
+if int(objnum) < 1200:
     objnum = int(objnum)
     astdys = pd.read_csv('astdys_tnos.csv')
     objname = astdys['Name'].iloc[objnum]
+
+#Produce tno file based on given filename
+else:
+    objname = str(objnum)
 
 
 filename = 'TNOs/' + objname
@@ -50,6 +51,7 @@ except:
     runprops['objnum'] = objnum
     runprops['objtype'] = 'TNO'
     runprops['err_message'] = 'Simulation failed during initialization. Might not be findable in JPL Horizons'
+    print(runprops.get('err_message'))
     runprops['run_success'] = False
     runpath = 'TNOs/'+sbody+'/runprops.txt'
     with open(runpath, 'w') as file:

@@ -874,8 +874,13 @@ struct reb_particle reb_get_com_range(struct reb_simulation* r, int first, int l
 // Simulation Archive
 struct reb_simulationarchive_blob {  // Used in the binary file to identify data blobs
     int32_t index;                   // Index of previous blob (binary file is 0, first blob is 1)
-    int16_t offset_prev;             // Offset to beginning of previous blob (size of previous blob).
-    int16_t offset_next;             // Offset to end of following blob (size of following blob).
+    int32_t offset_prev;             // Offset to beginning of previous blob (size of previous blob).
+    int32_t offset_next;             // Offset to end of following blob (size of following blob).
+};
+struct reb_simulationarchive_blob16 {  // For backwards compatability only. Will be removed in a future release. 
+    int32_t index;
+    int16_t offset_prev;
+    int16_t offset_next;
 };
 
 struct reb_simulationarchive{
