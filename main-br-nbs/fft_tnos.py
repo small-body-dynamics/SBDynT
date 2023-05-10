@@ -298,7 +298,7 @@ for j in range(len(astdys)):
   
     imax = len(Yp)
     #disregard antyhing with a period shorter than 5000 years
-    freqlim = 1./5000.
+    freqlim = 1./10000.
     #disregard frequencies for which any planet has power at higher than 10% the max
     pth = 0.1
     
@@ -441,4 +441,4 @@ for j in range(len(astdys)):
         file.write(json.dumps(runprops, indent = 4))
     
 
-pe_df.to_csv('data_files/prop_elem_tnos_2_5mil.csv')
+pe_df.to_csv('data_files/prop_elem_tnos_test.csv')
