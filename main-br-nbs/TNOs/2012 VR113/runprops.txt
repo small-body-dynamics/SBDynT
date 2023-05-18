@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2012 VR113",
+    "objnum": 867,
+    "objtype": "TNO",
+    "run_success": true
 }

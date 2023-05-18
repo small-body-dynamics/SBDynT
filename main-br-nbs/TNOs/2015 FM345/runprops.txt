@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2015 FM345",
+    "objnum": 1166,
+    "objtype": "TNO",
+    "run_success": true
 }

@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2006 HA123",
+    "objnum": 687,
+    "objtype": "TNO",
+    "run_success": true
 }

@@ -1,6 +1,8 @@
 {
-    "1_Hill__Neptune": false,
-    "3_Hill_Neptune": true,
-    "2_Hill_Neptune": true,
-    "1_Hill_Neptune": true
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2011 SO277",
+    "objnum": 786,
+    "objtype": "TNO",
+    "run_success": true
 }

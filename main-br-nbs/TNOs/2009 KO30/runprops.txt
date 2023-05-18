@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2009 KO30",
+    "objnum": 737,
+    "objtype": "TNO",
+    "run_success": true
 }

@@ -1,4 +1,8 @@
 {
-    "1_Hill__Neptune": false,
-    "3_Hill_Neptune": true
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2014 XU40",
+    "objnum": 1141,
+    "objtype": "TNO",
+    "run_success": true
 }
