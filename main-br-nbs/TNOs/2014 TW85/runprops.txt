@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2014 TW85",
+    "objnum": 1097,
+    "objtype": "TNO",
+    "run_success": true
 }

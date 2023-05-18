@@ -1,3 +1,8 @@
 {
-    "1_Hill__Neptune": false
+    "tmax": 100000000.0,
+    "tout": 4000.0,
+    "objname": "2010 TD192",
+    "objnum": 757,
+    "objtype": "TNO",
+    "run_success": true
 }
