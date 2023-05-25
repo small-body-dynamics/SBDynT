@@ -94,7 +94,7 @@ kn = allplan['kn'].values
 pn = allplan['pn'].values
 qn = allplan['qn'].values
 
-arange = range(600,620)
+arange = range(500,520)
 #for j in range(len(astdys)):
 for j in arange:
     print(j)
@@ -104,19 +104,10 @@ for j in arange:
     filename = 'TNOs/' + objname
     
     archive = rebound.SimulationArchive(filename+'/archive.bin')
-    print(len(archive),'len archive')
+    #print(len(archive),'len archive')
     series = bin_to_df.bin_to_df(objname,archive)
-    print(series)
+    #print(series)
 
-    getData = ReadJson(str(filename)+'/runprops.txt')
-    runprops = getData.outProps()
-    runprops = {"3_Hill__Neptune": False}
-    runprops = {"2_Hill__Neptune": False}
-    runprops = {"1_Hill__Neptune": False}
-
-    if runprops.get('run_success') == False:
-        print(Objname +" failed in it's simulation. Will be skipped.")
-        continue
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
@@ -203,9 +194,6 @@ for j in arange:
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
 
-    runpath = str(filename)+'/runprops.txt'
-    with open(runpath, 'w') as file:
-        file.write(json.dumps(runprops, indent = 4))
-    
+        
 
 pe_df.to_csv('data_files/prop_elem_tnos_singlefreq.csv')

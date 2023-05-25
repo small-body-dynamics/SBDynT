@@ -7,12 +7,12 @@ import os
 import horizons_api
 import pandas as pd
 
-filetype = 'Asteroids'
+filetype = 'TNOs'
 
 if filetype == 'Asteroids':
-    astdys = pd.read_csv('astdys_ast.csv')
+    astdys = pd.read_csv('data_files/astdys_ast.csv')
 elif filetype == 'TNOs':
-    astdys = pd.read_csv('astdys_tnos.csv')
+    astdys = pd.read_csv('data_files/astdys_tnos.csv')
 
 clones = 0 
 #for i in range(len(astdys)):

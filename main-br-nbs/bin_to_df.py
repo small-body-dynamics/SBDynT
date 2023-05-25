@@ -24,11 +24,9 @@ def bin_to_df(objname,archive):
     filename = "TNOs/"+objname
     archive = archive
     
-    getData = ReadJson(filename+'/runprops.txt')
-    runprops = getData.outProps()
     
-    print(archive.tmin)
-    print(archive.tmax)
+    #print(archive.tmin)
+    #print(archive.tmax)
     
     planets = ['jupiter','archiveturn','uranus','neptune']
     
@@ -62,7 +60,7 @@ def bin_to_df(objname,archive):
     apl = np.zeros((len(archive),npl))
     for j,sim in enumerate(archive):
         
-        print("j ", j)
+        #print("j ", j)
         try:
             tp = sim.particles[sbody+"_bf"]
         except:

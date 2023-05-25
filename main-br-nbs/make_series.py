@@ -110,7 +110,7 @@ for j,sim in enumerate(sa):
         series['pn'] = ppl[:,3]
         series['qn'] = qpl[:,3]
 
-        series.to_csv(filename+'/series.csv')
+        series.to_csv(filename+'/series_merc.csv')
         runprops['Ejected'] = True
         
         break;
@@ -213,5 +213,5 @@ series['qn'] = qpl[:,3]
 #print('Megno Calc: ',sa[-1].calculate_megno())
 #print(sa)
 #print(sa[0])
-series.to_csv(filename+'/series.csv')
+series.to_csv(filename+'/series_wh.csv')
 

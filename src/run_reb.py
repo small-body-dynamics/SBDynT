@@ -30,7 +30,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     # initialize simulation variable
     sim = rebound.Simulation()
     sim.units = ('yr', 'AU', 'Msun')
-
+    print('Sim made')
     #set up small body variables
     ntp = 1 + clones
     sbx = np.zeros(ntp)
@@ -44,8 +44,9 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     #flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
     filetype = 'TNOs/'
     filename = filetype + des
+    print(filename)
     horizons_data = pd.read_csv(filename+'/horizon_data.csv')
-    horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
+    horizons_planets = pd.read_csv('data_files/horizon_planets.csv')
     print(filename)
     flag = horizons_data['flag'][0]
     epoch = horizons_data['epoch'][0]    
@@ -56,8 +57,8 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     sbvy = horizons_data['sbvy'].values
     sbvz = horizons_data['sbvz'].values
 
-
-
+    print('Data Read')
+   
     if(flag<1):
         print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim
@@ -89,7 +90,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     #set of reasonable whfast simulation timesteps for each planet
     #(1/20 of its orbital period for terrestrial planets, 1/30 for giants)
     dt = [0.012,0.03,0.05,0.09,0.4,0.98,2.7,5.4]
-
+    print('Sim starting')
     #add the mass of any not-included planets to the sun
     msun = SS_GM[0]
     #start with shortest timestep
@@ -143,6 +144,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         svx = -com.vx; svy = -com.vy; svz = -com.vz;
 
 
+    print('Adding planets')
     #add each included planet to the simulation and correct for the missing planets
     for pl1 in planets:
         pl = [t for t in planet_id if planet_id[t]==pl1]
@@ -178,9 +180,9 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
         sbhash = des + '_bf'
         sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)
-
+    print('Move to com')
     sim.move_to_com()
-    print('Init_megno')
+    #print('Init_megno')
     #sim.init_megno()
 
     return 1, epoch, sim
@@ -198,11 +200,11 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
-    sim.integrator = 'mercurius'
-    #sim.integrator = 'whfast'
+    #sim.integrator = 'mercurius'
+    sim.integrator = 'whfast'
     sim.collision = "direct"
-    sim.ri_mercurius.hillfac = 3.
-    #sim.ri_whfast.hillfac = 3.
+    #sim.ri_mercurius.hillfac = 3.
+    sim.ri_whfast.hillfac = 3.
     sim.collision_resolve = "merge"
     
 

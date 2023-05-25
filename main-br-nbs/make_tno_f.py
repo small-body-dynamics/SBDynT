@@ -63,11 +63,11 @@ o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
 tmax = 1e8
-tout = 1e4
+tout = 4e3
 
 runprops = {}
-runprops['tmax'] = 1e8
-runprops['tout'] = 1e4
+runprops['tmax'] = tmax
+runprops['tout'] = tout
 runprops['objname'] = sbody
 runprops['objnum'] = objnum
 runprops['objtype'] = 'TNO'
