@@ -1,8 +1,3 @@
 {
-    "tmax": 100000000.0,
-    "tout": 4000.0,
-    "objname": "2005 EM303",
-    "objnum": 649,
-    "objtype": "TNO",
-    "run_success": true
+    "1_Hill__Neptune": false
 }

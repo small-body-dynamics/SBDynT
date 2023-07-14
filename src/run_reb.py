@@ -42,26 +42,48 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     #get the small body's position and velocity
     #flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
-    filetype = 'TNOs/'
-    filename = filetype + des
-    print(filename)
-    horizons_data = pd.read_csv(filename+'/horizon_data.csv')
-    horizons_planets = pd.read_csv('data_files/horizon_planets.csv')
-    print(filename)
-    flag = horizons_data['flag'][0]
-    epoch = horizons_data['epoch'][0]    
-    sbx = horizons_data['sbx'].values
-    sby = horizons_data['sby'].values
-    sbz = horizons_data['sbz'].values
-    sbvx = horizons_data['sbvx'].values
-    sbvy = horizons_data['sbvy'].values
-    sbvz = horizons_data['sbvz'].values
+    
+    filetype = 'Distance/'
+    if isinstance(des,str):
+        filename = filetype + des
+        print(filename)
+        horizons_data = pd.read_csv(filename+'/horizon_data.csv')
+        horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
+        flag = horizons_data['flag'][0]
+        epoch = horizons_data['epoch'][0]    
+        sbx = horizons_data['sbx'].values
+        sby = horizons_data['sby'].values
+        sbz = horizons_data['sbz'].values
+        sbvx = horizons_data['sbvx'].values
+        sbvy = horizons_data['sbvy'].values
+        sbvz = horizons_data['sbvz'].values
+        if(flag<1):
+            print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
+            return 0, 0., sim
+    else:
+        filename = []
+        horizons_data = []
+        flag = 1
+        horizons_planets = pd.read_csv('data_files/horizon_planets.csv')
+        epoch = []
+        sbx = []
+        sby = []
+        sbz = []
+        sbvx = []
+        sbvy = []
+        sbvz = []
+        for i in des:
+            filename = filetype + str(i)
+            horizons_data = pd.read_csv(filename+'/horizon_data.csv')
+            epoch.append(horizons_data['epoch'][0])   
+            sbx.append(horizons_data['sbx'].values)
+            sby.append(horizons_data['sby'].values)
+            sbz.append(horizons_data['sbz'].values)
+            sbvx.append(horizons_data['sbvx'].values)
+            sbvy.append(horizons_data['sbvy'].values)
+            sbvz.append(horizons_data['sbvz'].values)
 
     print('Data Read')
-   
-    if(flag<1):
-        print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
-        return 0, 0., sim
     
     #set up massive body variables    
     npl = len(planets) + 1 #for the sun
@@ -101,7 +123,13 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
             notplanets.append(planet_id[i])
             #make the timestep bigger
             sim.dt = dt[i]
-
+            
+    #If des is a list of strings, then you are likely running a pair bakcwards integration,
+    #and you need a smaller timestep to join pairs.       
+    if not isinstance(des, str):
+        print('Backwards integration timestep')
+        sim.dt = -sim.dt/1000
+        
     #sun's augmented mass in solar masses
     msun = msun/SS_GM[0]
     radius = 695700.*6.68459e-9
@@ -177,9 +205,15 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
             sbx[i]+=sx;sby[i]+=sy;sbz[i]+=sz; sbvx[i]+=svx;sbvy[i]+=svy;sbvz[i]+=svz;
             sim.add(m=0.,x=sbx[i],y=sby[i],z=sbz[i],vx=sbvx[i],vy=sbvy[i],vz=sbvz[i],hash=sbhash)
     else:
-        sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
-        sbhash = des + '_bf'
-        sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)
+        if isinstance(des,str):
+            sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
+            sbhash = des + '_bf'
+            sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)
+        else:
+            for i in range(len(des)):
+                sbx[i]+=sx;sby[i]+=sy;sbz[i]+=sz; sbvx[i]+=svx;sbvy[i]+=svy;sbvz[i]+=svz;
+                sbhash = des[i] + '_bf'
+                sim.add(m=5.03e-13,x=sbx[i][0],y=sby[i][0],z=sbz[i][0],vx=sbvx[i][0],vy=sbvy[i][0],vz=sbvz[i][0],hash=sbhash)
     print('Move to com')
     sim.move_to_com()
     #print('Init_megno')
@@ -200,11 +234,11 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
-    #sim.integrator = 'mercurius'
-    sim.integrator = 'whfast'
+    sim.integrator = 'mercurius'
+    #sim.integrator = 'whfast'
     sim.collision = "direct"
-    #sim.ri_mercurius.hillfac = 3.
-    sim.ri_whfast.hillfac = 3.
+    sim.ri_mercurius.hillfac = 3.
+    #sim.ri_whfast.hillfac = 3.
     sim.collision_resolve = "merge"
     
 

@@ -1,0 +1,7 @@
+{
+    "tmax": -1000000.0,
+    "tout": 100.0,
+    "objname": "K03H57H",
+    "objtype": "TNO",
+    "run_success": true
+}

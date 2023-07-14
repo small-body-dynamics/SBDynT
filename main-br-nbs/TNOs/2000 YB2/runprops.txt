@@ -1,6 +1,6 @@
 {
     "tmax": 100000000.0,
-    "tout": 4000.0,
+    "tout": 10000.0,
     "objname": "2000 YB2",
     "objnum": 383,
     "objtype": "TNO",

@@ -1,6 +1,7 @@
 import numpy as np
 import commentjson as json
 import pandas as pd
+import bin_to_df
 import matplotlib.pyplot as plt
 import sys
 import os
@@ -32,9 +33,9 @@ plt.rcParams["figure.titlesize"] = 25
 astdys = pd.read_csv('TNOs/astdys_tnos.csv')
 pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','megno','lyapunov']
 filename = astdys['Name'].iloc[0]
-series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
+#series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
 
-series = series[:500]
+#series = series[:500]
 
 allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 
@@ -94,8 +95,16 @@ pn = allplan['pn'].values
 qn = allplan['qn'].values
 
 rev = 1296000
+g5 = 4.24/rev
+g6 = 28.22/rev
+g7 = 3.08/rev
+g8 = 0.67/rev
+s6 = 26.34/rev
+s7 = 2.99/rev
+s8 = 0.69/rev
 
-#arange = range(1174,1183)
+
+#arange = range(600,650)
 for j in range(len(astdys)):
 #for j in arange:
     print(j)
@@ -103,17 +112,15 @@ for j in range(len(astdys)):
     objname = astdys['Name'].iloc[j]
 #    print(objname)
     filename = 'TNOs/' + objname
-    
-    series = pd.read_csv(filename+'/series.csv')
+    try:
+        archive = rebound.SimulationArchive(filename+'/archive.bin')
+        #print(len(archive),'len archive')
+        series = bin_to_df.bin_to_df(objname,archive)
+    except:
+        continue
+    #series = pd.read_csv(filename+'/series.csv')
     #series = series[:250]
-    getData = ReadJson(str(filename)+'/runprops.txt')
-    runprops = getData.outProps()
-    runprops = {"3_Hill__Neptune": False}
-    runprops = {"2_Hill__Neptune": False}
-    runprops = {"1_Hill__Neptune": False}
 
-    if runprops.get('run_success') == False:
-        print(Objname +" failed in it's simulation. Will be skipped.")
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
@@ -136,6 +143,7 @@ for j in range(len(astdys)):
     #print('n = ', n)
     freq = np.fft.rfftfreq(n,d=dt)
     #print(len(freq), 'L: length of frequency array')
+    '''
     g5 = freq[ihjmax]
     g6 = freq[ihsmax]
     g7 = freq[ihumax]
@@ -144,6 +152,7 @@ for j in range(len(astdys)):
     s6 = freq[ipsmax]
     s7 = freq[ipumax]
     s8 = freq[ipnmax]
+    '''
     #particle eccentricity vectors
     Yh= np.fft.rfft(h)
     Yk = np.fft.rfft(k)
@@ -159,9 +168,9 @@ for j in range(len(astdys)):
     #disregard antyhing with a period shorter than 5000 years
     freqlim = 1./10000.
     #disregard frequencies for which any planet has power at higher than 10% the max
-    pth = 0.1
+    pth = 0.25
     
-    spread = 1
+    spread = 3
        
     #print(hk_ind,pq_ind)
     pYh = np.abs(Yh)**2
@@ -213,17 +222,17 @@ for j in range(len(astdys)):
     #secresind2 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0]]
 
 #Specific g and s frequencies
-    #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0]]
-    #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0]]
+    secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0]]
+    secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0]]
 
 #Knezevic and Milani frequencies
-    secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z4)[0][0]]
-    secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z4)[0][0]]
+    #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z4)[0][0]]
+    #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z4)[0][0]]
 
 
     limit_ind = np.where(freq >= freqlim)[0]
 
-    spread = 0
+    spread = 3
 
     for i in range(len(secresind1)):
         if spread > 0:
@@ -278,9 +287,5 @@ for j in range(len(astdys)):
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
 
-    runpath = str(filename)+'/runprops.txt'
-    with open(runpath, 'w') as file:
-        file.write(json.dumps(runprops, indent = 4))
-    
 
-pe_df.to_csv('data_files/prop_elem_tnos_singlefreq.csv')
+pe_df.to_csv('data_files/prop_elem_tnos_secres.csv')

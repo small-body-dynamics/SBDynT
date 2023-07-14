@@ -1,6 +1,6 @@
 {
     "tmax": 100000000.0,
-    "tout": 4000.0,
+    "tout": 10000.0,
     "objname": "2001 RZ143",
     "objnum": 434,
     "objtype": "TNO",
