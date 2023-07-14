@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2004 VY130",
-    "objnum": 635,
-    "objtype": "TNO",
-    "run_success": true
-}

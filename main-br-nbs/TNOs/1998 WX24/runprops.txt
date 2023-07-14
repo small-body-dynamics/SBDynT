@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "1998 WX24",
-    "objnum": 271,
-    "objtype": "TNO",
-    "run_success": true
-}

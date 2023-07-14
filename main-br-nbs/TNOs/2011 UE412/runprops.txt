@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2011 UE412",
-    "objnum": 795,
-    "objtype": "TNO",
-    "run_success": true
-}

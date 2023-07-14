@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2015 FG345",
-    "objnum": 1163,
-    "objtype": "TNO",
-    "run_success": true
-}

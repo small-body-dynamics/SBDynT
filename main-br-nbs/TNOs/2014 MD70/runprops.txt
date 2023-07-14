@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2014 MD70",
-    "objnum": 1055,
-    "objtype": "TNO",
-    "run_success": true
-}

@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2007 FO51",
-    "objnum": 712,
-    "objtype": "TNO",
-    "run_success": true
-}

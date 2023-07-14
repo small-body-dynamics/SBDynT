@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2000 GY146",
-    "objnum": 350,
-    "objtype": "TNO",
-    "run_success": true
-}
