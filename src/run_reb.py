@@ -200,11 +200,11 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
-    #sim.integrator = 'mercurius'
-    sim.integrator = 'whfast'
+    sim.integrator = 'mercurius'
+    #sim.integrator = 'whfast'
     sim.collision = "direct"
-    #sim.ri_mercurius.hillfac = 3.
-    sim.ri_whfast.hillfac = 3.
+    sim.ri_mercurius.hillfac = 3.
+    #sim.ri_whfast.hillfac = 3.
     sim.collision_resolve = "merge"
     
 

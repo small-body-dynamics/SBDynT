@@ -1,6 +1,6 @@
 {
     "tmax": 100000000.0,
-    "tout": 4000.0,
+    "tout": 10000.0,
     "objname": "2014 TE86",
     "objnum": 1094,
     "objtype": "TNO",

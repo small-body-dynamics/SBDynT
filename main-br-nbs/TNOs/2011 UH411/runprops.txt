@@ -1,6 +1,6 @@
 {
     "tmax": 100000000.0,
-    "tout": 4000.0,
+    "tout": 10000.0,
     "objname": "2011 UH411",
     "objnum": 799,
     "objtype": "TNO",

@@ -1,6 +1,6 @@
 {
     "tmax": 100000000.0,
-    "tout": 4000.0,
+    "tout": 10000.0,
     "objname": "2002 CZ154",
     "objnum": 453,
     "objtype": "TNO",
