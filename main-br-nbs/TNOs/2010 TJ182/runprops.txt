@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2010 TJ182",
-    "objnum": 761,
-    "objtype": "TNO",
-    "run_success": true
-}

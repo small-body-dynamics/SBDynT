@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2014 GE54",
-    "objnum": 1013,
-    "objtype": "TNO",
-    "run_success": true
-}

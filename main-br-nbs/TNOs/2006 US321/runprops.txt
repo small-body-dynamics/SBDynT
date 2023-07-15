@@ -1,7 +1,0 @@
-{
-    "tmax": 10000000.0,
-    "tout": 1000.0,
-    "objname": "2006 US321",
-    "objtype": "TNO",
-    "run_success": true
-}

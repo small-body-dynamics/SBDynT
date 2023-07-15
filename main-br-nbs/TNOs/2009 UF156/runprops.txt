@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2009 UF156",
-    "objnum": 738,
-    "objtype": "TNO",
-    "run_success": true
-}

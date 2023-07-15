@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2002 PX170",
-    "objnum": 477,
-    "objtype": "TNO",
-    "run_success": true
-}

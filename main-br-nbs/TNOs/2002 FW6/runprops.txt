@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2002 FW6",
-    "objnum": 457,
-    "objtype": "TNO",
-    "run_success": true
-}

@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2012 HL85",
-    "objnum": 846,
-    "objtype": "TNO",
-    "run_success": true
-}

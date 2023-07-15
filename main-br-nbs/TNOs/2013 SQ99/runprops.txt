@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2013 SQ99",
-    "objnum": 969,
-    "objtype": "TNO",
-    "run_success": true
-}

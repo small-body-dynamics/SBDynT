@@ -1,8 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 10000.0,
-    "objname": "2003 SO317",
-    "objnum": 533,
-    "objtype": "TNO",
-    "run_success": true
-}
