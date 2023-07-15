@@ -17,7 +17,7 @@ class ReadJson(object):
     def outProps(self):
         return self.data
 
-astdys = pd.read_csv('data_files/Distance.txt')
+astdys = pd.read_csv('data_files/Distant_names.csv')
 
 #for i in range(len(astdys)):
 #for i in range(10):
@@ -27,7 +27,7 @@ print(objnum)
 #Produce tno file based on astdys list
 if isinstance(objnum, int):
     objnum = int(objnum)
-    astdys = pd.read_csv('data_files/Distance.txt')
+    astdys = pd.read_csv('data_files/Distant_names.csv')
     objname = astdys['Name'].iloc[objnum]
 
 #Produce tno file based on given filename

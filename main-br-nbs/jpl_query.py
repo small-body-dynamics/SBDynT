@@ -14,7 +14,7 @@ if filetype == 'Asteroids':
 elif filetype == 'TNOs':
     astdys = pd.read_csv('data_files/astdys_tnos.csv')
 elif filetype == 'Distance':
-    astdys = pd.read_csv('data_files/Distance.txt')
+    astdys = pd.read_csv('data_files/Distant_names.csv')
 
 clones = 0 
 #for i in range(len(astdys)):
