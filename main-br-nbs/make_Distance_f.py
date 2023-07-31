@@ -25,14 +25,10 @@ objnum = sys.argv[1]
 print(objnum)
 
 #Produce tno file based on astdys list
-if isinstance(objnum, int):
-    objnum = int(objnum)
-    astdys = pd.read_csv('data_files/Distant_names.csv')
-    objname = astdys['Name'].iloc[objnum]
 
-#Produce tno file based on given filename
-else:
-    objname = str(objnum)
+objnum = int(objnum)
+astdys = pd.read_csv('data_files/Distant_names.csv')
+objname = astdys['Name'].iloc[objnum]
 
 
 filename = 'Distance/' + objname

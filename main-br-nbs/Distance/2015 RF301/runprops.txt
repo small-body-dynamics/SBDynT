@@ -1,0 +1,8 @@
+{
+    "tmax": -1000000000.0,
+    "tout": 1000000.0,
+    "objname": "2015 RF301",
+    "objnum": 3955,
+    "objtype": "Distance",
+    "run_success": true
+}
