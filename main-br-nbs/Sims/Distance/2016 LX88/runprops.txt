@@ -1,0 +1,8 @@
+{
+    "tmax": -1000000000.0,
+    "tout": 1000000.0,
+    "objname": "2016 LX88",
+    "objnum": 4333,
+    "objtype": "Distance",
+    "run_success": true
+}

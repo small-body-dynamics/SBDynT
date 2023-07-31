@@ -13,15 +13,15 @@ class ReadJson(object):
     def outProps(self):
         return self.data
     
-def bin_to_df(objname,archive):
+def bin_to_df(folder,objname,archive):
 
     r2d = 180/np.pi
     
-    astdys = pd.read_csv('data_files/astdys_tnos.csv')
+    astdys = pd.read_csv('data_files/'+str(folder)+'_data.csv')
 
     sbody = objname
     
-    filename = "TNOs/"+objname
+    filename = 'Sims/'+str(folder)+'/'+str(objname)
     archive = archive
     
     
@@ -97,7 +97,7 @@ def bin_to_df(objname,archive):
             series['qn'] = qpl[:,3]
     
             series.to_csv(filename+'/series.csv')
-            runprops['Ejected'] = True
+            #runprops['Ejected'] = True
             
             break;
     

@@ -1,0 +1,8 @@
+{
+    "tmax": -1000000000.0,
+    "tout": 1000000.0,
+    "objname": "2014 FA72",
+    "objnum": 3003,
+    "objtype": "Distance",
+    "run_success": true
+}
