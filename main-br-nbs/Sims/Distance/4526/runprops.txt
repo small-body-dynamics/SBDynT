@@ -1,7 +1,0 @@
-{
-    "objname": "4526",
-    "objnum": "4526",
-    "objtype": "Distance",
-    "err_message": "Simulation failed during initialization. Might not be findable in JPL Horizons",
-    "run_success": false
-}
