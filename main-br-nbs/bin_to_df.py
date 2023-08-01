@@ -19,7 +19,7 @@ def bin_to_df(folder,objname,archive):
     
     astdys = pd.read_csv('data_files/'+str(folder)+'_data.csv')
 
-    sbody = objname
+    sbody = str(objname)
     
     filename = 'Sims/'+str(folder)+'/'+str(objname)
     archive = archive
@@ -62,6 +62,7 @@ def bin_to_df(folder,objname,archive):
         
         #print("j ", j)
         try:
+            #print('Looking for particle ', sbody + '_bf', ' in sim.')
             tp = sim.particles[sbody+"_bf"]
         except:
             print('Object was ejected from simulation. Setting ejection to True in runprops.')

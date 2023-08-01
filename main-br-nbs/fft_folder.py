@@ -33,13 +33,14 @@ plt.rcParams["figure.titlesize"] = 25
 folder = sys.argv[1]
 
 astdys = pd.read_csv('data_files/'+str(folder)+'_data.csv')
-pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','megno','lyapunov']
+pe_cols = ['Name','sma','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','megno','lyapunov']
 filename = astdys['Name'].iloc[1]
 
 fullfile = 'Sims/'+str(folder)+ '/' + str(filename)+'/archive.bin'
 print(fullfile)
 arc1 = rebound.SimulationArchive(fullfile)
 series = bin_to_df(folder,filename,arc1)
+#print(series)
 #series = pd.read_csv('Sims/' + str(folder) + '/' + str(filename) + '/series.csv')
 
 series = series[:500]
@@ -51,7 +52,7 @@ allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
 #h_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
 #k_transfer_f = np.zeros((len(astdys),len(np.fft.rfft(allplan['t'].values))))
 
-gp_vals = np.zeros((len(astdys),9))
+gp_vals = np.zeros((len(astdys),10))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
 
 pYpu = np.abs(np.fft.rfft(allplan['pu'].values))**2
@@ -172,12 +173,14 @@ for j in range(len(astdys)):
         filename = 'Sims/' + str(folder) + '/' + str(objname)
         archive = rebound.SimulationArchive(filename +'/archive.bin')
         series = bin_to_df(folder,objname,archive)
+        #print(series)
     except:
         print(folder, objname, filename)
         print('No archive.bin to read')
         continue
     #series = pd.read_csv(filename+'/series.csv')
     series = series[:250]
+    '''
     getData = ReadJson(str(filename)+'/runprops.txt')
     runprops = getData.outProps()
     runprops = {"3_Hill__Neptune": False}
@@ -186,6 +189,7 @@ for j in range(len(astdys)):
 
     if runprops.get('run_success') == False:
         print(Objname +" failed in it's simulation. Will be skipped.")
+    '''
     horizon = pd.read_csv(filename+'/horizon_data.csv')
     if horizon['flag'][0] == 0:
         continue
@@ -337,6 +341,7 @@ for j in range(len(astdys)):
     for i in range(0,imax-1):
         m = 1.02496658e26
         M = 1.98969175e30
+        '''
         if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
             runprops['3_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
@@ -349,6 +354,7 @@ for j in range(len(astdys)):
             runprops['1_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
+        '''
     '''
         if freq[i] > freqlim:
             Yp_f[i] = 0
@@ -370,6 +376,7 @@ for j in range(len(astdys)):
     for i in range(0,imax-1):
         m = 1.02496658e26
         M = 1.98969175e30
+        '''
         if abs(an[i]*(1+en[i]) - a[i]*(1-e[i])) < 3*an[i]*(m/3/M)**(1/3):
             runprops['3_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en[i])) + ' AU and object at ' + str(a[i]*(1-e[i])) + ' AU')
@@ -382,7 +389,7 @@ for j in range(len(astdys)):
             runprops['1_Hill_Neptune'] = True
             #print('Within 3 Hill sphere\'s of Neptune with Neptune at ' + str(an[i]*(1+en$
             #print('Obj ecc: ', e[i])
-            
+        '''   
         for z in range(numfreqs):
             if (pYpu[i]>pth*pumax[z] or pYpj[i]>pth*pjmax[z] or pYps[i]>pth*psmax[z] 
                or pYpn[i]>pth*pnmax[z] or freq[i]>freqlim):
@@ -426,6 +433,7 @@ for j in range(len(astdys)):
     #print('Cal sinI: ' , np.mean(sini_f))
     #print('Cal e: ', np.mean(ecc_f))
     pe_df['Name'][j] = objname
+    pe_df['sma'][j] = np.mean(a)
     pe_df['obs_ecc'][j] = np.mean(e)
     pe_df['obs_sinI'][j] = np.mean(np.sin(inc))
 
@@ -438,10 +446,10 @@ for j in range(len(astdys)):
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
-
+    '''
     runpath = str(filename)+'/runprops.txt'
     with open(runpath, 'w') as file:
         file.write(json.dumps(runprops, indent = 4))
-    
+    '''
 
 pe_df.to_csv('data_files/prop_elem_'+folder+'.csv')
