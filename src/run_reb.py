@@ -51,9 +51,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
         print(horizons_data)
         epoch = horizons_data['epoch'][0]
-        
-        '''
-        flag = horizons_data['flag'][0]
+      
         epoch = horizons_data['epoch'][0]    
         sbx = horizons_data['sbx'].values
         sby = horizons_data['sby'].values
@@ -61,10 +59,12 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         sbvx = horizons_data['sbvx'].values
         sbvy = horizons_data['sbvy'].values
         sbvz = horizons_data['sbvz'].values
-        if(flag<1):
-            print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
-            return 0, 0., sim
-        '''
+
+        #if(flag<1):
+        #    print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
+        #    return 0, 0., sim
+        #'''
+         
     else:
         filename = []
         horizons_data = []
@@ -79,6 +79,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         sbvz = []
         for i in des:
             filename = filetype + str(i)
+
             horizons_data = pd.read_csv(folder)
             #epoch.append(horizons_data['epoch'][0])   
             sbx.append(horizons_data['sbx'].values)
