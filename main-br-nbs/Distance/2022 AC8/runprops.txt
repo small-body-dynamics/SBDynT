@@ -1,0 +1,8 @@
+{
+    "tmax": -1000000000.0,
+    "tout": 1000000.0,
+    "objname": "2022 AC8",
+    "objnum": 4989,
+    "objtype": "Distance",
+    "run_success": true
+}

@@ -1,0 +1,8 @@
+{
+    "tmax": -1000000000.0,
+    "tout": 1000000.0,
+    "objname": "2007 LF38",
+    "objnum": 2036,
+    "objtype": "Distance",
+    "run_success": true
+}

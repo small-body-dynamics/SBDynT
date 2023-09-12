@@ -2,7 +2,7 @@
 # submit_array.sh
 
 #SBATCH --ntasks=1
-#SBATCH --time=01:30:00
+#SBATCH --time=04:00:00
 #SBATCH --mem-per-cpu=256M
 #SBATCH --array=0-1183
 
