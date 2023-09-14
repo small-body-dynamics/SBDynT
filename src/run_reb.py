@@ -185,14 +185,16 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         pl = [t for t in planet_id if planet_id[t]==pl1]
         #flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl,epoch=epoch)
         mass = horizons_planets['mass_'+str(pl[0])][0]
+        #print(mass)
         radius = horizons_planets['radius_'+str(pl[0])][0]
+        #print(radius)
         x = horizons_planets['x_'+str(pl[0])][0]
         y = horizons_planets['y_'+str(pl[0])][0]
         z = horizons_planets['z_'+str(pl[0])][0]
         vx = horizons_planets['vx_'+str(pl[0])][0]
         vy = horizons_planets['vy_'+str(pl[0])][0]
         vz = horizons_planets['vz_'+str(pl[0])][0]
-        flag=1
+        flag = 1
         if(flag<1):
             print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
             return 0, 0., sim
@@ -201,7 +203,6 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         sim.add(m=mass,r=radius,x=x,y=y,z=z,vx=vx,vy=vy,vz=vz,hash=pl1)
 
     sim.N_active = npl
-
     if(clones>0):
         for i in range(0,ntp):
             if(i==0):
