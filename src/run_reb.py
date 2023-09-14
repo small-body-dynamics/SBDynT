@@ -192,7 +192,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         vx = horizons_planets['vx_'+str(pl[0])][0]
         vy = horizons_planets['vy_'+str(pl[0])][0]
         vz = horizons_planets['vz_'+str(pl[0])][0]
-
+        flag=1
         if(flag<1):
             print("initialize_simulation failed at horizons_api.query_horizons_planets for ", pl)
             return 0, 0., sim

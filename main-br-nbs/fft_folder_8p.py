@@ -366,19 +366,19 @@ for j in range(len(astdys)):
     #        else:
     #            p_transfer_f[j][i] = 1
             if (pYqu[i]>pth*qumax[z] or pYqj[i]>pth*qjmax[z] or pYqs[i]>pth*qsmax[z] 
-               or pYqn[i]>pth*qnmax[z] pYqmc[i]>pth*qmcmax[z] or pYqv[i]>pth*qvmax[z]
+               or pYqn[i]>pth*qnmax[z] or pYqmc[i]>pth*qmcmax[z] or pYqv[i]>pth*qvmax[z]
                 or pYqe[i]>pth*qemax[z] or pYqmr[i]>pth*qmrmax[z] or freq[i]>freqlim):
                 Yq_f[i-3:i+3]=0
     #        else:
     #            q_transfer_f[j][i] = 1
             if (pYhu[i]>pth*humax[z] or pYhj[i]>pth*hjmax[z] or pYhs[i]>pth*hsmax[z] 
-               or pYhn[i]>pth*hnmax[z] pYhmc[i]>pth*hmcmax[z] or pYhv[i]>pth*hvmax[z]
+               or pYhn[i]>pth*hnmax[z] or pYhmc[i]>pth*hmcmax[z] or pYhv[i]>pth*hvmax[z]
                 or pYhe[i]>pth*hemax[z] or pYhmr[i]>pth*hmrmax[z] or freq[i]>freqlim):
                 Yh_f[i-3:i+3]=0
     #        else:
     #            h_transfer_f[j][i] = 1
             if (pYku[i]>pth*kumax[z] or pYkj[i]>pth*kjmax[z] or pYks[i]>pth*ksmax[z] 
-               or pYkn[i]>pth*knmax[z] pYkmc[i]>pth*kmcmax[z] or pYkv[i]>pth*kvmax[z]
+               or pYkn[i]>pth*knmax[z] or pYkmc[i]>pth*kmcmax[z] or pYkv[i]>pth*kvmax[z]
                 or pYke[i]>pth*kemax[z] or pYkmr[i]>pth*kmrmax[z] or freq[i]>freqlim):
                 Yk_f[i-3:i+3]=0
     #        else:
@@ -407,4 +407,4 @@ for j in range(len(astdys)):
     pe_df['calc_ecc'][j] = np.mean(ecc_f)
 
 
-pe_df.to_csv('data_files/prop_elem_'+folder+'.csv')
+pe_df.to_csv('data_files/prop_elem_'+folder+'_8p.csv')

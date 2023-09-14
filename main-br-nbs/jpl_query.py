@@ -35,7 +35,7 @@ if filetype != 'Generic':
     astdys = pd.read_csv('data_files/'+filetype+'_data.csv')
     
     print(astdys)
-    for i in range(len(astdys)):
+    for i in range(1500,len(astdys)):
     #for i in range(len(objects)):
     #for i in arange:
         #print(i)

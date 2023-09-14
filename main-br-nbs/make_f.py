@@ -38,7 +38,7 @@ try:
         print(flag, epoch, sim)
     elif runtype == '8planet':
         flag, epoch, sim = run_reb.initialize_simulation(planets=['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'],des=objname,clones=0, folder = objtype)
-    
+        print(flag, epoch, sim)    
     
     com = sim.calculate_com()
     p = sim.particles[sbody+"_bf"]
@@ -58,8 +58,8 @@ except:
 o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
-tmax = 1e8
-tout = 1e4
+tmax = 1e7
+tout = 1e3
 
 runprops = {}
 runprops['tmax'] = tmax
