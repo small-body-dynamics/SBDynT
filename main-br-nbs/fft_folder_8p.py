@@ -45,7 +45,7 @@ series = bin_to_df(folder,filename,arc1)
 
 series = series[:500]
 
-allplan = pd.read_csv('../test-notebooks/series_2.csv',index_col=0)
+allplan = pd.read_csv('../test-notebooks/series_3.csv',index_col=0)
 
 gp_vals = np.zeros((len(astdys),10))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
