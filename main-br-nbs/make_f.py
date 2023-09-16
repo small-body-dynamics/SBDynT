@@ -58,7 +58,7 @@ except:
 o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
-tmax = 1e7
+tmax = 1e5
 tout = 1e3
 
 runprops = {}

@@ -22,7 +22,6 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     
     #make all planet names lowercase
     planets = [pl.lower() for pl in planets]
-    print(25)
     #create an array of planets not included in the simulation
     #will be used to correct the simulation's barycenter for their absence
     notplanets = []
@@ -53,12 +52,13 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         epoch = horizons_data['epoch'][0]
       
         epoch = horizons_data['epoch'][0]    
-        sbx = horizons_data['sbx'].values
-        sby = horizons_data['sby'].values
-        sbz = horizons_data['sbz'].values
-        sbvx = horizons_data['sbvx'].values
-        sbvy = horizons_data['sbvy'].values
-        sbvz = horizons_data['sbvz'].values
+        for i in range(ntp):
+            sbx[i] = horizons_data['sbx'].values
+            sby[i] = horizons_data['sby'].values
+            sbz[i] = horizons_data['sbz'].values
+            sbvx[i] = horizons_data['sbvx'].values
+            sbvy[i] = horizons_data['sbvy'].values
+            sbvz[i] = horizons_data['sbvz'].values
 
         #if(flag<1):
         #    print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
@@ -212,6 +212,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
             #correct for the missing planets
             sbx[i]+=sx;sby[i]+=sy;sbz[i]+=sz; sbvx[i]+=svx;sbvy[i]+=svy;sbvz[i]+=svz;
             sim.add(m=0.,x=sbx[i],y=sby[i],z=sbz[i],vx=sbvx[i],vy=sbvy[i],vz=sbvz[i],hash=sbhash)
+            #print(i)
     else:
         if isinstance(des,str):
             sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
