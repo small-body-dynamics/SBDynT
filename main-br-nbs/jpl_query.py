@@ -9,12 +9,12 @@ import pandas as pd
 
 filetype = str(sys.argv[1])
 
-clones = 0 
+clones = 20 
 #for i in range(len(astdys)):
 #for i in range(10):
 #objnum = int(sys.argv[1])
 #print(objnum)
-vals = np.zeros((1,8))
+vals = np.zeros((clones+1,8))
 plan_vals = np.zeros((1,64))
 horizon_data = pd.DataFrame(vals,columns=['flag','epoch','sbx','sby','sbz','sbvx','sbvy','sbvz'])
 planet_id = {1: 'mercury', 2: 'venus', 3:'earth', 4:'mars', 5: 'jupiter', 6 : 'saturn', 7 : 'uranus', 8 : 'neptune'}
@@ -34,9 +34,9 @@ horizon_planets = pd.DataFrame(plan_vals, columns=plan_cols)
 if filetype != 'Generic':
     astdys = pd.read_csv('data_files/'+filetype+'_data.csv')
     
-    print(astdys)
-    for i in range(1500,len(astdys)):
-    #for i in range(len(objects)):
+    #print(astdys)
+    #for i in range(len(astdys)):
+    for i in range(1000,1500):
     #for i in arange:
         #print(i)
         objname = str(astdys['Name'].iloc[i])
@@ -55,10 +55,12 @@ if filetype != 'Generic':
         sbvy = np.zeros(ntp)
         sbvz = np.zeros(ntp)
         
-        horizon_data = pd.DataFrame(columns=['flag','epoch','sbx','sby','sbz','sbvx','sbvy','sbvz'])
+        horizon_data = pd.DataFrame(vals,columns=['flag','epoch','sbx','sby','sbz','sbvx','sbvy','sbvz'])
         flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
-        horizon_data['flag'] = [flag]
-        horizon_data['epoch'] = epoch
+        #print(sbx)
+        #print(horizon_data['sbx'])
+        horizon_data['flag'][:] = flag
+        horizon_data['epoch'][:] = epoch
         horizon_data['sbx'] = sbx
         horizon_data['sby'] = sby
         horizon_data['sbz'] = sbz

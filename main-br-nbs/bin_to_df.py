@@ -13,7 +13,7 @@ class ReadJson(object):
     def outProps(self):
         return self.data
     
-def bin_to_df(folder,objname,archive):
+def bin_to_df(folder,objname,archive, clonenum = 0):
 
     r2d = 180/np.pi
     
@@ -63,7 +63,11 @@ def bin_to_df(folder,objname,archive):
         #print("j ", j)
         try:
             #print('Looking for particle ', sbody + '_bf', ' in sim.')
-            tp = sim.particles[sbody+"_bf"]
+            if clonenum == 0:
+                tp = sim.particles[sbody+"_bf"]
+            else:
+                tp = sim.particles[sbody+"_"+str(clonenum)]
+                    
         except:
             print('Object was ejected from simulation. Setting ejection to True in runprops.')
             series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
@@ -151,6 +155,7 @@ def bin_to_df(folder,objname,archive):
     series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
     
     series['t'] = t
+    print(ppart)
     series['a'] = a
     series['ecc'] = e
     series['an'] = an
