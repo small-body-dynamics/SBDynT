@@ -43,7 +43,7 @@ series = bin_to_df(folder,filename,arc1)
 #print(series)
 #series = pd.read_csv('Sims/' + str(folder) + '/' + str(filename) + '/series.csv')
 
-series = series[:500]
+#series = series[:500]
 
 allplan = pd.read_csv('../test-notebooks/series_3.csv',index_col=0)
 
@@ -84,7 +84,7 @@ pYkv = np.abs(np.fft.rfft(allplan['kv'].values))**2
 pYke = np.abs(np.fft.rfft(allplan['ke'].values))**2
 pYkmr = np.abs(np.fft.rfft(allplan['kmr'].values))**2
 
-numfreqs = 12
+numfreqs = 3
 pumax = np.zeros(numfreqs)
 pnmax = np.zeros(numfreqs)
 pjmax = np.zeros(numfreqs)
@@ -263,14 +263,38 @@ hmr = allplan['hmr'].values
 kmr = allplan['kmr'].values
 pmr = allplan['pmr'].values
 qmr = allplan['qmr'].values
+'''
+ihmax = np.argmax(np.abs(Yh[1:]))+1
+ikmax = np.argmax(np.abs(Yk[1:]))+1
+ihumax = np.argmax(np.abs(Yhu[1:]))+1
+ihnmax = np.argmax(np.abs(Yhn[1:]))+1 
+ihsmax = np.argmax(np.abs(Yhs[1:]))+1 
+ihjmax = np.argmax(np.abs(Yhj[1:]))+1 
+ikumax = np.argmax(np.abs(Yku[1:]))+1 
+iknmax = np.argmax(np.abs(Ykn[1:]))+1
+iksmax = np.argmax(np.abs(Yks[1:]))+1
+ikjmax = np.argmax(np.abs(Ykj[1:]))+1 
 
-arange = range(1,2)
+rev = 1296000
+g = freq[ihmax]
+s = freq[ipmax]
+
+g5 = freq[ihjmax]
+g6 = freq[ihsmax]
+g7 = freq[ihumax]
+g8 = freq[ihnmax]
+s5 = 0
+s6 = freq[ipsmax]
+s7 = freq[ipumax]
+s8 = freq[ipnmax]
+'''
+arange = range(20,22)
 #for j in range(len(astdys)):
 for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
-    numclone = 20
-    print(filename)
+    numclone = 0
+    #print(filename)
     horizon = pd.read_csv(str(fileloc)+'/horizon_data.csv')
 #    prnt(objname)
     sini_pe = np.zeros(numclone+1)
@@ -281,11 +305,9 @@ for j in arange:
         
         for w in range(numclone + 1):
             series = bin_to_df(folder,objname,archive, w)
-
-            series = series[:250]
-
-            if horizon['flag'][0] == 0:
-                continue
+            #print(series)
+            #if horizon['flag'][0] == 0:
+            #    continue
             t = series['t'].values
             a = series['a'].values
             an = series['an'].values
@@ -298,7 +320,7 @@ for j in arange:
             k = series['k'].values
             p = series['p'].values
             q = series['q'].values
-            
+
             
             dt = t[1]
             n = len(h)
@@ -320,7 +342,7 @@ for j in arange:
           
             imax = len(Yp)
             #disregard antyhing with a period shorter than 5000 years
-            freqlim = 1./10000.
+            freqlim = 1./5000.
             #disregard frequencies for which any planet has power at higher than 10% the max
             pth = 0.1
             
@@ -332,6 +354,12 @@ for j in arange:
             pYk = np.abs(Yk)**2
             pYp = np.abs(Yp)**2
             pYq = np.abs(Yq)**2
+            '''
+            plt.scatter(1/freq[1:],pYh[1:])
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.savefig('h_vec.png')
+            '''
             for i in range(0,imax-1):
                 m = 1.02496658e26
                 M = 1.98969175e30
@@ -365,30 +393,34 @@ for j in arange:
                         Yk_f[i-3:i+3]=0
             #        else:
         #            k_transfer_f[j][i] = 1    
- 
+            '''
+            plt.scatter(1/freq[1:],np.abs(Yh_f[1:]**2))
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.savefig('h_vec_filt.png')
+            '''
             p_f = np.fft.irfft(Yp_f,len(p))
             q_f = np.fft.irfft(Yq_f,len(q))
             h_f = np.fft.irfft(Yh_f,len(h))
             k_f = np.fft.irfft(Yk_f,len(k))
+            
+            #print(p_f,q_f)
         
             #print(astdys['sinI'],j)
             sini_f = np.sqrt(p_f*p_f + q_f*q_f)
             ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
-
-            sini_pe = np.append(sini_pe,np.mean(sini_f))
-            ecc_pe = np.append(ecc_pe,np.mean(ecc_f))
+            sini_pe[w] = np.mean(sini_f)
+            ecc_pe[w] = np.mean(ecc_f)
             
-            
+       
     
     except:
         print(folder, objname, filename)
         print('Error occurred while producing proper elements')
         continue
+        
     #series = pd.read_csv(filename+'/series.csv')
-    
-
-    
-    #print('Objname: ', objname)
+    #print('Objname: ', objname)print
     #print('Cal sinI: ' , np.mean(sini_f))
     #print('Cal e: ', np.mean(ecc_f))
     pe_df['Name'][j] = objname
@@ -400,8 +432,6 @@ for j in arange:
     pe_df['calc_ecc'][j] = np.mean(ecc_pe)
     pe_df['err_sinI'][j] = np.std(sini_pe)
     pe_df['err_ecc'][j] = np.std(ecc_pe)
-    
-    print(sini_pe)
 
 
 pe_df.to_csv('data_files/prop_elem_'+folder+'_8p.csv')

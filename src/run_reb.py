@@ -45,10 +45,10 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     if isinstance(des,str):
         filename = 'Sims/' + folder + '/' +des
-        print(filename)
+        #print(filename)
         horizons_data = pd.read_csv(filename+'/horizon_data.csv')
         horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
-        print(horizons_data)
+        #print(horizons_data)
         epoch = horizons_data['epoch'][0]
  
         for i in range(ntp):
@@ -145,7 +145,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         tsim = rebound.Simulation()
         tsim.units = ('yr', 'AU', 'Msun')
         tsim.add(m=1.0,x=0.,y=0.,z=0.,vx=0.,vy=0.,vz=0.)
-        print(notplanets)
+        #print(notplanets)
         for pl1 in notplanets:
             #print(planet_id)
             pl = [t for t in planet_id if planet_id[t]==pl1]

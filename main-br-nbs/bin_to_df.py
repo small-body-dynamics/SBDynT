@@ -13,7 +13,7 @@ class ReadJson(object):
     def outProps(self):
         return self.data
     
-def bin_to_df(folder,objname,archive, clonenum = 0):
+def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
 
     r2d = 180/np.pi
     
@@ -29,6 +29,7 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
     #print(archive.tmax)
     
     planets = ['jupiter','archiveturn','uranus','neptune']
+    planets = ['mercury','venus','earth','mars','jupiter','archiveturn','uranus','neptune']
     
     a = np.zeros(len(archive));
     e = np.zeros(len(archive));
@@ -42,7 +43,9 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
     kh = np.zeros(len(archive),dtype=complex);
     #k = np.zeros(len(archive));
     t = np.zeros(len(archive));
+    #print('lenght:', len(archive))
     npl = 5
+    npl = 9
     
     qppl = np.asfortranarray(np.zeros(shape=[len(archive),npl],dtype=complex));
     khpl = np.asfortranarray(np.zeros(shape=[len(archive),npl],dtype=complex));
@@ -70,7 +73,7 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
                     
         except:
             print('Object was ejected from simulation. Setting ejection to True in runprops.')
-            series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
+            series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
     
             print(len(hpl),len(hpl[0,:]))
             series['t'] = t
@@ -83,23 +86,57 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
             series['q'] = qpart
             series['h'] = hpart
             series['k'] = kpart
-    
-            series['hj'] = hpl[:,0]
-            series['kj'] = kpl[:,0]
-            series['pj'] = ppl[:,0]
-            series['qj'] = qpl[:,0]
-            series['hs'] = hpl[:,1]
-            series['ks'] = kpl[:,1]
-            series['ps'] = ppl[:,1]
-            series['qs'] = qpl[:,1]
-            series['hu'] = hpl[:,2]
-            series['ku'] = kpl[:,2]
-            series['pu'] = ppl[:,2]
-            series['qu'] = qpl[:,2]
-            series['hn'] = hpl[:,3]
-            series['kn'] = kpl[:,3]
-            series['pn'] = ppl[:,3]
-            series['qn'] = qpl[:,3]
+            if planets == '4planet':
+                series['hj'] = hpl[:,0]
+                series['kj'] = kpl[:,0]
+                series['pj'] = ppl[:,0]
+                series['qj'] = qpl[:,0]
+                series['hs'] = hpl[:,1]
+                series['ks'] = kpl[:,1]
+                series['ps'] = ppl[:,1]
+                series['qs'] = qpl[:,1]
+                series['hu'] = hpl[:,2]
+                series['ku'] = kpl[:,2]
+                series['pu'] = ppl[:,2]
+                series['qu'] = qpl[:,2]
+                series['hn'] = hpl[:,3]
+                series['kn'] = kpl[:,3]
+                series['pn'] = ppl[:,3]
+                series['qn'] = qpl[:,3]
+            else:
+                series['hmc'] = hpl[:,0]
+                series['kmc'] = kpl[:,0]
+                series['pmc'] = ppl[:,0]
+                series['qmc'] = qpl[:,0]
+                series['hv'] = hpl[:,1]
+                series['kv'] = kpl[:,1]
+                series['pv'] = ppl[:,1]
+                series['qv'] = qpl[:,1]
+                series['he'] = hpl[:,2]
+                series['ke'] = kpl[:,2]
+                series['pe'] = ppl[:,2]
+                series['qe'] = qpl[:,2]
+                series['hmr'] = hpl[:,3]
+                series['kmr'] = kpl[:,3]
+                series['pmr'] = ppl[:,3]
+                series['qmr'] = qpl[:,3]
+                
+                series['hj'] = hpl[:,4]
+                series['kj'] = kpl[:,4]
+                series['pj'] = ppl[:,4]
+                series['qj'] = qpl[:,4]
+                series['hs'] = hpl[:,5]
+                series['ks'] = kpl[:,5]
+                series['ps'] = ppl[:,5]
+                series['qs'] = qpl[:,5]
+                series['hu'] = hpl[:,6]
+                series['ku'] = kpl[:,6]
+                series['pu'] = ppl[:,6]
+                series['qu'] = qpl[:,6]
+                series['hn'] = hpl[:,7]
+                series['kn'] = kpl[:,7]
+                series['pn'] = ppl[:,7]
+                series['qn'] = qpl[:,7]
     
             series.to_csv(filename+'/series.csv')
             #runprops['Ejected'] = True
@@ -152,10 +189,9 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
             ppl[j,i] = ptemp
             qpl[j,i] = qtemp
     
-    series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
+    series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
     
     series['t'] = t
-    print(ppart)
     series['a'] = a
     series['ecc'] = e
     series['an'] = an
@@ -165,23 +201,57 @@ def bin_to_df(folder,objname,archive, clonenum = 0):
     series['q'] = qpart
     series['h'] = hpart
     series['k'] = kpart
-    
-    series['hj'] = hpl[:,0]
-    series['kj'] = kpl[:,0]
-    series['pj'] = ppl[:,0]
-    series['qj'] = qpl[:,0]
-    series['hs'] = hpl[:,1]
-    series['ks'] = kpl[:,1]
-    series['ps'] = ppl[:,1]
-    series['qs'] = qpl[:,1]
-    series['hu'] = hpl[:,2]
-    series['ku'] = kpl[:,2]
-    series['pu'] = ppl[:,2]
-    series['qu'] = qpl[:,2]
-    series['hn'] = hpl[:,3]
-    series['kn'] = kpl[:,3]
-    series['pn'] = ppl[:,3]
-    series['qn'] = qpl[:,3]
+    if planets == '4planet':
+        series['hj'] = hpl[:,0]
+        series['kj'] = kpl[:,0]
+        series['pj'] = ppl[:,0]
+        series['qj'] = qpl[:,0]
+        series['hs'] = hpl[:,1]
+        series['ks'] = kpl[:,1]
+        series['ps'] = ppl[:,1]
+        series['qs'] = qpl[:,1]
+        series['hu'] = hpl[:,2]
+        series['ku'] = kpl[:,2]
+        series['pu'] = ppl[:,2]
+        series['qu'] = qpl[:,2]
+        series['hn'] = hpl[:,3]
+        series['kn'] = kpl[:,3]
+        series['pn'] = ppl[:,3]
+        series['qn'] = qpl[:,3]
+    else:
+        series['hmc'] = hpl[:,0]
+        series['kmc'] = kpl[:,0]
+        series['pmc'] = ppl[:,0]
+        series['qmc'] = qpl[:,0]
+        series['hv'] = hpl[:,1]
+        series['kv'] = kpl[:,1]
+        series['pv'] = ppl[:,1]
+        series['qv'] = qpl[:,1]
+        series['he'] = hpl[:,2]
+        series['ke'] = kpl[:,2]
+        series['pe'] = ppl[:,2]
+        series['qe'] = qpl[:,2]
+        series['hmr'] = hpl[:,3]
+        series['kmr'] = kpl[:,3]
+        series['pmr'] = ppl[:,3]
+        series['qmr'] = qpl[:,3]
+                
+        series['hj'] = hpl[:,4]
+        series['kj'] = kpl[:,4]
+        series['pj'] = ppl[:,4]
+        series['qj'] = qpl[:,4]
+        series['hs'] = hpl[:,5]
+        series['ks'] = kpl[:,5]
+        series['ps'] = ppl[:,5]
+        series['qs'] = qpl[:,5]
+        series['hu'] = hpl[:,6]
+        series['ku'] = kpl[:,6]
+        series['pu'] = ppl[:,6]
+        series['qu'] = qpl[:,6]
+        series['hn'] = hpl[:,7]
+        series['kn'] = kpl[:,7]
+        series['pn'] = ppl[:,7]
+        series['qn'] = qpl[:,7]
 
     return series
 
