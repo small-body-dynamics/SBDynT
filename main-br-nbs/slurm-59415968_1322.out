@@ -1,0 +1,19 @@
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+Sim made
+Sims/AstFam/1363
+   Unnamed: 0  flag      epoch       sbx  ...     sbz      sbvx      sbvy      sbvz
+0           0     1  2457380.0  0.946172  ... -0.0338 -3.351046  1.392278 -0.058775
+
+[1 rows x 9 columns]
+Data Read
+Sim starting
+Adding planets
+1363_20
+done
+2457380.0
+1 2457380.0 <rebound.simulation.Simulation object at 0x7f5120b410d0, N=30, t=0.0>
+Starting Integration
+Simulation integration finished in  2:24:32.705839  seconds.
