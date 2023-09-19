@@ -53,12 +53,12 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
       
         epoch = horizons_data['epoch'][0]    
         for i in range(ntp):
-            sbx[i] = horizons_data['sbx'].values
-            sby[i] = horizons_data['sby'].values
-            sbz[i] = horizons_data['sbz'].values
-            sbvx[i] = horizons_data['sbvx'].values
-            sbvy[i] = horizons_data['sbvy'].values
-            sbvz[i] = horizons_data['sbvz'].values
+            sbx[i] = horizons_data['sbx'][i].values
+            sby[i] = horizons_data['sby'][i].values
+            sbz[i] = horizons_data['sbz'][i].values
+            sbvx[i] = horizons_data['sbvx'][i].values
+            sbvy[i] = horizons_data['sbvy'][i].values
+            sbvz[i] = horizons_data['sbvz'][i].values
 
         #if(flag<1):
         #    print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
