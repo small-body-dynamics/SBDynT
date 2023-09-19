@@ -1,5 +1,0 @@
-
-Inactive Modules:
-  1) defaultenv     2) lmod
-
-slurmstepd: error: *** JOB 59417162 ON m8-10-2 CANCELLED AT 2023-09-16T16:57:05 DUE TO TIME LIMIT ***
