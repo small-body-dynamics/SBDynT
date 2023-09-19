@@ -50,15 +50,15 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
         horizons_planets = pd.read_csv(filename+'/horizon_planets.csv')
         print(horizons_data)
         epoch = horizons_data['epoch'][0]
-      
-        epoch = horizons_data['epoch'][0]    
+ 
         for i in range(ntp):
-            sbx[i] = horizons_data['sbx'][i].values
-            sby[i] = horizons_data['sby'][i].values
-            sbz[i] = horizons_data['sbz'][i].values
-            sbvx[i] = horizons_data['sbvx'][i].values
-            sbvy[i] = horizons_data['sbvy'][i].values
-            sbvz[i] = horizons_data['sbvz'][i].values
+            sbx[i] = horizons_data['sbx'][i]
+            sby[i] = horizons_data['sby'][i]
+            sbz[i] = horizons_data['sbz'][i]
+            sbvx[i] = horizons_data['sbvx'][i]
+            sbvy[i] = horizons_data['sbvy'][i]
+            sbvz[i] = horizons_data['sbvz'][i]
+            #print('work')
 
         #if(flag<1):
         #    print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
@@ -67,16 +67,10 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
          
     else:
         filename = []
-        horizons_data = []
         flag = 1
         horizons_planets = pd.read_csv(folder + '/horizon_planets.csv')
         epoch = []
-        sbx = []
-        sby = []
-        sbz = []
-        sbvx = []
-        sbvy = []
-        sbvz = []
+
         for i in des:
             filename = filetype + str(i)
 

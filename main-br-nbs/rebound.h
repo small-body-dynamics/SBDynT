@@ -253,7 +253,6 @@ struct reb_simulation_integrator_bs {
     int user_ode_needs_nbody; // Do not set manually. Use needs_nbody in reb_ode instead.
 };
 
-
 enum REB_EOS_TYPE {
     REB_EOS_LF = 0x00, 
     REB_EOS_LF4 = 0x01,
@@ -444,7 +443,6 @@ enum REB_BINARY_FIELD_TYPE {
     REB_BINARY_FIELD_TYPE_EOS_ISSYNCHRON = 152,
     REB_BINARY_FIELD_TYPE_RAND_SEED = 154,
     REB_BINARY_FIELD_TYPE_TESTPARTICLEHIDEWARNINGS = 155,
-
     REB_BINARY_FIELD_TYPE_BS_EPSABS = 156,
     REB_BINARY_FIELD_TYPE_BS_EPSREL = 157,
     REB_BINARY_FIELD_TYPE_BS_MINDT = 158,
@@ -452,7 +450,6 @@ enum REB_BINARY_FIELD_TYPE {
     REB_BINARY_FIELD_TYPE_BS_FIRSTORLASTSTEP = 160,
     REB_BINARY_FIELD_TYPE_BS_PREVIOUSREJECTED = 161,
     REB_BINARY_FIELD_TYPE_BS_TARGETITER = 162,
-
 
     REB_BINARY_FIELD_TYPE_HEADER = 1329743186,  // Corresponds to REBO (first characters of header text)
     REB_BINARY_FIELD_TYPE_SABLOB = 9998,        // SA Blob
@@ -602,9 +599,7 @@ struct reb_simulation {
         REB_INTEGRATOR_MERCURIUS = 9,// MERCURIUS integrator 
         REB_INTEGRATOR_SABA = 10,    // SABA integrator family (Laskar and Robutel 2001)
         REB_INTEGRATOR_EOS = 11,     // Embedded Operator Splitting (EOS) integrator family (Rein 2019)
-
         REB_INTEGRATOR_BS = 12,      // Gragg-Bulirsch-Stoer 
-
         } integrator;
     enum {
         REB_BOUNDARY_NONE = 0,      // Do not check for anything (default)
@@ -629,7 +624,6 @@ struct reb_simulation {
     struct reb_simulation_integrator_mercurius ri_mercurius;// The MERCURIUS struct
     struct reb_simulation_integrator_janus ri_janus;        // The JANUS struct 
     struct reb_simulation_integrator_eos ri_eos;            // The EOS struct 
-
     struct reb_simulation_integrator_bs ri_bs;              // The BS struct
 
     // ODEs
@@ -759,6 +753,9 @@ enum reb_input_binary_messages {
     REB_INPUT_BINARY_WARNING_CORRUPTFILE = 512,
 };
 
+// ODE functions
+struct reb_ode* reb_create_ode(struct reb_simulation* r, unsigned int length);
+void reb_free_ode(struct reb_ode* ode);
 
 // Miscellaneous functions
 uint32_t reb_hash(const char* str);
