@@ -137,3 +137,4 @@ archive.bin
 *transfer.txt
 *.bin
 runprops.txt
+slurm*

@@ -288,9 +288,9 @@ s6 = freq[ipsmax]
 s7 = freq[ipumax]
 s8 = freq[ipnmax]
 '''
-arange = range(20,22)
-#for j in range(len(astdys)):
-for j in arange:
+#arange = range(20,22)
+for j in range(len(astdys)):
+#for j in arange:
     print(j)
     objname = astdys['Name'].iloc[j]
     numclone = 0
