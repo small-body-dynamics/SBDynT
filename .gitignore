@@ -134,3 +134,6 @@ dmypy.json
 *series.csv
 *.bin
 *.h5
+
+#local test directory
+KV-local-development-test-notebooks/
