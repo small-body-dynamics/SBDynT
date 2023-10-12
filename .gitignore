@@ -139,3 +139,4 @@ dmypy.json
 
 #local test directory
 KV-local-development-test-notebooks/
+*.swp

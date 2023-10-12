@@ -197,6 +197,26 @@ def arraymod2pi(x):
 
     return x
 
+#################################################################
+#################################################################
+# returns an angle between -pi and pi
+#################################################################
+def arraymod2pi0(x):
+    """
+    input:
+        x = array of angles in radians
+    output
+        array of angles in radians re-centered from -pi to pi
+    """
+    imax = len(x)
+    for i in range (0,imax):
+        while (x[i] > np.pi):
+            x[i] += -2. * np.pi
+        while (x[i] < -np.pi):
+            x[i] += 2. * np.pi
+
+    return x
+
 
 def arraymod360(x):
     """
