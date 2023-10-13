@@ -240,9 +240,13 @@ def query_sb_from_jpl(des='', clones=0):
     url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'"
     if(destype == 'provisional'):
         url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    elif(destype == 'other'):
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
     else:
         url += "&OUT_UNITS='AU-D'&COMMAND='"
-    url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
     
     # run the query and exit if it fails
@@ -374,13 +378,16 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
         start_time = 'JD' + str(epoch)
         stop_time = 'JD' + str(epoch + 1)
         url = ("https://ssd.jpl.nasa.gov/api/horizons.api"
-               + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER=")
+               + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER='@Sun'")
         if(destype == 'provisional'):
-            url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='DES="
+            url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+            url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        elif(destype == 'other'):
+            url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+            url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
         else:
-            url += "'@Sun'&OUT_UNITS='AU-D'&COMMAND='"
-        url += pdes + "%3B'&START_TIME=" + start_time
-        url += "&STOP_TIME=" + stop_time
+            url += "&OUT_UNITS='AU-D'&COMMAND='"
+            url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
         # run the query and exit if it fails
         response = requests.get(url)

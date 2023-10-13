@@ -227,8 +227,9 @@ def mpc_designation_translation(obj):
     If an unpacked provisional MPC designation is input, this routine
     outputs a packed version of that designation. If a packed number
     is input, the unpacked number is returned. Otherwise it returns 
-    the same string that was input. This makes the Horizons query 
-    function more robust. 
+    the same string that was input. Also returns a designation type
+    which is useful because comet queries sometimes require extra
+    search terms. This makes the Horizons query function more robust. 
     :param obj: string, minor planet designation
     :returns des: string, obj, packed provisional MPC designation, or
                           unpacked number
@@ -247,15 +248,30 @@ def mpc_designation_translation(obj):
            "s": "54", "t": "55", "u": "56", "v": "57", "w": "58", "x": "59",
            "y": "60", "z": "61"
            }
+    
     hex_list = list(num.keys())
     num_list = list(num.values())
     destype = 'other'
 
+    #search for un-packed provisional designation with or without a space
+    #after the year
     regex_provis = re.compile(r"\b(\d{4})([- _]?)([a-zA-Z]{2})(\d*)\b")
+    #search for a packed provisional designation
+    regex_packedprovis = re.compile(r"\b([a-zA-Z]{1})(\d{2})([a-zA-Z]{1})(\d{2}|[a-zA-Z]{1}\d{1})([a-zA-Z]{1})\b")
+    #search for a packed number designation    
     regex_packednum = re.compile(r"\b([a-zA-Z]{1})(\d{4})\b")
+    #search for an unpacked number designation        
+    regex_num = re.compile(r"^[0-9]+$")    
+
+    #in case the input was not specified as a string (e.g., numbered 
+    #object not enclosed in ''), convert to string
+    if(not(isinstance(obj, str))):
+        obj =str(obj)
     
     provis = regex_provis.findall(obj)
+    packedprovis = regex_packedprovis.findall(obj)    
     packednum = regex_packednum.findall(obj)
+    num = regex_num.findall(obj)    
     if (provis):
         destype = 'provisional'
         if (len(provis[0]) == 4):
@@ -282,10 +298,16 @@ def mpc_designation_translation(obj):
         else:
             des += number
         des += lchars[1]
+    elif(packedprovis):
+        destype = 'provisional'
+        des = obj
     elif(packednum):
         destype = 'number'
         j = hex_list.index(packednum[0][0])
         des = str(num_list[j]) + str(packednum[0][1])
+    elif(num):
+        destype = 'number'
+        des = obj
     else:
         des = obj
 
