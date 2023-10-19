@@ -303,7 +303,7 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
         print("tmin is less than t[0], starting at tmin=%f instead" % t[0])
         i_t0=0
     
-    if(tmax==t[-1]):
+    if(np.abs(tmax-t[-1])<1):
         i_tf = nout-1
     elif(t[-1] < tmax):
         print("tmax is greater than t[-1], starting at tmax=%f instead" % t[-1])
@@ -339,7 +339,7 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
             flag = 2
             sampling_warning = 1
         twindow = t[i] - t[i_win1]
-        if(twindow >= dtwindow):
+        if(twindow >= dtwindow or np.abs(twindow-dtwindow)<5):
             n_windows+=1
             n_points = i-i_win1
             if(n_points<150 and nwindows_warning==0):
@@ -379,7 +379,7 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
 
         for i in range(i_t0,i_tf+1):
             twindow = t[i] - t[i_win1]
-            if(twindow >= dtwindow):
+            if(twindow >= dtwindow or np.abs(twindow-dtwindow)<5):
                 #calculate average and standard deviations
                 #for a, e, inc
                 wabar[nwin] = np.mean(a[tp,i_win1:i])
