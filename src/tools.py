@@ -166,7 +166,7 @@ def mod2pi(x):
     """
     input:
         x = any angle in radians
-    output
+    output:
         an angle in radians re-centered from 0-2pi
     """
     
@@ -185,7 +185,7 @@ def arraymod2pi(x):
     """
     input:
         x = array of angles in radians
-    output
+    output:
         array of angles in radians re-centered from 0-2pi
     """
     imax = len(x)
@@ -205,7 +205,7 @@ def arraymod2pi0(x):
     """
     input:
         x = array of angles in radians
-    output
+    output:
         array of angles in radians re-centered from -pi to pi
     """
     imax = len(x)
@@ -222,7 +222,7 @@ def arraymod360(x):
     """
     input:
         x = array of angles in degrees
-    output
+    output:
         array of angles in degrees recentered 0-360
     """
     imax = len(x)
@@ -250,11 +250,13 @@ def mpc_designation_translation(obj):
     the same string that was input. Also returns a designation type
     which is useful because comet queries sometimes require extra
     search terms. This makes the Horizons query function more robust. 
-    :param obj: string, minor planet designation
-    :returns des: string, obj, packed provisional MPC designation, or
-                          unpacked number
-             type: string, type of designation "number" 
-                   or "provisional" or "other"
+    input:
+        obj: string, minor planet designation
+    output: 
+        des: string, obj, packed provisional MPC designation, or
+             unpacked number
+        type: string, type of designation "number" 
+              or "provisional" or "other"
     """
     num = {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5",
            "6": "6", "7": "7", "8": "8", "9": "9", "A": "10", "B": "11",
