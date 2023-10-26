@@ -5,7 +5,14 @@ We are developing a well-documented, open-source Python package, the Small Body 
 We are in the very early stages of development, primarily focusing on adding individual functions that will later be incoporated into a larger work-flow. Functions currently available are shown in the demonstration notebook in the example-notebooks directory. These include already useful tools to generate clones of an observed small body's orbit over its orbit uncertainties using JPL's orbit fit and associated covariance matrix and to initialize and run rebound simulations for those clones.
 
 ### Requirements and installation
-Coming soon....
+Currently, to use SBDynT, download the repository and add the following to your python code:<br>
+import sys<br>
+sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
+
+The following packages must be installed:<br>
+rebound<br>
+numpy<br>
+astroquery
 
 ### Contact information
 Kat Volk, kat.volk@gmail.com
