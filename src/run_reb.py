@@ -318,8 +318,7 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
                    deletefile=False):
     """
     run a mercurius simulation saving to a simulation archive every tout
-    removing particles if they exceed the maximum distance or go below
-    the minumum distance
+
     """
     sim.automateSimulationArchive(filename, interval=tout,
                                   deletefile=deletefile)
