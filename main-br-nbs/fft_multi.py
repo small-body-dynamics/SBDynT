@@ -33,10 +33,17 @@ def prop_calc(j, astdys):
 #    print(objname)
     filename = 'TNOs/' + objname
     try:
-        archive = rebound.SimulationArchive(filename+'/archive.bin')
+        fullfile = 'Sims/TNOs/'+objname+'/archive.bin'
+        #print(fullfile)
+        arc1 = rebound.SimulationArchive(fullfile)
+        #print(arc1)
+        series = bin_to_df.bin_to_df('TNOs',objname,arc1,'4planet')
+        #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
-        series = bin_to_df.bin_to_df(objname,archive)
+        #series = bin_to_df.bin_to_df(objname,archive)
+        
     except:
+        print('Failed')
         return [objname,0,0,0,0,0,0]
     #series = pd.read_csv(filename+'/series.csv')
     #series = series[:250]
@@ -52,7 +59,7 @@ def prop_calc(j, astdys):
     k = series['k'].values
     p = series['p'].values
     q = series['q'].values
-    
+    #print(t)
     
     dt = t[1]
     n = len(h)
@@ -91,7 +98,7 @@ def prop_calc(j, astdys):
   
     imax = len(Yp)
     #disregard antyhing with a period shorter than 5000 years
-    freqlim = 1./10000.
+    freqlim = 1./1000.
     #disregard frequencies for which any planet has power at higher than 10% the max
     pth = 0.25
     
@@ -131,6 +138,25 @@ def prop_calc(j, astdys):
     z8 = abs(2*(g-g6)+s-s6)
     z9 = abs(3*(g-g6)+s-s6)
     
+        
+    z1_g = (-s+g6+s6)
+    z2_g = (-s+g5+s7)
+    z3_g = (-s+g5+s6)
+    z4_g = (2*g6-g5)
+    z5_g = (2*g6-g7)
+    z7_g = (3*g6-2*g5)
+    z8_g = (2*g6-s+s6)/2
+    z9_g = (3*g6-s+s6)/3
+        
+        
+    z1_s = (-g+g6+s6)
+    z2_s = (-g+g5+s7)
+    z3_s = (-g+g5+s6)
+    z6_s = (s6+g5-g6)
+    z8_s = (-2*(g-g6)+s6)
+    z9_s = (-3*(g-g6)+s6)
+    
+        
 
     #print(np.where(freq>=g5)[0][0])
 
@@ -154,11 +180,77 @@ def prop_calc(j, astdys):
     secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z4)[0][0]]
     secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z4)[0][0]]
 
+    g5 = 4.25749319/rev
+    g6 = 28.24552984/rev
+    g7 = 3.08675577/rev
+    g8 = 0.67255084/rev
+    s6 = -26.34496354/rev
+    s7 = -2.99266093/rev
+    s8 = -0.69251386/rev
+    
+            #'''
+            #'''
+            
+    z1 = 2*g6-g5
+    z2 = 2*g6-g7
+    z3 = -2*g5+3*g6
+    z4 = -g5+g6+g7
+    z5 = g5+g6-g7
+    z6 = -g5+2*g6+s6-s7
+    z7 = g5-s6+s7
+    z8 = 2*g5-g7
+
+    g=g*rev
+    s=s*rev
+    g5=g5*rev
+    g6=g6*rev
+    g7=g7*rev
+    g8=g8*rev
+    s6=s6*rev
+    s7=s7*rev
+    s8=s8*rev
+
+    de = np.abs(np.array([g5,g6,g7,g8,s6,s7,s8,g-g5,g-g6,g5-g6,s-s7,s-s6,s7-s6,g+s-s7-g5,g+s-s7-g6,g+s-s6-g5,g+s-s6-g6,2*g-2*s,g-2*g5+g6,g+g5-2*g6,2*g-g5-g6,-g+s+g5-s7,-g+s+g6-s7,-g+s+g5-s6,-g+s+g6-s6,g-g5+s7-s6,g-g5-s7+s6,g-g6+s7-s6,g-g6-s7+s6,2*g-s-s7,2*g-s-s6,-g+2*s-g5,-g+2*s-g6,2*g-2*s7,2*g-2*s6,2*g-s7-s6,g-s+g5-s7,g-s+g5-s6,g-s+g6-s7,g-s+g6-s6,g+g5-2*s7,g+g6-2*s7,g+g5-2*s6,g+g6-2*s6,g+g5-s7-s6,g+g6-s7-s6,s-2*s7+s6,s+s7-2*s6,2*s-s7-s6,s+g5-g6-s7,s-g5+g6-s7,s+g5-g6-s6,s-g5+g6-s6,2*s-2*g5,2*s-2*g6,2*s-g5-g6,s-2*g5+s7,s-2*g5+s6,s-2*g6+s7,s-2*g6+s6,s-g5-g6+s7,s-g5-g6+s6,2*g-2*g5,2*g-2*g6,2*s-2*s7,2*s-2*s6,g-2*g6+g7,g-3*g6+2*g5,2*(g-g6)+(s-s6),g+g5-g6-g7,g-g5-g6+g7,g+g5-2*g6-s6+s7,3*(g-g6)+(s-s6)]))/rev
+    #Knezevic and Milani frequencies
+    secresind1 = []
+    secresind2 = []
+    
+    secresde = []
+            
+    for i in range(len(de)):
+        if de[i] < 20000:
+            continue
+        secresde.append(int(np.where(freq >= de[i])[0][0]))
+    #z7_g,
+    #z1_s,z8_s,z9_s
+    freq1 = [g5,g6,g7,g8,z1_g,z2_g,z3_g,z4_g,z5_g,z8_g,z9_g]
+    freq2 = [s6,s7,s8,z2_s,z3_s,z6_s]
+    
+    freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
+    freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
+    
+    freq1 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z4,z5,z7,z8,z9]
+    freq2 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+    
+    freq1 = [g5,g6,g7,g8,z4]
+    freq2 = [s6,s7,s8,z4]
+    
+    for i in freq1:
+        if 1/i < 20000:
+            continue
+        secresind1.append(np.where(freq>=i)[0][0])
+    for i in freq2:
+        if 1/i < 20000:
+            continue
+        secresind2.append(np.where(freq>=i)[0][0])
+    
+    #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1_g)[0][0],np.where(freq >= z2_g)[0][0],np.where(freq >= z3_g)[0][0],np.where(freq >= z4_g)[0][0],np.where(freq >= z5_g)[0][0],np.where(freq >= z7_g)[0][0],np.where(freq >= z8_g)[0][0],np.where(freq >= z9_g)[0][0]]
+    #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1_s)[0][0],np.where(freq >= z2_s)[0][0],np.where(freq >= z3_s)[0][0],np.where(freq >= z6_s)[0][0],np.where(freq >= z8_s)[0][0],np.where(freq >= z9_s)[0][0]]
 
     limit_ind = np.where(freq >= freqlim)[0]
 
     spread = 3
-
+    #'''
     for i in range(len(secresind1)):
         if spread > 0:
             Yh_f[secresind1[i]-spread:secresind1[i]+spread] = 0
@@ -174,6 +266,20 @@ def prop_calc(j, astdys):
         else:
             Yp_f[secresind2[i]] = 0
             Yq_f[secresind2[i]] = 0
+    '''     
+    for i in range(len(secresde)):
+        ind = int(secresde[i])
+        if spread > 0:
+            Yh_f[ind-spread:ind+spread] = 0
+            Yk_f[ind-spread:ind+spread] = 0
+            Yp_f[ind-spread:ind+spread] = 0
+            Yq_f[ind-spread:ind+spread] = 0
+        else:
+            Yh_f[ind] = 0
+            Yk_f[ind] = 0
+            Yp_f[ind] = 0
+            Yq_f[ind] = 0 
+    #'''
         
     Yp_f[limit_ind] = 0
     Yq_f[limit_ind] = 0
@@ -217,7 +323,7 @@ if __name__ == '__main__':
             pool.wait()
             sys.exit(0)
             
-        astdys = pd.read_csv('TNOs/astdys_tnos.csv')
+        astdys = pd.read_csv('data_files/TNOs_data.csv')
         pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
         filename = astdys['Name'].iloc[0]
         #series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
@@ -295,4 +401,4 @@ if __name__ == '__main__':
         pe_df = pd.DataFrame(data,columns = pe_cols)
         print(pe_df)
 
-        pe_df.to_csv('data_files/prop_elem_tnos_multi_ident.csv')
+        pe_df.to_csv('data_files/prop_elem_tnos_multi_sec_few.csv')

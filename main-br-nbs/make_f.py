@@ -34,11 +34,12 @@ try:
         os.mkdir(filetype)
     runtype = str(sys.argv[3])
     if runtype == '4planet':
-        flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter','saturn','uranus','neptune'],des=objname,clones=0, folder = objtype)
+        flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter','saturn','uranus','neptune'],des=objname,clones=1, folder = objtype)
         print(flag, epoch, sim)
     elif runtype == '8planet':
-        flag, epoch, sim = run_reb.initialize_simulation(planets=['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'],des=objname,clones=20, folder = objtype)
-        print(flag, epoch, sim)    
+        flag, epoch, sim = run_reb.initialize_simulation(planets=['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'],des=objname,clones=1, folder = objtype)
+        print(flag, epoch, sim)  
+        #print(len(sim.particles))
     
     com = sim.calculate_com()
     p = sim.particles[sbody+"_bf"]
@@ -59,7 +60,7 @@ o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
 tmax = 1e6
-tout = 1e2
+tout = 1e3
 
 runprops = {}
 runprops['tmax'] = tmax
@@ -72,4 +73,5 @@ runpath = filetype+'/runprops.txt'
 with open(runpath, 'w') as file:
     file.write(json.dumps(runprops, indent = 4))
 
-sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename=filetype+"/archive.bin",deletefile=True,mindist=20.)
+sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename=filetype+"/archive_megtest.bin",deletefile=True,mindist=20.)
+

@@ -218,10 +218,13 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
                 sbhash = des[i] + '_bf'
                 sim.add(m=5.03e-13,x=sbx[i][0],y=sby[i][0],z=sbz[i][0],vx=sbvx[i][0],vy=sbvy[i][0],vz=sbvz[i][0],hash=sbhash)
     print(sbhash)
+
     sim.move_to_com()
+
     print('done')
     #print('Init_megno')
     #sim.init_megno()
+
     print(epoch)
     return 1, epoch, sim
 
@@ -240,9 +243,11 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
     sim.integrator = 'mercurius'
     #sim.integrator = 'whfast'
+    #sim.integrator = 'ias15'
     sim.collision = "direct"
     sim.ri_mercurius.hillfac = 3.
     #sim.ri_whfast.hillfac = 3.
+    #sim.ri_ias15.hillfac= 3.
     sim.collision_resolve = "merge"
     
 
@@ -301,4 +306,5 @@ void heartbeat(struct reb_simulation* r){
 
     print('Simulation integration finished in ', datetime.datetime.now() - time0, ' seconds.')
     return sim
+
 
