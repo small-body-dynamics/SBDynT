@@ -9,23 +9,23 @@ import textwrap
 import tools
 
 
-def query_horizons_planets(obj='', epoch=2455000):
+def query_horizons_planets(obj='', epoch=2459580.5):
     """
     Get the heliocentric position and velocity of a major planet from 
     JPL Horizons via web API request
 
     inputs:
-    :param obj: string, major planet name (not case sensitive)
-    :param epoch: float, JD date, defaults to sometime in 2009
+        obj: string, major planet name (not case sensitive)
+        epoch (optional): float, JD date, defaults to Jan 1, 2022
 
     outputs:
-    :returns flag: integer, 0 if nothing was queried, 
-                            1 if query is successful)
-    :returns m: float, object mass (in solar masses)
-    :returns r: float, object radius (in au)
-    :returns x: np array, cartesian heliocentric positions (in au)
-    :returns v: np array, cartesian heliocentric velocities (in au/year)
-    all return values set to 0 if unsuccessful
+        flag: integer, 0 if nothing was queried, 
+                       1 if query is successful)
+        m: float, object mass (in solar masses)
+        r: float, object radius (in au)
+        x: np array, cartesian heliocentric positions (in au)
+        v: np array, cartesian heliocentric velocities (in au/year)
+        all return values set to 0 if unsuccessful
     """
 
     obj = obj.lower()
@@ -134,19 +134,19 @@ def query_sb_from_jpl(des='', clones=0):
     to heliocentric cartesian positions and velocities
 
     inputs:
-    :param des: string, the designation for the object in the SBDB
-    :param clones: integer, number of times to clone using the
-                   covariance matrix
+        des: string, the designation for the object in the SBDB
+        clones (optional): integer, number of times to clone using the
+                           covariance matrix
 
     outputs:
-    :return flag: integer, 1 if query worked, 0 otherwise)
-    :return x: np array (size clones+1), cartesian heliocentric x (au)
-            y: np array (size clones+1), cartesian heliocentric y (au)
-            z: np array (size clones+1), cartesian heliocentric z (au)
-    :return vx: np array (size clones+1), cartesian heliocentric vx (au)
-            vy: np array (size clones+1), cartesian heliocentric vy (au)
-            vz: np array (size clones+1), cartesian heliocentric vz (au)
-    all return values set to 0 if unsuccessful
+        flag: integer, 1 if query worked, 0 otherwise)
+        x: np array (size clones+1), cartesian heliocentric x (au)
+        y: np array (size clones+1), cartesian heliocentric y (au)
+        z: np array (size clones+1), cartesian heliocentric z (au)
+        vx: np array (size clones+1), cartesian heliocentric vx (au)
+        vy: np array (size clones+1), cartesian heliocentric vy (au)
+        vz: np array (size clones+1), cartesian heliocentric vz (au)
+        all return values set to 0 if unsuccessful
     """
     pdes, destype = tools.mpc_designation_translation(des)
 
@@ -339,19 +339,19 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
     positions and velocities
 
     inputs:
-    :param des: string or list of strings, the designation for the
-                object or list of objects
-    :param (optional) epoch: (JD) defaults to Jan 1, 2022
+        des: string or list of strings, the designation for the
+             object or list of objects
+        epoch (optional): (JD) defaults to Jan 1, 2022
 
     outputs:
-    :return flag: integer, 1 if query worked, 0 otherwise)
-    :return x: np array (size=len(des)), cartesian heliocentric x (au)
-            y: np array (size=len(des)), cartesian heliocentric y (au)
-            z: np array (size=len(des)), cartesian heliocentric z (au)
-    :return vx: np array (size=len(des)), cartesian heliocentric vx (au)
-            vy: np array (size=len(des)), cartesian heliocentric vy (au)
-            vz: np array (size=len(des)), cartesian heliocentric vz (au)
-    all return values set to 0 if unsuccessful
+        flag: integer, 1 if query worked, 0 otherwise
+        x: np array (size=len(des)), cartesian heliocentric x (au)
+        y: np array (size=len(des)), cartesian heliocentric y (au)
+        z: np array (size=len(des)), cartesian heliocentric z (au)
+        vx: np array (size=len(des)), cartesian heliocentric vx (au)
+        vy: np array (size=len(des)), cartesian heliocentric vy (au)
+        vz: np array (size=len(des)), cartesian heliocentric vz (au)
+        all return values set to 0 if unsuccessful
     """
 
     # if the user provided just a single string as the designation
