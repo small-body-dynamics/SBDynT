@@ -23,6 +23,14 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
         svy: float, cartesian velocity correction for missing perturbers (au/yr)
         svz: float, cartesian velocity correction for missing perturbers (au/yr)
     """
+    #check to see if the sim already has particles in it
+    if(sim.N > 0):
+        print("run_reb.add_planets failed")
+        print("This rebound simulation instance already has particles in it!")
+        print("run_reb.add_planets can only accept an empty rebound simulation instance")
+        return 0, sim, 0.,0.,0.,0.,0.,0.
+
+
     # make all planet names lowercase
     planets = [pl.lower() for pl in planets]
     # create an array of planets not included in the simulation
@@ -37,44 +45,31 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
     planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars',
                  5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
 
-    # array of GM values queried January 2022
-    # (there isn't a way to get this from Horizons, so we just have to hard
-    # code it) values for giant planet systems are from Park et al. 2021 DE440
-    # and DE441, https://doi.org/10.3847/1538-3881/abd414
-    # all in km^3 kg^–1 s^–2
-    # G = 6.6743015e-20 #in km^3 kg^–1 s^–2
-    SS_GM = np.zeros(9)
-    SS_GM[0] = 132712440041.93938  # Sun
-    SS_GM[1] = 22031.86855  # Mercury
-    SS_GM[2] = 324858.592  # Venus
-    SS_GM[3] = 403503.235502  # Earth-Moon
-    SS_GM[4] = 42828.375214  # Mars
-    SS_GM[5] = 126712764.10  # Jupiter system
-    SS_GM[6] = 37940584.8418  # Saturn system
-    SS_GM[7] = 5794556.4  # Uranus system
-    SS_GM[8] = 6836527.10058  # Neptune system
+    # import the following hard-coded constants:
+    # Planet physical parameters
+    # SS_GM[0:9] in km^3 s^–2
+    # SS_r[0:9] all in au
+    # reasonable integration timesteps for each planet:
+    # dt[0:9]
+    import hard_coded_constants as const
 
-    # set of reasonable whfast simulation timesteps for each planet
-    # (1/20 of its orbital period for terrestrial planets, 1/30 for giants)
-    # dt[0] is a placeholder since the planets are indexed starting
-    # at 1 instad of at 0
-    dt = [0.00001, 0.012, 0.03, 0.05, 0.09, 0.4, 0.98, 2.7, 5.4]
-    sim.dt = dt[0]
+    sim.dt = const.dt[0]
 
     # add the mass of any not-included planets to the sun
-    msun = SS_GM[0]
+    msun = const.SS_GM[0]
     # work from Neptune in to also set the largest allowable timestep
     for i in range(8, 0, -1):
         if (not(planet_id[i] in planets)):
-            msun += SS_GM[i]
+            msun += const.SS_GM[i]
             notplanets.append(planet_id[i])
         else:
             # reset the timestep for that planet
-            sim.dt = dt[i]
+            sim.dt = const.dt[i]
 
     # sun's augmented mass in solar masses
-    msun = msun/SS_GM[0]
-    radius = 695700.*6.68459e-9
+    msun = msun/const.SS_GM[0]
+    # sun's radius in au
+    radius = const.SS_r[0]
     sim.add(m=msun, r=radius, x=0., y=0., z=0.,
             vx=0., vy=0., vz=0., hash='sun')
 
@@ -94,7 +89,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
             flag, mass, radius, [x, y, z], [vx, vy, vz] = \
                 horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
             if(flag < 1):
-                print("initialize_simulation failed at \
+                print("run_reb.add_planets failed at \
                     horizons_api.query_horizons_planets for ", pl)
                 return 0, sim, 0.,0.,0.,0.,0.,0.
             tsim.add(m=mass, r=radius, x=x, y=y, z=z, vx=vx, vy=vy, vz=vz)
@@ -113,7 +108,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
         flag, mass, radius, [x, y, z], [vx, vy, vz] = \
             horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
         if(flag < 1):
-            print("initialize_simulation failed at \
+            print("run_reb.add_planets failed failed at \
                   horizons_api.query_horizons_planets for ", pl)
             return 0, sim, 0.,0.,0.,0.,0.,0.
         # correct for the missing planets
@@ -162,7 +157,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = \
         horizons_api.query_sb_from_jpl(des=des, clones=clones)
     if(flag < 1):
-        print("initialize_simulation failed at horizons_api.query_sb_from_jpl")
+        print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim
     
     # add the planets and return the position/velocity corrections for
@@ -170,7 +165,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):
-        print("initialize_simulation failed at run_reb.add_planets")
+        print("run_reb.initialize_simulation failed at run_reb.add_planets")
         return 0, 0., sim
     
     if(clones > 0):
@@ -235,7 +230,7 @@ def initialize_simulation_at_epoch(
     flag, sbx, sby, sbz, sbvx, sbvy, sbvz = \
         horizons_api.query_sb_from_horizons(des=des, epoch=epoch)
     if (flag < 1):
-        print("initialize_simulation failed at "
+        print("run_reb.initialize_simulation_at_epoch failed at "
               "horizons_api.query_sb_from_horizons")
         return 0, 0., sim
 
@@ -244,7 +239,7 @@ def initialize_simulation_at_epoch(
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):
-        print("initialize_simulation failed at run_reb.add_planets")
+        print("run_reb.initialize_simulation_at_epoch failed at run_reb.add_planets")
         return 0, 0., sim
 
 
