@@ -9,7 +9,7 @@ import pandas as pd
 
 filetype = str(sys.argv[1])
 
-clones = 20 
+clones = 1 
 #for i in range(len(astdys)):
 #for i in range(10):
 #objnum = int(sys.argv[1])
@@ -35,8 +35,8 @@ if filetype != 'Generic':
     astdys = pd.read_csv('data_files/'+filetype+'_data.csv')
     
     #print(astdys)
-    #for i in range(len(astdys)):
-    for i in range(1000,1500):
+    for i in range(1465,len(astdys)):
+    #for i in range(1465,1500):
     #for i in arange:
         #print(i)
         objname = str(astdys['Name'].iloc[i])
