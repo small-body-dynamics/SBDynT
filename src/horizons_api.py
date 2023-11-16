@@ -230,7 +230,7 @@ def query_sb_from_jpl(des='', clones=0):
         url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
     else:
         url += "&OUT_UNITS='AU-D'&COMMAND='"
-        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
     
     # run the query and exit if it fails
@@ -375,7 +375,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
         else:
             url += "&OUT_UNITS='AU-D'&COMMAND='"
-            url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+            url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
         # run the query and exit if it fails
         response = requests.get(url)
@@ -421,4 +421,8 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
                   "request result for %s" %(des[n]))
             return 0, x, y, z, vx, vy, vz
 
-    return 1, x, y, z, vx, vy, vz
+    if(ntp == 1):
+        #return just single values instead of numpy arrays
+        return 1, x[0], y[0], z[0], vx[0], vy[0], vz[0]
+    else:
+        return 1, x, y, z, vx, vy, vz

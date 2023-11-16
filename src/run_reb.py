@@ -30,6 +30,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
         print("run_reb.add_planets can only accept an empty rebound simulation instance")
         return 0, sim, 0.,0.,0.,0.,0.,0.
 
+    sim.units = ('yr', 'AU', 'Msun')
 
     # make all planet names lowercase
     planets = [pl.lower() for pl in planets]
@@ -249,6 +250,7 @@ def initialize_simulation_at_epoch(
         sbx[i] += sx; sby[i] += sy; sbz[i] += sz
         sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
         sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
+                
                 vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
 
     sim.move_to_com()
@@ -259,27 +261,50 @@ def initialize_simulation_at_epoch(
 def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
                    deletefile=False,integrator='mercurius'):
     """
-    run a mercurius simulation saving to a simulation archive every tout
-
+    run a simulation saving to a simulation archive every tout
     inputs:
-        sim: rebound simulation instance with all bodies added and simulation
-             timestep set
-        tmax: float, desired stopping time for the integration in years
-        tout: float, desired interval for saving the simulation output in years
-        filename: string, file the simulation archive should be saved to
-        deletefile (optional): Boolean, whether filename should be deleted
-                               if it already exists (default False to not delete
-                               the file)
-        integrator (optional): rebound integrator to use. Currently doesn't do 
-                               anything because only mercurius is set
+        sim (rebound simulation instance): initialized with all the
+            planets and small bodies
+        tmax (float; years): simulation stopping time
+        tout (float; years): interval for saving simulation outputs to
+            the simulation archive file
+        filename (str; optional): name/path for the simulation
+            archive file that rebound will generate
+        deletefile (bool; optional): if set to True and a file with
+            the name/path of filename exists, it will be deleted before
+            the new simulation archive file is created. The default
+            is False, which means new data will be appended to filename
+        integrator (rebound integrator; optional): the desired integrator
+            rebound will use to integrate from sim.t to sim.tmax. The
+            default is mercurius with a direct collision search, hill
+            switchover at 3 hill radii, and the collision resolve set to
+            merge. Currently, sbdynt is configured to allow the following
+            integrator options: whfast, mercurius, ias15
+    outputs:
+        flag (int): 0 if something went wrong, 1 if the integration succeded
+        sim (rebound simulation instance): contains the full simulation
+            state at tmax
     """
+
+    #check for integrator choice and set any required extra parameters
+    if(integrator.lower == 'mercurius'.lower):
+        sim.integrator = 'mercurius'
+        sim.collision = "direct"
+        sim.ri_mercurius.hillfac = 3.
+        sim.collision_resolve = "merge"
+    elif(integrator.lower == 'whfast'.lower):
+        sim.integrator = 'whfast'
+    elif(integrator == 'ias15'):
+        sim.integrator = 'ias15'
+    else:
+        print("chosen integrator type not currently supported here \
+                    options are whfast, mercurius, ias15")
+        return 0, sim
+
+    #set up the simulation archive 
     sim.automateSimulationArchive(filename, interval=tout,
                                   deletefile=deletefile)
 
-    sim.integrator = 'mercurius'
-    sim.collision = "direct"
-    sim.ri_mercurius.hillfac = 3.
-    sim.collision_resolve = "merge"
-
+    #run until tmax
     sim.integrate(tmax)
-    return sim
+    return 1, sim

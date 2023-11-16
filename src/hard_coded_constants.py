@@ -9,7 +9,6 @@ import numpy as np
 dt = [0.00001, 0.012, 0.03, 0.05, 0.09, 0.4, 0.98, 2.7, 5.4]
 
 
-
 # array of GM values queried January 2022 (there isn't a way to get
 # this from Horizons via API, so we just have to hard code it)
 # values for giant planet systems are from Park et al. 2021 DE440
@@ -41,4 +40,10 @@ SS_r[6] = 60268.*kmtoau  # Saturn system
 SS_r[7] = 25559.*kmtoau  # Uranus system
 SS_r[8] = 24764.*kmtoau  # Neptune system
 
+
+# constants needed for accepting orbit fits from non-JPL sources
+#
+# Find_Orb sun GM as of Nov. 15, 2023 (km^3 s^-2)
+find_orb_sunGM = 1.3271243994E+11
+stoyear = 1./(365.25*24.*60.*60.)
 

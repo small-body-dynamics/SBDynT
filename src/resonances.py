@@ -27,12 +27,16 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
                   -n*node_tp - r*varpi_planet - s*node_planet
         nclones (int): number of clones of the best-fit orbit
     output:
+        ## if nclones=0, all arrays are 1-d    
         flag (int): 1 if successful and 0 if there was a problem
-        a (2-d float array): semimajor axis (au)
-        e (2-d float array): eccentricity
-        inc (2-d float array): inclination (degrees)
-        phi (2-d float array): resonant angle (degrees)
-            all arrays are for the test particles in the 
+        a (1-d or 2-d float array): semimajor axis (au)
+        e (1-d or 2-d float array): eccentricity
+        inc (1-d or2-d float array): inclination (rad)
+        node (1-d or 2-d float array): longitude of ascending node (rad)
+        aperi (1-d or 2-d float array): argument of perihelion (rad)
+        MA (1-d or 2-d float array): mean anomaly (rad)
+        phi (1-d or 2-d float array): resonant angle (rad)
+            above arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
             starting at 1 
@@ -61,16 +65,24 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
     sa = rebound.SimulationArchive(archivefile)
 
     nout = len(sa)
+
+    if(nout <1):
+        print("resonances.read_sa_for_resonance failed")
+        print("Problem reading the simulation archive file")
+        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], ''
+
     ntp = nclones+1
 
 
     a = np.zeros([ntp,nout])
     e = np.zeros([ntp,nout])
     inc = np.zeros([ntp,nout])
+    node = np.zeros([ntp,nout])
+    aperi = np.zeros([ntp,nout])
+    ma = np.zeros([ntp,nout])    
     phi = np.zeros([ntp,nout])
     t = np.zeros(nout)
 
-    r2d = 180./np.pi
     for i,sim in enumerate(sa):
         #calculate the planet's orbit relative to the barycenter
         pl = sim.particles[planet]
@@ -88,18 +100,27 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
             if(j==0):
                 tp_hash = sbody + "_bf"
             #grab the particle and calculate its barycentric orbit
-            tp = sim.particles[tp_hash]
+            try:
+                tp = sim.particles[tp_hash]
+            except:
+                print("resonances.read_sa_for_resonance failed")
+                print("Problem finding a particle with that hash in the archive")
+                return 0, a, e, inc, node, aperi, ma, phi, t, ''
             o = tp.calculate_orbit(com)
             a[j,i] = o.a
             e[j,i] = o.e
-            inc[j,i] = o.inc*r2d
+            inc[j,i] = o.inc
+            node[j,i] = o.Omega
+            aperi[j,i] = o.omega
+            ma[j,i] = o.M
+            
             lamda = o.Omega+o.omega+o.M
             #calculate the resonant angle
             pt = float(p)*lamda - float(q)*lamda_pl - float(m)*(o.Omega+o.omega)
             if(n!=0 or r!=0 or s!=0):
                 pt = pt - float(n)*o.Omega - float(r)*(o_pl.Omega+o_pl.omega) - float(s)*o_pl.Omega
             pt = tools.mod2pi(pt)
-            phi[j,i] = pt*r2d
+            phi[j,i] = pt
     
     flag = 1
 
@@ -115,16 +136,17 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
     res_string+='$'
 
 
-
-    return flag, a, e, inc, phi, t, res_string
+    if(nclones == 0):
+        return flag, a[0,:], e[0,:], inc[0,:], node[0,:], aperi[0,:], ma[0,:], phi[0,:], t, res_string
+    else:
+        return flag, a, e, inc, node, aperi, ma, phi, t, res_string
 #################################################################
 
 
 
 #################################################################
 #################################################################
-# reads the simulation archive files into orbital element
-# arrays necessary to produce a resonant plot
+# plots the resonance angle and a, e, i
 #################################################################
 def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], phi=[[0.],], t=[0.],nclones=0,figfile=''):
     """
@@ -135,8 +157,8 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         res_string (str): the string that prints the resonant angle
         a (2-d float array): semimajor axis (au)        
         e (2-d float array): eccentricity
-        inc (2-d float array): inclination (degrees)
-        phi (2-d float array): resonant angle (degrees)
+        inc (2-d float array): inclination (rad)
+        phi (2-d float array): resonant angle (rad)
             all arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
@@ -151,6 +173,18 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
     """
 
     ntp = nclones+1
+
+    if(nclones == 0 and len(a.shape)<2):
+        #reshape the arrays since everything assumes 2-d
+        a = np.array([a])
+        e = np.array([e])
+        inc = np.array([inc])
+        phi = np.array([phi])
+    #we will plot in degrees, so convert inc and phi
+    rad_to_deg = 180./np.pi
+    
+    inc=inc*rad_to_deg
+    phi=phi*rad_to_deg
 
     fig = plt.figure(figsize=(10, 10))
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.92, wspace=0.35, hspace=0.25)
@@ -233,8 +267,8 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
                           should be several libration timescales
         a (2-d float array): semimajor axis (au)        
         e (2-d float array): eccentricity
-        inc (2-d float array): inclination (degrees)
-        phi (2-d float array): resonant angle (degrees)
+        inc (2-d float array): inclination (rad)
+        phi (2-d float array): resonant angle (rad)
             all arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
@@ -265,6 +299,15 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
     
     flag = 1
     ntp = nclones+1
+    deg_to_rad = np.pi/180.
+
+    if(nclones == 0 and len(a.shape)<2):
+        #reshape the arrays since everything assumes 2-d
+        a = np.array([a])
+        e = np.array([e])
+        inc = np.array([inc])
+        phi = np.array([phi])
+
     
     #(a,e,i)_stats is a 2-d array containing the analysis
     #of (a,e,i) over the windows. The first index is the 
@@ -287,7 +330,7 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
 
     #fraction of windows with (max_phi - min_phi)<dpmax
     fwindows = np.zeros(ntp)
-    dpmax = 350. #can be lowered to 340 if time sampling isn't high enough
+    dpmax = 350.*deg_to_rad #can be lowered to 340 degrees if time sampling isn't high enough
     
     #do a bunch of checks to make sure tmin, tmax, and dtwindow are sensible
     nout = len(t)
@@ -345,7 +388,7 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
             if(n_points<150 and nwindows_warning==0):
                 print("caution: at least one window has <150 points")
                 print("lowering libration threshold to 340 degrees as a result")
-                dpmax = 340.
+                dpmax = 340.*deg_to_rad
                 flag = 2
                 nwindows_warning=1
             if(n_points<80):
@@ -399,21 +442,21 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
                 dphi[1::] = np.diff(wphi)
                 #grab the difference between the first and last entry
                 #corrected for the wrapping
-                dphi[0] = wphi[0] - wphi[-1] + 360.
+                dphi[0] = wphi[0] - wphi[-1] + 2.*np.pi 
                 j = np.argmax(dphi)
-                if(dphi[j]>=(360.-dpmax)):
+                if(dphi[j]>=(2.*np.pi-dpmax)):
                     #librating
                     libwin+=1
                     if(j>0): 
                         #libration not centered within 0-360
                         #recenter sorted phi to account for that
                         for k in range (0,j):
-                            wphi[k] = wphi[k] + 360.
+                            wphi[k] = wphi[k] + 2.*np.pi
                         wphi.sort()
                     #average phi in the window
                     wphibar[nwin] = np.mean(wphi)
-                    if(wphibar[nwin] >360.):
-                        wphibar[nwin]= wphibar[nwin]-360.
+                    if(wphibar[nwin] >2.*np.pi):
+                        wphibar[nwin]= wphibar[nwin]-2.*np.pi
                     #delta phi in the window (slightly weighted to account for outliers)
                     wdphi[nwin] = (2.*wphi[-1] + wphi[-2] - 2.*wphi[0] - wphi[1])/3.
 

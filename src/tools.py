@@ -1,5 +1,6 @@
 import numpy as np
 import re
+import rebound
 
 
 #################################################################
@@ -284,6 +285,13 @@ def mpc_designation_translation(obj):
     regex_packednum = re.compile(r"\b([a-zA-Z]{1})(\d{4})\b")
     #search for an unpacked number designation        
     regex_num = re.compile(r"^[0-9]+$")    
+    #search for a named object (no numbers in name)        
+    regex_name = re.compile(r"^[a-zA-Z]+$")    
+
+    #search for a comet that's described by both number and name (i.e., has a slash)       
+    regex_cometname = re.compile(r"(^[0-9]+)([a-zA-Z])([/])([a-zA-Z]+)")    
+
+
 
     #in case the input was not specified as a string (e.g., numbered 
     #object not enclosed in ''), convert to string
@@ -294,6 +302,8 @@ def mpc_designation_translation(obj):
     packedprovis = regex_packedprovis.findall(obj)    
     packednum = regex_packednum.findall(obj)
     num = regex_num.findall(obj)    
+    name = regex_name.findall(obj)    
+    cometname = regex_cometname.findall(obj)    
     if (provis):
         destype = 'provisional'
         if (len(provis[0]) == 4):
@@ -330,7 +340,163 @@ def mpc_designation_translation(obj):
     elif(num):
         destype = 'number'
         des = obj
+    elif(name):
+        destype = 'named'
+        des = obj
+    elif(cometname):
+        #reduce to the numbered version of the comet (e.g,, 29P instead of 29P/SW1)
+        des = cometname[0][0] + cometname[0][1]
     else:
+        #this should be essentially just comets, but leaving as 'other'
         des = obj
 
     return des, destype
+
+
+
+
+#################################################################
+#################################################################
+# reads the simulation archive files into orbital element
+# arrays necessary to produce a resonant plot
+#################################################################
+def read_sa_by_hash(obj_hash = '', archivefile=''):
+    """
+    Reads the simulation archive file produced by the run_reb
+    routines
+        obj_hash (str): hash of the simulation particle
+        archivefile (str): path to rebound simulation archive
+    output:
+        flag (int): 1 if successful and 0 if there was a problem
+        a (1-d float array): semimajor axis (au)
+        e (1-d float array): eccentricity
+        inc (1-d float array): inclination (rad)
+        node (1-d float array): longitude of ascending node (rad)
+        aperi (1-d float array): argument of perihelion (rad)
+        MA (1-d float array): mean anomaly (rad)
+        time (1-d float array): simulations time (years)
+    """
+
+    
+    #read the simulation archive and calculate resonant angles
+    sa = rebound.SimulationArchive(archivefile)
+    nout = len(sa)
+    if(nout <1):
+        print("tools.read_sa_by_hash failed")
+        print("Problem reading the simulation archive file")
+        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+
+
+    a = np.zeros(nout)
+    e = np.zeros(nout)
+    inc = np.zeros(nout)
+    node = np.zeros(nout)
+    aperi = np.zeros(nout)
+    ma = np.zeros(nout)
+    t = np.zeros(nout)
+        
+    for i,sim in enumerate(sa):
+        #calculate the object's orbit relative to the barycenter
+        try:
+            p = sim.particles[obj_hash]
+        except:
+            print("tools.read_sa_by_hash failed")
+            print("Problem finding a particle with that hash in the archive")
+            return 0, a, e, inc, node, aperi, ma, t
+
+        com = sim.calculate_com()
+        o = p.calculate_orbit(com)
+
+        t[i] = sim.t
+
+        a[i] = o.a
+        e[i] = o.e
+        inc[i] = o.inc
+        node[i] = o.Omega
+        aperi[i] = o.omega
+        ma[i] = o.M
+    
+    return 1, a, e, inc, node, aperi, ma, t
+#################################################################
+
+
+#################################################################
+#################################################################
+# reads the simulation archive files into orbital element
+# arrays necessary to produce a resonant plot
+#################################################################
+def read_sa_for_sbody(sbody = '', archivefile='',nclones=0):
+    """
+    Reads the simulation archive file produced by the run_reb
+    routines for the small body's orbital evolution
+        sbody: string, user-provided small body designation
+        archivefile (str): path to rebound simulation archive
+        nclones (optional): number of clones, defaults to zero
+    output:
+        ## if nclones=0, all arrays are 1-d
+        flag (int): 1 if successful and 0 if there was a problem
+        a (1-d or 2-d float array): semimajor axis (au)
+        e (1-d or 2-d float array): eccentricity
+        inc (1-d or 2-d float array): inclination (rad)
+        node (1-d or 2-d float array): longitude of ascending node (rad)
+        aperi (1-d or 2-d float array): argument of perihelion (rad)
+        MA (1-d or 2-d float array): mean anomaly (rad)
+            above arrays are for the test particles in the 
+            format [particle id number, output number]
+            best-fit clone is id=0, clones are numbered
+            starting at 1 
+        time (1-d float array): simulations time (years)
+    """
+
+    
+    #read the simulation archive and calculate resonant angles
+    sa = rebound.SimulationArchive(archivefile)
+    nout = len(sa)
+    if(nout <1):
+        print("tools.read_sa_by_hash failed")
+        print("Problem reading the simulation archive file")
+        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+
+    ntp = nclones+1
+    a = np.zeros([ntp,nout])
+    e = np.zeros([ntp,nout])
+    inc = np.zeros([ntp,nout])
+    node = np.zeros([ntp,nout])
+    aperi = np.zeros([ntp,nout])
+    ma = np.zeros([ntp,nout])
+    t = np.zeros(nout)
+        
+    for i,sim in enumerate(sa):
+        #calculate the object's orbit relative to the barycenter
+        
+        com = sim.calculate_com()
+        t[i] = sim.t
+        for j in range(0,ntp):
+            #the hash format for clones
+            tp_hash = sbody + "_" + str(j)
+            #except the best fit is different:
+            if(j==0):
+                tp_hash = sbody + "_bf"
+            try:
+                p = sim.particles[tp_hash]
+            except:
+                print("tools.read_sa_for_sbody failed")
+                print("Problem finding a particle with that hash in the archive")
+                return 0, a, e, inc, node, aperi, ma, t
+
+
+            o = p.calculate_orbit(com)
+            a[j,i] = o.a
+            e[j,i] = o.e
+            inc[j,i] = o.inc
+            node[j,i] = o.Omega
+            aperi[j,i] = o.omega
+            ma[j,i] = o.M
+    
+    if(nclones == 0):
+        return 1, a[0,:], e[0,:], inc[0,:], node[0,:], aperi[0,:], ma[0,:], t
+    else:
+        return 1, a, e, inc, node, aperi, ma, t
+#################################################################
+
+
