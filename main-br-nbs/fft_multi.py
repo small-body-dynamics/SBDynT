@@ -32,7 +32,8 @@ def prop_calc(j, astdys):
     objname = astdys['Name'].iloc[j]
 #    print(objname)
     filename = 'AstFam_families/' + str(j)
-    #filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims//' + str(j)
+    #filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/' + str(j)
+
     try:
         #fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
         fullfile = 'Sims/AstFam_families/'+str(j)+'/archive_hires.bin'
@@ -46,7 +47,7 @@ def prop_calc(j, astdys):
         
     except:
         print('Failed')
-        return [objname,0,0,0,0,0,0]
+        return [objname,0,0,0,0,0,0,0]
     #series = pd.read_csv(filename+'/series.csv')
     #series = series[:250]
 
