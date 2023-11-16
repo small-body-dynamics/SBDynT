@@ -14,14 +14,15 @@ class ReadJson(object):
         return self.data
     
 def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 0):
-    #print(folder)
+    #print(folder,objname,archive,astdys)
     r2d = 180/np.pi
     sbody = str(astdys['Name'].iloc[int(objname)])
-    sbody = '2'
+    #print(sbody)   #sbody = '2'
     
-    #filename = 'Sims/'+str(folder)+'/'+str(objname)
-    filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/'+str(folder)+'/'+str(objname)
-    print(sbody)    
+    filename = 'Sims/'+str(folder)+'/'+str(objname)
+    #filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/'+str(folder)+'/'+str(objname)
+    #print(filename)
+    #print(sbody)    
     
     #print(archive.tmin)
     #print(archive.tmax)
@@ -96,7 +97,11 @@ def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 
             #ay[j] = tp.ay
             #az[j] = tp.az
         
-        except:
+        except Exception as error:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, fname, exc_tb.tb_lineno)
+            print(error) 
             print('Object was ejected from simulation. Setting ejection to True in runprops.')
             series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
     

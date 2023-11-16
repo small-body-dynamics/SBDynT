@@ -37,20 +37,23 @@ def prop_calc(j, astdys):
     try:
         #fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
         fullfile = 'Sims/AstFam_families/'+str(j)+'/archive_hires.bin'
-        #print(fullfile)
+        print(fullfile)
         arc1 = rebound.SimulationArchive(fullfile)
-        #print(arc1)
-        series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,'8planet')
+        #print(arc1,j)
+        series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
         #series = bin_to_df.bin_to_df(objname,archive)
         
-    except:
-        print('Failed')
+    except Exception as error:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        print('Failed with error:', error)
         return [objname,0,0,0,0,0,0,0]
     #series = pd.read_csv(filename+'/series.csv')
     #series = series[:250]
-
+    print('Series read, doing fft now')
     t = series['t'].values
     a = series['a'].values
     #an = series['an'].values
