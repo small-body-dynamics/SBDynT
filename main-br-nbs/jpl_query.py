@@ -35,14 +35,14 @@ if filetype != 'Generic':
     astdys = pd.read_csv('data_files/'+filetype+'_data.csv')
     
     #print(astdys)
-    for i in range(1465,len(astdys)):
+    for i in range(len(astdys)):
     #for i in range(1465,1500):
     #for i in arange:
         #print(i)
         objname = str(astdys['Name'].iloc[i])
         print(objname)
         #objname = str(objects[i])
-        filename = 'Sims/'+filetype + '/' + objname
+        filename = 'Sims/'+filetype + '/' + str(i)
         if not os.path.isdir(filename):
             os.mkdir(filename)
         sbody = objname    
