@@ -31,22 +31,22 @@ def prop_calc(j, astdys):
     
     objname = astdys['Name'].iloc[j]
 #    print(objname)
-    filename = 'TNOs_new/' + str(j)
-    filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/' + str(j)
+    filename = 'AstFam_families/' + str(j)
+    #filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/' + str(j)
     try:
-        fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
-        #fullfile = 'Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
+        #fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
+        fullfile = 'Sims/AstFam_families/'+str(j)+'/archive_hires.bin'
         #print(fullfile)
         arc1 = rebound.SimulationArchive(fullfile)
         #print(arc1)
-        series = bin_to_df.bin_to_df('TNOs_new',str(j),arc1,'4planet')
+        series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,'8planet')
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
         #series = bin_to_df.bin_to_df(objname,archive)
         
     except:
         print('Failed')
-        return [objname,0,0,0,0,0,0]
+        return [objname,0,0,0,0,0,0,0]
     #series = pd.read_csv(filename+'/series.csv')
     #series = series[:250]
 
@@ -330,7 +330,7 @@ if __name__ == '__main__':
             pool.wait()
             sys.exit(0)
             
-        astdys = pd.read_csv('data_files/TNOs_new_data.csv')
+        astdys = pd.read_csv('data_files/AstFam_families_data.csv')
         pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','calc_sma']
         filename = astdys['Name'].iloc[0]
         #series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
