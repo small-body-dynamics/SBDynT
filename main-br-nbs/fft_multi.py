@@ -31,13 +31,15 @@ def prop_calc(j, astdys):
     
     objname = astdys['Name'].iloc[j]
 #    print(objname)
-    filename = 'TNOs/' + objname
+    filename = 'TNOs_new/' + str(j)
+    filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/' + str(j)
     try:
-        fullfile = 'Sims/TNOs/'+objname+'/archive.bin'
+        fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
+        #fullfile = 'Sims/TNOs_new/'+str(j)+'/archive_hires.bin'
         #print(fullfile)
         arc1 = rebound.SimulationArchive(fullfile)
         #print(arc1)
-        series = bin_to_df.bin_to_df('TNOs',objname,arc1,'4planet')
+        series = bin_to_df.bin_to_df('TNOs_new',str(j),arc1,'4planet')
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
         #series = bin_to_df.bin_to_df(objname,archive)
@@ -90,6 +92,7 @@ def prop_calc(j, astdys):
     Yk = np.fft.rfft(k)
     Yp= np.fft.rfft(p)
     Yq = np.fft.rfft(q)
+    Ya_f = np.fft.rfft(a)
     
     Yp[0]=0
     Yq[0]=0
@@ -116,12 +119,13 @@ def prop_calc(j, astdys):
     Yh_f = Yh.copy()
     Yk_f = Yk.copy()
     
+    
     #z10,z11,s7,z6
     
-    Yp_f[0]=0
-    Yq_f[0]=0
-    Yh_f[0]=0
-    Yk_f[0]=0
+    #Yp_f[0]=0
+    #Yq_f[0]=0
+    #Yh_f[0]=0
+    #Yk_f[0]=0
 
         
     gind = np.argmax(Yh)    
@@ -218,7 +222,7 @@ def prop_calc(j, astdys):
     secresde = []
             
     for i in range(len(de)):
-        if de[i] < 20000:
+        if de[i] < 10000:
             continue
         secresde.append(int(np.where(freq >= de[i])[0][0]))
     #z7_g,
@@ -229,18 +233,18 @@ def prop_calc(j, astdys):
     freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
     freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
     
-    freq1 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z4,z5,z7,z8,z9]
-    freq2 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+    #freq1 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z4,z5,z7,z8,z9]
+    #freq2 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z6,z8,z9]
     
-    freq1 = [g5,g6,g7,g8,z4]
-    freq2 = [s6,s7,s8,z4]
+    #freq1 = [g5,g6,g7,g8,z4]
+    #freq2 = [s6,s7,s8,z4]
     
     for i in freq1:
-        if 1/i < 20000:
+        if 1/i < 10000:
             continue
         secresind1.append(np.where(freq>=i)[0][0])
     for i in freq2:
-        if 1/i < 20000:
+        if 1/i < 10000:
             continue
         secresind2.append(np.where(freq>=i)[0][0])
     
@@ -285,11 +289,13 @@ def prop_calc(j, astdys):
     Yq_f[limit_ind] = 0
     Yk_f[limit_ind] = 0
     Yh_f[limit_ind] = 0
+    Ya_f[limit_ind] = 0
     
     p_f = np.fft.irfft(Yp_f,len(p))
     q_f = np.fft.irfft(Yq_f,len(q))
     h_f = np.fft.irfft(Yh_f,len(h))
     k_f = np.fft.irfft(Yk_f,len(k))
+    a_f = np.fft.irfft(Ya_f,len(a))
 
     #print(astdys['sinI'],j)
     sini_f = np.sqrt(p_f*p_f + q_f*q_f)
@@ -297,13 +303,14 @@ def prop_calc(j, astdys):
     astsinI = astdys['sinI'][j]
     astecc = astdys['e'][j]    
     
+    
     #pe_df['megno'][j] = np.mean(series['megno'].values)
     #pe_df['lyapunov'][j] = np.mean(series['lyapunov'].values)
     #plt.figure()
     #plt.scatter(t,inc)
     #plt.savefig(filename+'/inc.png')
 
-    return [objname,np.mean(e),np.mean(np.sin(inc)),np.mean(sini_f),np.mean(ecc_f),astsinI,astecc]
+    return [objname,np.mean(e),np.mean(np.sin(inc)),np.mean(ecc_f),np.mean(sini_f),astecc,astsinI,np.mean(a_f)]
 
 plt.rcParams["figure.figsize"] = (20, 10)
 plt.rcParams["axes.labelsize"] = 20
@@ -323,8 +330,8 @@ if __name__ == '__main__':
             pool.wait()
             sys.exit(0)
             
-        astdys = pd.read_csv('data_files/TNOs_data.csv')
-        pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI']
+        astdys = pd.read_csv('data_files/TNOs_new_data.csv')
+        pe_cols = ['Name','obs_ecc','obs_sinI','calc_ecc','calc_sinI','ast_ecc','ast_sinI','calc_sma']
         filename = astdys['Name'].iloc[0]
         #series = pd.read_csv('TNOs/'+str(filename)+'/series.csv')
 
@@ -401,4 +408,4 @@ if __name__ == '__main__':
         pe_df = pd.DataFrame(data,columns = pe_cols)
         print(pe_df)
 
-        pe_df.to_csv('data_files/prop_elem_tnos_multi_sec_few.csv')
+        pe_df.to_csv('data_files/prop_elem_TNOs_multi_sec_hires.csv')

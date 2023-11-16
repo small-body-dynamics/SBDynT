@@ -13,17 +13,15 @@ class ReadJson(object):
     def outProps(self):
         return self.data
     
-def bin_to_df(folder,objname,archive,planet_set = '4planet', clonenum = 0):
+def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 0):
     #print(folder)
     r2d = 180/np.pi
-    #print('data_files/'+str(folder)+'_data.csv')
-    astdys = pd.read_csv('data_files/'+str(folder)+'_data.csv')
-    #print(astdys)
-    sbody = str(objname)
+    sbody = str(astdys['Name'].iloc[int(objname)])
+    sbody = '2'
     
-    filename = 'Sims/'+str(folder)+'/'+str(objname)
-    archive = archive
-    
+    #filename = 'Sims/'+str(folder)+'/'+str(objname)
+    filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/'+str(folder)+'/'+str(objname)
+    print(sbody)    
     
     #print(archive.tmin)
     #print(archive.tmax)
@@ -88,15 +86,15 @@ def bin_to_df(folder,objname,archive,planet_set = '4planet', clonenum = 0):
             #if j%10==0:
                 #print(tp)
                 #print(tp.x)
-            x[j] = tp.x
-            y[j] = tp.y
-            z[j] = tp.z
-            vx[j] = tp.vx
-            vy[j] = tp.vy
-            vz[j] = tp.vz
-            ax[j] = tp.ax
-            ay[j] = tp.ay
-            az[j] = tp.az
+            #x[j] = tp.x
+            #y[j] = tp.y
+            #z[j] = tp.z
+            #vx[j] = tp.vx
+            #vy[j] = tp.vy
+            #vz[j] = tp.vz
+            #ax[j] = tp.ax
+            #ay[j] = tp.ay
+            #az[j] = tp.az
         
         except:
             print('Object was ejected from simulation. Setting ejection to True in runprops.')
@@ -186,6 +184,8 @@ def bin_to_df(folder,objname,archive,planet_set = '4planet', clonenum = 0):
         on = tpn.calculate_orbit(com)
         #print(sim.integrator)
         if sim.integrator == 'whfast':
+            megno[j] = sim.calculate_megno()
+        if sim.integrator == 'ias15':
             megno[j] = sim.calculate_megno()
         t[j] = sim.t
         a[j] = o.a
