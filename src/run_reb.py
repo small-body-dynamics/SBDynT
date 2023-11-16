@@ -44,6 +44,8 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     #flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
 
     if isinstance(des,str):
+        catalog = pd.read_csv('data_files/'+str(folder)+'_data.csv')
+        objname = catalog['Name'].iloc[int(des)]
         filename = 'Sims/' + folder + '/' +des
         #print(filename)
         horizons_data = pd.read_csv(filename+'/horizon_data.csv')
@@ -200,7 +202,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     if(clones>0):
         for i in range(0,ntp):
             if(i==0):
-                sbhash = des + '_bf'
+                sbhash = str(objname) + '_bf'
             else:
                 sbhash = str(des) + '_' + str(i)
             #correct for the missing planets
@@ -210,7 +212,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     else:
         if isinstance(des,str):
             sbx+=sx;sby+=sy;sbz+=sz; sbvx+=svx;sbvy+=svy;sbvz+=svz;
-            sbhash = des + '_bf'
+            sbhash = str(objname) + '_bf'
             sim.add(m=0.,x=sbx[0],y=sby[0],z=sbz[0],vx=sbvx[0],vy=sbvy[0],vz=sbvz[0],hash=sbhash)        
         else:
             for i in range(len(des)):
@@ -223,7 +225,8 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
 
     print('done')
     #print('Init_megno')
-    #sim.init_megno()
+    
+    sim.init_megno()
 
     print(epoch)
     return 1, epoch, sim
@@ -241,13 +244,15 @@ def run_simulation(sim, tmax=0, tout=0,filename="archive.bin",deletefile=True,ma
     sim.automateSimulationArchive(filename,interval=tout,deletefile=deletefile)
     
     #sim.automateSimulationArchive(filename,step=int(tmax/tout),deletefile=deletefile)
-    sim.integrator = 'mercurius'
-    #sim.integrator = 'whfast'
+
+    #sim.integrator = 'mercurius'
+    sim.integrator = 'whfast'
     #sim.integrator = 'ias15'
     sim.collision = "direct"
-    sim.ri_mercurius.hillfac = 3.
-    #sim.ri_whfast.hillfac = 3.
-    #sim.ri_ias15.hillfac= 3.
+    #sim.ri_mercurius.hillfac = 3.
+    sim.ri_whfast.hillfac = 3.
+    #sim.ri_ias15.hillfac = 3.
+
     sim.collision_resolve = "merge"
     
 
