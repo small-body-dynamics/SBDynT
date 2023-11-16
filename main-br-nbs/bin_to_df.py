@@ -13,23 +13,24 @@ class ReadJson(object):
     def outProps(self):
         return self.data
     
-def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
-
+def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 0):
+    #print(folder)
     r2d = 180/np.pi
+    sbody = str(astdys['Name'].iloc[int(objname)])
+    sbody = '2'
     
-    astdys = pd.read_csv('data_files/'+str(folder)+'_data.csv')
-
-    sbody = str(objname)
-    
-    filename = 'Sims/'+str(folder)+'/'+str(objname)
-    archive = archive
-    
+    #filename = 'Sims/'+str(folder)+'/'+str(objname)
+    filename = '~/../../../hdd/haumea-data/djspenc/SBDynT_Sims/'+str(folder)+'/'+str(objname)
+    print(sbody)    
     
     #print(archive.tmin)
     #print(archive.tmax)
-    
-    planets = ['jupiter','archiveturn','uranus','neptune']
-    planets = ['mercury','venus','earth','mars','jupiter','archiveturn','uranus','neptune']
+    if planet_set=='4planet':
+        planets = ['jupiter','saturn','uranus','neptune']
+        npl = 5
+    else:
+        planets = ['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune']
+        npl = 9
     
     a = np.zeros(len(archive));
     e = np.zeros(len(archive));
@@ -44,9 +45,9 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
     #k = np.zeros(len(archive));
     t = np.zeros(len(archive));
     #print('lenght:', len(archive))
-    npl = 5
-    npl = 9
-    
+    #print(planets)
+
+    #print(npl)
     qppl = np.asfortranarray(np.zeros(shape=[len(archive),npl],dtype=complex));
     khpl = np.asfortranarray(np.zeros(shape=[len(archive),npl],dtype=complex));
     
@@ -59,6 +60,17 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
     kpart = np.zeros(len(archive))
     ppart = np.zeros(len(archive))
     qpart = np.zeros(len(archive))
+    megno = np.zeros(len(archive))
+    x = np.zeros(len(archive))
+    y = np.zeros(len(archive))
+    z = np.zeros(len(archive))
+    vx = np.zeros(len(archive))
+    vy = np.zeros(len(archive))
+    vz = np.zeros(len(archive))
+    ax = np.zeros(len(archive))
+    ay = np.zeros(len(archive))
+    az = np.zeros(len(archive))
+    
     
     apl = np.zeros((len(archive),npl))
     for j,sim in enumerate(archive):
@@ -70,7 +82,20 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
                 tp = sim.particles[sbody+"_bf"]
             else:
                 tp = sim.particles[sbody+"_"+str(clonenum)]
-                    
+        
+            #if j%10==0:
+                #print(tp)
+                #print(tp.x)
+            #x[j] = tp.x
+            #y[j] = tp.y
+            #z[j] = tp.z
+            #vx[j] = tp.vx
+            #vy[j] = tp.vy
+            #vz[j] = tp.vz
+            #ax[j] = tp.ax
+            #ay[j] = tp.ay
+            #az[j] = tp.az
+        
         except:
             print('Object was ejected from simulation. Setting ejection to True in runprops.')
             series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
@@ -86,6 +111,15 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
             series['q'] = qpart
             series['h'] = hpart
             series['k'] = kpart
+            series['x'] = x
+            series['y'] = y
+            series['z'] = z
+            series['vx'] = vx
+            series['vy'] = vy
+            series['vz'] = vz
+            series['ax'] = ax
+            series['ay'] = ay
+            series['az'] = az
             if planets == '4planet':
                 series['hj'] = hpl[:,0]
                 series['kj'] = kpl[:,0]
@@ -148,6 +182,11 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
         com = sim.calculate_com()
         o = tp.calculate_orbit(com)
         on = tpn.calculate_orbit(com)
+        #print(sim.integrator)
+        if sim.integrator == 'whfast':
+            megno[j] = sim.calculate_megno()
+        if sim.integrator == 'ias15':
+            megno[j] = sim.calculate_megno()
         t[j] = sim.t
         a[j] = o.a
         an[j] = on.a
@@ -170,7 +209,9 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
         e[j] = o.e
         en[j] = on.e
         inc[j] = o.inc*180/np.pi
-        #print(sim.particles[1].inc)
+        
+        #print(sim.particles[1].in
+        #print(npl)
         for i in range (0,npl):
             #print(planets[i])
             
@@ -189,7 +230,7 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
             ppl[j,i] = ptemp
             qpl[j,i] = qtemp
     
-    series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov'])
+    series = pd.DataFrame(columns=['t','a','ecc','an','eccn','inc','p','q','h','k','hmc','kmc','pcm','qmc','hv','kv','pv','qv','he','ke','pe','qe','hmr','kmr','pmr','qmr','hj','kj','pj','qj','hs','ks','ps','qs','hu','ku','pu','qu','hn','kn','pn','qn','megno','lyapunov','x','y','z'])
     
     series['t'] = t
     series['a'] = a
@@ -201,7 +242,18 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
     series['q'] = qpart
     series['h'] = hpart
     series['k'] = kpart
-    if planets == '4planet':
+    series['megno'] = megno
+    series['x'] = x
+    series['y'] = y
+    series['z'] = z
+    series['vx'] = vx
+    series['vy'] = vy
+    series['vz'] = vz
+    series['ax'] = ax
+    series['ay'] = ay
+    series['az'] = az
+    
+    if planet_set == '4planet':
         series['hj'] = hpl[:,0]
         series['kj'] = kpl[:,0]
         series['pj'] = ppl[:,0]
@@ -253,5 +305,6 @@ def bin_to_df(folder,objname,archive,planets = '4planet', clonenum = 0):
         series['pn'] = ppl[:,7]
         series['qn'] = qpl[:,7]
 
+    
     return series
 

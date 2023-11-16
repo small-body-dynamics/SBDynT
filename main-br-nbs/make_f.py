@@ -78,3 +78,4 @@ with open(runpath, 'w') as file:
     file.write(json.dumps(runprops, indent = 4))
 
 sim = run_reb.run_simulation(sim, tmax=tmax, tout=tout,filename="/tmp/archive_ias15_"+str(objnum)+".bin",deletefile=True,mindist=20.)
+

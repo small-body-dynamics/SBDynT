@@ -38,14 +38,18 @@ filename = str(astdys['Name'].iloc[1])
 fileloc = 'Sims/'+str(folder)+ '/' + str(filename)
 fullfile = 'Sims/'+str(folder)+ '/' + str(filename)+'/archive.bin'
 print(fullfile)
-arc1 = rebound.SimulationArchive(fullfile)
-series = bin_to_df(folder,filename,arc1)
+#arc1 = rebound.SimulationArchive(fullfile)
+#series = bin_to_df(folder,filename,arc1)
 #print(series)
 #series = pd.read_csv('Sims/' + str(folder) + '/' + str(filename) + '/series.csv')
 
 #series = series[:500]
 
 allplan = pd.read_csv('../test-notebooks/series_3.csv',index_col=0)
+
+dt = allplan['t'][1]
+n = len(allplan)
+freqtot = np.fft.rfftfreq(n,dt)
 
 gp_vals = np.zeros((len(astdys),10))
 pe_df = pd.DataFrame(gp_vals,columns = pe_cols)
@@ -152,7 +156,6 @@ pYkmcc = np.copy(pYkmc[1:])
 pYkvc = np.copy(pYkv[1:])
 pYkec = np.copy(pYke[1:])
 pYkmrc = np.copy(pYkmr[1:])
-
 
 for i in range(numfreqs):
     pumax[i] = np.max(pYpuc)
@@ -263,36 +266,31 @@ hmr = allplan['hmr'].values
 kmr = allplan['kmr'].values
 pmr = allplan['pmr'].values
 qmr = allplan['qmr'].values
-'''
-ihmax = np.argmax(np.abs(Yh[1:]))+1
-ikmax = np.argmax(np.abs(Yk[1:]))+1
-ihumax = np.argmax(np.abs(Yhu[1:]))+1
-ihnmax = np.argmax(np.abs(Yhn[1:]))+1 
-ihsmax = np.argmax(np.abs(Yhs[1:]))+1 
-ihjmax = np.argmax(np.abs(Yhj[1:]))+1 
-ikumax = np.argmax(np.abs(Yku[1:]))+1 
-iknmax = np.argmax(np.abs(Ykn[1:]))+1
-iksmax = np.argmax(np.abs(Yks[1:]))+1
-ikjmax = np.argmax(np.abs(Ykj[1:]))+1 
 
-rev = 1296000
-g = freq[ihmax]
-s = freq[ipmax]
+ihumax = np.argmax(pYhu[1:])+1
+ihnmax = np.argmax(pYhn[1:])+1
+ihjmax = np.argmax(pYhj[1:])+1
+ihsmax = np.argmax(pYhs[1:])+1
+ikumax = np.argmax(pYku[1:])+1
+iknmax = np.argmax(pYkn[1:])+1
+ikjmax = np.argmax(pYkj[1:])+1
+iksmax = np.argmax(pYks[1:])+1
+ipumax = np.argmax(pYpu[1:])+1
+ipnmax = np.argmax(pYpn[1:])+1
+ipjmax = np.argmax(pYpj[1:])+1
+ipsmax = np.argmax(pYps[1:])+1
+iqumax = np.argmax(pYqu[1:])+1
+iqnmax = np.argmax(pYqn[1:])+1
+iqjmax = np.argmax(pYqj[1:])+1
+iqsmax = np.argmax(pYqs[1:])+1
 
-g5 = freq[ihjmax]
-g6 = freq[ihsmax]
-g7 = freq[ihumax]
-g8 = freq[ihnmax]
-s5 = 0
-s6 = freq[ipsmax]
-s7 = freq[ipumax]
-s8 = freq[ipnmax]
-'''
-#arange = range(20,22)
+
+#arange = range(173,174)
 for j in range(len(astdys)):
 #for j in arange:
-    print(j)
+    #print(j)
     objname = astdys['Name'].iloc[j]
+    print(objname)
     numclone = 0
     #print(filename)
     horizon = pd.read_csv(str(fileloc)+'/horizon_data.csv')
@@ -320,7 +318,6 @@ for j in range(len(astdys)):
             k = series['k'].values
             p = series['p'].values
             q = series['q'].values
-
             
             dt = t[1]
             n = len(h)
@@ -342,11 +339,11 @@ for j in range(len(astdys)):
           
             imax = len(Yp)
             #disregard antyhing with a period shorter than 5000 years
-            freqlim = 1./5000.
+            freqlim = 1./1000.
             #disregard frequencies for which any planet has power at higher than 10% the max
             pth = 0.1
-            
-            spread = 1
+
+            spread = 3
     
         
             #print(hk_ind,pq_ind)
@@ -354,51 +351,235 @@ for j in range(len(astdys)):
             pYk = np.abs(Yk)**2
             pYp = np.abs(Yp)**2
             pYq = np.abs(Yq)**2
+
+            ihmax = np.argmax(pYh)+1
+            ipmax = np.argmax(pYp)+1
+
+            rev = 1296000
+            g = freqtot[ihmax]
+            s = freqtot[ipmax]
+            g5 = freqtot[ihjmax]
+            g6 = freqtot[ihsmax]
+            g7 = freqtot[ihumax]
+            g8 = freqtot[ihnmax]
+            s5 = 0
+            s6 = freqtot[ipsmax]
+            s7 = freqtot[ipumax]
+            s8 = freqtot[ipnmax]
+            
+            v1 = g - g5
+            v2 = g - g6
+            v3 = s - s6
+
+            z1 = abs(g+s-g6-s6) # G and S
+            z2 = abs(g+s-g5-s7) # G and S
+            z3 = abs(g+s-g5-s6) # G and S
+            z4 = abs(g-2*g6+g5) # G
+            z5 = abs(g-2*g6+g7) # G
+            z6 = abs(s-s6-g5+g6) # S
+            z7 = abs(g-3*g6+2*g5) # G
+            z8 = abs(2*(g-g6)+s-s6) # G and S
+            z9 = abs(3*(g-g6)+s-s6) # G and S
+            
+            g5 = 4.24/rev
+            g6 = 28.22/rev
+            g7 = 3.08/rev
+            g8 = 0.67/rev
+            s6 = 26.34/rev
+            s7 = 2.99/rev
+            s8 = 0.69/rev
+            
+            z1 = abs(g+s-g6-s6)
+            z2 = abs(g+s-g5-s7)
+            z3 = abs(g+s-g5-s6)
+            z4 = abs(g-2*g6+g5)
+            z5 = abs(g-2*g6+g7)
+            z6 = abs(s-s6-g5+g6)
+            z7 = abs(g-3*g6+2*g5)
+            z8 = abs(2*(g-g6)+s-s6)
+            z9 = abs(3*(g-g6)+s-s6)
+            
+            g5 = 4.25749319/rev
+            g6 = 28.24552984/rev
+            g7 = 3.08675577/rev
+            g8 = 0.67255084/rev
+            s6 = -26.34496354/rev
+            s7 = -2.99266093/rev
+            s8 = -0.69251386/rev
+            #'''
+            #'''
+            
+            z1 = 2*g6-g5
+            z2 = 2*g6-g7
+            z3 = -2*g5+3*g6
+            z4 = -g5+g6+g7
+            z5 = g5+g6-g7
+            z6 = -g5+2*g6+s6-s7
+            z7 = g5-s6+s7
+            z8 = 2*g5-g7
+            
+            correction = np.log10(g5*0.1)
+            secresind = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0]]
+            
+            secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0]]
+            secresind2 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0]-6,np.where(freq >= z4)[0][0]-6,np.where(freq >= z5)[0][0]-6,np.where(freq >= z6)[0][0]-6,np.where(freq >= z7)[0][0]-6,np.where(freq >= z8)[0][0]]
+
+            #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+            #secresind2 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+            
+            #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+            #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+            
+            #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0]]
+            #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0]]
+
+            #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0],np.where(freq >= v1)[0][0],np.where(freq >= v2)[0][0]]
+            #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0],np.where(freq >= v3)[0][0]]
+
+            
+            '''
+            for i in range(len(secresind)):
+                if spread > 0:
+                    Yh_f[secresind[i]-spread:secresind[i]+spread] = 0
+                    Yk_f[secresind[i]-spread:secresind[i]+spread] = 0
+                    Yp_f[secresind[i]-spread:secresind[i]+spread] = 0
+                    Yq_f[secresind[i]-spread:secresind[i]+spread] = 0
+                else:
+                    Yh_f[secresind[i]] = 0
+                    Yk_f[secresind[i]] = 0
+                    Yp_f[secresind[i]] = 0
+                    Yq_f[secresind[i]] = 0
+            '''       
+            for i in range(len(secresind1)):
+                if spread > 0:
+                    Yh_f[secresind1[i]-spread:secresind1[i]+spread] = 0
+                    Yk_f[secresind1[i]-spread:secresind1[i]+spread] = 0
+                else:
+                    Yh_f[secresind1[i]] = 0
+                    Yk_f[secresind1[i]] = 0
+                    
+            for i in range(len(secresind2)):
+                if spread > 0:
+                    Yp_f[secresind2[i]-spread:secresind2[i]+spread] = 0
+                    Yq_f[secresind2[i]-spread:secresind2[i]+spread] = 0
+                else:
+                    Yp_f[secresind2[i]] = 0
+                    Yq_f[secresind2[i]] = 0
+            
+            g=g*rev
+            s=s*rev
+            g5=g5*rev
+            g6=g6*rev
+            g7=g7*rev
+            g8=g8*rev
+            s6=s6*rev
+            s7=s7*rev
+            s8=s8*rev
+
+            de = np.abs(np.array([g-g5,g-g6,g5-g6,s-s7,s-s6,s7-s6,g+s-s7-g5,g+s-s7-g6,g+s-s6-g5,g+s-s6-g6,2*g-2*s,g-2*g5+g6,g+g5-2*g6,2*g-g5-g6,-g+s+g5-s7,-g+s+g6-s7,-g+s+g5-s6,-g+s+g6-s6,g-g5+s7-s6,g-g5-s7+s6,g-g6+s7-s6,g-g6-s7+s6,2*g-s-s7,2*g-s-s6,-g+2*s-g5,-g+2*s-g6,2*g-2*s7,2*g-2*s6,2*g-s7-s6,g-s+g5-s7,g-s+g5-s6,g-s+g6-s7,g-s+g6-s6,g+g5-2*s7,g+g6-2*s7,g+g5-2*s6,g+g6-2*s6,g+g5-s7-s6,g+g6-s7-s6,s-2*s7+s6,s+s7-2*s6,2*s-s7-s6,s+g5-g6-s7,s-g5+g6-s7,s+g5-g6-s6,s-g5+g6-s6,2*s-2*g5,2*s-2*g6,2*s-g5-g6,s-2*g5+s7,s-2*g5+s6,s-2*g6+s7,s-2*g6+s6,s-g5-g6+s7,s-g5-g6+s6,2*g-2*g5,2*g-2*g6,2*s-2*s7,2*s-2*s6,g-2*g6+g7,g-3*g6+2*g5,2*(g-g6)+(s-s6),g+g5-g6-g7,g-g5-g6+g7,g+g5-2*g6-s6+s7,3*(g-g6)+(s-s6)]))/rev
+            #print('de', de)
+            secresde = np.zeros(len(de))
+            
+            for i in range(len(de)):
+                secresde[i] = int(np.where(freq >= de[i])[0][0])
+            #print('484', secresde)
+            
+            for i in range(len(de)):
+                ind = int(secresde[i])
+                if spread > 0:
+                    Yh_f[ind-spread:ind+spread] = 0
+                    Yk_f[ind-spread:ind+spread] = 0
+                    Yp_f[ind-spread:ind+spread] = 0
+                    Yq_f[ind-spread:ind+spread] = 0
+                else:
+                    Yh_f[ind] = 0
+                    Yk_f[ind] = 0
+                    Yp_f[ind] = 0
+                    Yq_f[ind] = 0
+            #print('497')       
+            '''
+            freqind = np.where(freq < freqlim)[0]
+            Yh_f[freqind] = 0
+            Yk_f[freqind] = 0
+            Yp_f[freqind] = 0
+            Yq_f[freqind] = 0
+            #'''
+            
+            
             '''
             plt.scatter(1/freq[1:],pYh[1:])
+            
+            plt.vlines(1/g5,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/g6,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/g7,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/g8,ymin=1e-3,ymax=1e3)
+
+            plt.vlines(1/s6,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/s7,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/s8,ymin=1e-3,ymax=1e3)
+
+            plt.vlines(1/z1,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z2,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z3,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z4,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z5,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z6,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z7,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z8,ymin=1e-3,ymax=1e3)
+            plt.vlines(1/z9,ymin=1e-3,ymax=1e3)
             plt.xscale('log')
             plt.yscale('log')
             plt.savefig('h_vec.png')
+            plt.close()
+            #'''
+
             '''
             for i in range(0,imax-1):
                 m = 1.02496658e26
                 M = 1.98969175e30
-
-            for i in range(0,imax-1):
-                m = 1.02496658e26
-                M = 1.98969175e30
-                   
                 for z in range(numfreqs):
                     if (pYpu[i]>pth*pumax[z] or pYpj[i]>pth*pjmax[z] or pYps[i]>pth*psmax[z] 
                        or pYpn[i]>pth*pnmax[z] or pYpmc[i]>pth*pmcmax[z] or pYpv[i]>pth*pvmax[z]
                         or pYpe[i]>pth*pemax[z] or pYpmr[i]>pth*pmrmax[z] or freq[i]>freqlim):
-                        Yp_f[i-3:i+3]=0
+                        Yp_f[i-spread:i+spread]=0
+                        if spread == 0:
+                            Yp_f[i]=0
         #        else:
         #            p_transfer_f[j][i] = 1
                     if (pYqu[i]>pth*qumax[z] or pYqj[i]>pth*qjmax[z] or pYqs[i]>pth*qsmax[z] 
                        or pYqn[i]>pth*qnmax[z] or pYqmc[i]>pth*qmcmax[z] or pYqv[i]>pth*qvmax[z]
                         or pYqe[i]>pth*qemax[z] or pYqmr[i]>pth*qmrmax[z] or freq[i]>freqlim):
-                        Yq_f[i-3:i+3]=0
+                        Yq_f[i-spread:i+spread]=0
+                        if spread == 0:
+                            Yq_f[i]=0
             #        else:
             #            q_transfer_f[j][i] = 1
                     if (pYhu[i]>pth*humax[z] or pYhj[i]>pth*hjmax[z] or pYhs[i]>pth*hsmax[z] 
                        or pYhn[i]>pth*hnmax[z] or pYhmc[i]>pth*hmcmax[z] or pYhv[i]>pth*hvmax[z]
                         or pYhe[i]>pth*hemax[z] or pYhmr[i]>pth*hmrmax[z] or freq[i]>freqlim):
-                        Yh_f[i-3:i+3]=0
+                        Yh_f[i-spread:i+spread]=0
+                        if spread == 0:
+                            Yh_f[i]=0
             #        else:
             #            h_transfer_f[j][i] = 1
                     if (pYku[i]>pth*kumax[z] or pYkj[i]>pth*kjmax[z] or pYks[i]>pth*ksmax[z] 
                        or pYkn[i]>pth*knmax[z] or pYkmc[i]>pth*kmcmax[z] or pYkv[i]>pth*kvmax[z]
                         or pYke[i]>pth*kemax[z] or pYkmr[i]>pth*kmrmax[z] or freq[i]>freqlim):
-                        Yk_f[i-3:i+3]=0
+                        Yk_f[i-spread:i+spread]=0
+                        if spread == 0:
+                            Yk_f[i]=0
             #        else:
         #            k_transfer_f[j][i] = 1    
+            '''
+            
             '''
             plt.scatter(1/freq[1:],np.abs(Yh_f[1:]**2))
             plt.xscale('log')
             plt.yscale('log')
             plt.savefig('h_vec_filt.png')
-            '''
+            plt.close()
+            #'''
+            
             p_f = np.fft.irfft(Yp_f,len(p))
             q_f = np.fft.irfft(Yq_f,len(q))
             h_f = np.fft.irfft(Yh_f,len(h))
@@ -434,4 +615,4 @@ for j in range(len(astdys)):
     pe_df['err_ecc'][j] = np.std(ecc_pe)
 
 
-pe_df.to_csv('data_files/prop_elem_'+folder+'_8p.csv')
+pe_df.to_csv('data_files/prop_elem_'+folder+'_secres_orbfit_correct.csv')
