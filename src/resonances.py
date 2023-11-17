@@ -148,7 +148,8 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
 #################################################################
 # plots the resonance angle and a, e, i
 #################################################################
-def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], phi=[[0.],], t=[0.],nclones=0,figfile=''):
+def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], phi=[[0.],], 
+                   t=[0.],nclones=0,figfile=None,bfps=1.,cps=0.5,calpha=0.5,tmin=None,tmax=None):
     """
     Makes a plot of a, e, inc, phi for a resonance based on having
     read in the simulation archive using read_sa_for_resonance
@@ -164,10 +165,14 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
             best-fit clone is id=0, clones are numbered
             starting at 1 
         time (1-d float array): simulations time (years)
-
         nclones (int): number of clones of the best-fit orbit
         figfile (str): path to save the figure to; if not set, the
             figure will not be saved but just displayed
+        bfps (optional,float): matplotlib point size argument for best-fit orbit
+        cps (optional,float): matplotlib point size argument for clone orbits
+        calpha (optional,float): matplotlib alpha argument for clone orbits
+        tmin (optional, float): minimum time for x-axis (years)
+        tmax (optional, float): maximum time for x-axis (years)        
     output:
         flag (int): 1 if successful and 0 if there was a problem
     """
@@ -182,74 +187,105 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         phi = np.array([phi])
     #we will plot in degrees, so convert inc and phi
     rad_to_deg = 180./np.pi
-    
     inc=inc*rad_to_deg
     phi=phi*rad_to_deg
 
-    fig = plt.figure(figsize=(10, 10))
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.92, wspace=0.35, hspace=0.25)
+
+    ncol = 4
+
+    if(nclones > 0):
+        nrows = 2
+        xwidth= 10
+    else:
+        nrows = 1
+        xwidth= 5
+
+    if(tmin == None):
+        tmin = t[0]
+    if(tmax == None):
+        tmax = t[-1]
+
+    deltat = tmax-tmin
+
+    if(tmax >=1e4 and deltat>1e3):
+        tscale = 1e3
+        timelabel = "time (kyr)"
+    if(tmax >=1e6 and deltat>1e5):
+        tscale = 1e6
+        timelabel = "time (Myr)"
+    elif(tmax >=1e6 and deltat>1e4):
+        tscale = 1e3
+        timelabel = "time (kyr)"
+    if(tmax >1e9 and deltat > 1e8):
+        tscale = 1e9
+        timelabel = "time (Gyr)"
+    elif(tmax >1e9 and deltat > 1e6):
+        tscale = 1e6
+        timelabel = "time (Myr)"
+    elif(tmax >1e9 and deltat > 1e4):
+        tscale = 1e3
+        timelabel = "time (kyr)"
+    
+    fig = plt.figure(figsize=(xwidth, 10))
+    plt.subplots_adjust(left=None, bottom=None, right=None, 
+                        top=0.92, wspace=0.35, hspace=0.25)
     
     plt.suptitle('object ' + sbody+ ' plotting '+ res_string)
 
-
-    a_ax1=plt.subplot2grid((4,2),(0,0))
+    a_ax1=plt.subplot2grid((ncol,nrows),(0,0))
     a_ax1.set_ylabel('a (au)')
-    a_ax2=plt.subplot2grid((4,2),(0,1))
-    a_ax2.set_ylabel('a (au)')
-    a_ax2.set_title(str(nclones) + ' clones')
     a_ax1.set_title('best-fit orbit')
-
-
-    e_ax1=plt.subplot2grid((4,2),(1,0))
+    e_ax1=plt.subplot2grid((ncol,nrows),(1,0))
     e_ax1.set_ylabel('e')
-    e_ax2=plt.subplot2grid((4,2),(1,1))
-    e_ax2.set_ylabel('e')
-
-
-    i_ax1=plt.subplot2grid((4,2),(2,0))
+    i_ax1=plt.subplot2grid((ncol,nrows),(2,0))
     i_ax1.set_ylabel('inc (deg)')
-    i_ax2=plt.subplot2grid((4,2),(2,1))
-    i_ax2.set_ylabel('inc (deg)')
-
-    p_ax1=plt.subplot2grid((4,2),(3,0))
-    p_ax1.set_ylabel('res angle (deg)')
-    p_ax2=plt.subplot2grid((4,2),(3,1))
-    p_ax2.set_ylabel('res angle (deg)')
+    p_ax1=plt.subplot2grid((ncol,nrows),(3,0))
+    p_ax1.set_ylabel('$\phi$ (deg)')
 
 
     p_ax1.set_ylim([0,360])
-    p_ax2.set_ylim([0,360])
     p_ax1.set_yticks(np.arange(0, 361, 60))
-    p_ax2.set_yticks(np.arange(0, 361, 60))
-    p_ax1.set_xlabel('time (Myr)')
-    p_ax2.set_xlabel('time (Myr)')
-
-    tmax = t[-1]
-
-    a_ax1.set_xlim([0,tmax/1e6])
-    a_ax2.set_xlim([0,tmax/1e6])
-    e_ax1.set_xlim([0,tmax/1e6])
-    e_ax2.set_xlim([0,tmax/1e6])
-    i_ax1.set_xlim([0,tmax/1e6])
-    i_ax2.set_xlim([0,tmax/1e6])
-    p_ax1.set_xlim([0,tmax/1e6])
-    p_ax2.set_xlim([0,tmax/1e6])
+    p_ax1.set_xlabel(timelabel)
+    a_ax1.set_xlim([tmin/tscale,tmax/tscale])
+    e_ax1.set_xlim([tmin/tscale,tmax/tscale])
+    i_ax1.set_xlim([tmin/tscale,tmax/tscale])
+    p_ax1.set_xlim([tmin/tscale,tmax/tscale])
 
 
     #just the best fit on the left panels:
-    a_ax1.scatter(t/1e6,a[0,:],s=0.01,c='k')
-    e_ax1.scatter(t/1e6,e[0,:],s=0.01,c='k')
-    i_ax1.scatter(t/1e6,inc[0,:],s=0.01,c='k')
-    p_ax1.scatter(t/1e6,phi[0,:],s=0.01,c='k')
+    a_ax1.scatter(t/tscale,a[0,:],s=bfps,c='k')
+    e_ax1.scatter(t/tscale,e[0,:],s=bfps,c='k')
+    i_ax1.scatter(t/tscale,inc[0,:],s=bfps,c='k')
+    p_ax1.scatter(t/tscale,phi[0,:],s=bfps,c='k')
 
-    #all the clones on the right panels
-    for tp in range (1,ntp):
-        a_ax2.scatter(t/1e6,a[tp,:],s=0.01,alpha=0.5)
-        e_ax2.scatter(t/1e6,e[tp,:],s=0.01,alpha=0.5)
-        i_ax2.scatter(t/1e6,inc[tp,:],s=0.01,alpha=0.5)
-        p_ax2.scatter(t/1e6,phi[tp,:],s=0.01,alpha=0.5)
 
-    if(figfile != ''):
+    if(nclones > 0):
+        a_ax2=plt.subplot2grid((ncol,nrows),(0,1))
+        a_ax2.set_ylabel('a (au)')
+        a_ax2.set_title(str(nclones) + ' clones')
+        e_ax2=plt.subplot2grid((ncol,nrows),(1,1))
+        e_ax2.set_ylabel('e')
+        i_ax2=plt.subplot2grid((ncol,nrows),(2,1))
+        i_ax2.set_ylabel('inc (deg)')
+        p_ax2=plt.subplot2grid((ncol,nrows),(3,1))
+        p_ax2.set_ylabel('$\phi$ (deg)')
+        p_ax2.set_ylim([0,360])
+        p_ax2.set_xlabel(timelabel)
+        p_ax2.set_yticks(np.arange(0, 361, 60))
+        a_ax2.set_xlim([tmin/tscale,tmax/tscale])
+        e_ax2.set_xlim([tmin/tscale,tmax/tscale])
+        i_ax2.set_xlim([tmin/tscale,tmax/tscale])
+        p_ax2.set_xlim([tmin/tscale,tmax/tscale])
+
+
+        #all the clones on the right panels
+        for tp in range (1,ntp):
+            a_ax2.scatter(t/tscale,a[tp,:],s=cps,alpha=calpha)
+            e_ax2.scatter(t/tscale,e[tp,:],s=cps,alpha=calpha)
+            i_ax2.scatter(t/tscale,inc[tp,:],s=cps,alpha=calpha)
+            p_ax2.scatter(t/tscale,phi[tp,:],s=cps,alpha=calpha)
+
+    if(figfile != None):
         plt.savefig(figfile)
 
     flag = 1

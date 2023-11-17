@@ -308,3 +308,31 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
     #run until tmax
     sim.integrate(tmax)
     return 1, sim
+
+
+def initialize_simulation_from_simarchive(sim, filename=" "):
+    """
+    read in a simulation archive to initialize a simulation instance
+    inputs:
+        sim (rebound simulation instance): must be empty
+        filename (str; optional): name/path for the simulation
+            archive file that rebound will generate
+    outputs:
+        flag (int): 0 if something went wrong, 1 if sucessful
+        sim (rebound simulation instance): contains the simulation
+            state in the last snapshot of the archivefile
+    """
+    if(sim.N > 0):
+        print("run_reb.initialize_simulation_from_simarchive failed")
+        print("This rebound simulation instance already has particles in it!")
+        print("can only accept an empty rebound simulation instance")
+        return 0, sim
+
+    try:
+        sim = rebound.Simulation(filename)
+    except RuntimeError:
+        print("run_reb.initialize_simulation_from_simarchive failed")
+        print("couldn't read the simulation archive file")
+        return 0, sim
+
+    return 1, sim
