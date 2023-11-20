@@ -38,7 +38,7 @@ try:
         flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter','saturn','uranus','neptune'],des=str(objnum),clones=0, folder = objtype)
         print(flag, epoch, sim)
     elif runtype == '8planet':
-        flag, epoch, sim = run_reb.initialize_simulation(planets=['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'],des=str(objnum),clones=20, folder = objtype)
+        flag, epoch, sim = run_reb.initialize_simulation(planets=['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'],des=str(objnum),clones=0, folder = objtype)
         print(flag, epoch, sim)    
     
     com = sim.calculate_com()
@@ -64,7 +64,7 @@ o = p.calculate_orbit(com)
 r2d = 180./np.pi
     
 tmax = 1e7
-tout = 5e2
+tout = 1e3
 
 runprops = {}
 runprops['tmax'] = tmax
