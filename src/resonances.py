@@ -11,7 +11,8 @@ import tools
 # reads the simulation archive files into orbital element
 # arrays necessary to produce a resonant plot
 #################################################################
-def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r=0,s=0,nclones=0):
+def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
+                          ,q=0,m=0,n=0,r=0,s=0,nclones=0):
     """
     Reads the simulation archive file produced by the run_reb
     routines
@@ -96,9 +97,9 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0,q=0,m=0,n=0,r
         for j in range(0,ntp):
             #the hash format for clones
             tp_hash = sbody + "_" + str(j)
-            #except the best fit is different:
+            #except the best fit is just the designation:
             if(j==0):
-                tp_hash = sbody + "_bf"
+                tp_hash = sbody 
             #grab the particle and calculate its barycentric orbit
             try:
                 tp = sim.particles[tp_hash]
@@ -191,13 +192,13 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
     phi=phi*rad_to_deg
 
 
-    ncol = 4
+    nrows = 4
 
     if(nclones > 0):
-        nrows = 2
+        ncol = 2
         xwidth= 10
     else:
-        nrows = 1
+        ncol = 1
         xwidth= 5
 
     if(tmin == None):
@@ -232,14 +233,14 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
     
     plt.suptitle('object ' + sbody+ ' plotting '+ res_string)
 
-    a_ax1=plt.subplot2grid((ncol,nrows),(0,0))
+    a_ax1=plt.subplot2grid((nrows,ncol),(0,0))
     a_ax1.set_ylabel('a (au)')
     a_ax1.set_title('best-fit orbit')
-    e_ax1=plt.subplot2grid((ncol,nrows),(1,0))
+    e_ax1=plt.subplot2grid((nrows,ncol),(1,0))
     e_ax1.set_ylabel('e')
-    i_ax1=plt.subplot2grid((ncol,nrows),(2,0))
+    i_ax1=plt.subplot2grid((nrows,ncol),(2,0))
     i_ax1.set_ylabel('inc (deg)')
-    p_ax1=plt.subplot2grid((ncol,nrows),(3,0))
+    p_ax1=plt.subplot2grid((nrows,ncol),(3,0))
     p_ax1.set_ylabel('$\phi$ (deg)')
 
 
@@ -260,14 +261,14 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
 
 
     if(nclones > 0):
-        a_ax2=plt.subplot2grid((ncol,nrows),(0,1))
+        a_ax2=plt.subplot2grid((nrows,ncol),(0,1))
         a_ax2.set_ylabel('a (au)')
         a_ax2.set_title(str(nclones) + ' clones')
-        e_ax2=plt.subplot2grid((ncol,nrows),(1,1))
+        e_ax2=plt.subplot2grid((nrows,ncol),(1,1))
         e_ax2.set_ylabel('e')
-        i_ax2=plt.subplot2grid((ncol,nrows),(2,1))
+        i_ax2=plt.subplot2grid((nrows,ncol),(2,1))
         i_ax2.set_ylabel('inc (deg)')
-        p_ax2=plt.subplot2grid((ncol,nrows),(3,1))
+        p_ax2=plt.subplot2grid((nrows,ncol),(3,1))
         p_ax2.set_ylabel('$\phi$ (deg)')
         p_ax2.set_ylim([0,360])
         p_ax2.set_xlabel(timelabel)
@@ -289,7 +290,7 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         plt.savefig(figfile)
 
     flag = 1
-    return flag
+    return flag, fig
 
 
 

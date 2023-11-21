@@ -172,7 +172,9 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     if(clones > 0):
         for i in range(0, ntp):
             if(i == 0):
-                sbhash = str(des) + '_bf'
+                #first clone is always just the best-fit orbit
+                #and the hash is not numbered
+                sbhash = str(des)
             else:
                 sbhash = str(des) + '_' + str(i)
             # correct for the missing planets
@@ -183,7 +185,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     else:
         sbx += sx; sby += sy; sbz += sz
         sbvx += svx; sbvy += svy; sbvz += svz
-        sbhash = des + '_bf'
+        sbhash = des 
         sim.add(m=0., x=sbx, y=sby, z=sbz,
                 vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
 
