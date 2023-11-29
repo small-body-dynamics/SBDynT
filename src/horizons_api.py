@@ -9,23 +9,23 @@ import textwrap
 import tools
 
 
-def query_horizons_planets(obj='', epoch=2455000):
+def query_horizons_planets(obj='', epoch=2459580.5):
     """
     Get the heliocentric position and velocity of a major planet from 
     JPL Horizons via web API request
 
     inputs:
-    :param obj: string, major planet name (not case sensitive)
-    :param epoch: float, JD date, defaults to sometime in 2009
+        obj: string, major planet name (not case sensitive)
+        epoch (optional): float, JD date, defaults to Jan 1, 2022
 
     outputs:
-    :returns flag: integer, 0 if nothing was queried, 
-                            1 if query is successful)
-    :returns m: float, object mass (in solar masses)
-    :returns r: float, object radius (in au)
-    :returns x: np array, cartesian heliocentric positions (in au)
-    :returns v: np array, cartesian heliocentric velocities (in au/year)
-    all return values set to 0 if unsuccessful
+        flag: integer, 0 if nothing was queried, 
+                       1 if query is successful)
+        m: float, object mass (in solar masses)
+        r: float, object radius (in au)
+        x: np array, cartesian heliocentric positions (in au)
+        v: np array, cartesian heliocentric velocities (in au/year)
+        all return values set to 0 if unsuccessful
     """
 
     obj = obj.lower()
@@ -41,43 +41,19 @@ def query_horizons_planets(obj='', epoch=2455000):
     try:
         des = str(planet_id[obj])
     except KeyError:
+        print("horizons_api.query_horizons_planets failed")
         print("KeyError: provided object is not one of the major planets")
         raise
 
-    # array of GM values queried January 2022 (there isn't a way to get
-    # this from Horizons via API, so we just have to hard code it)
-    # values for giant planet systems are from Park et al. 2021 DE440
-    # and DE441, https://doi.org/10.3847/1538-3881/abd414
-    # all in km^3 kg^–1 s^–2
-    # G = 6.6743015e-20 #in km^3 kg^–1 s^–2
-    SS_GM = np.zeros(9)
-    SS_GM[0] = 132712440041.93938  # Sun
-    SS_GM[1] = 22031.868551  # Mercury
-    SS_GM[2] = 324858.592  # Venus
-    SS_GM[3] = 398600.435507 + 4902.800118  # Earth + Moon
-    SS_GM[4] = 42828.375816  # Mars system
-    SS_GM[5] = 126712764.10  # Jupiter system
-    SS_GM[6] = 37940584.8418  # Saturn system
-    SS_GM[7] = 5794556.4  # Uranus system
-    SS_GM[8] = 6836527.10058  # Neptune system
-
-    # array of physical radius values queried January 2022
-    # (again, not possible to pull directly via API)
-    kmtoau = (1000./149597870700.)  # 1000m/(jpl's au in m) = 6.68459e-9
-    SS_r = np.zeros(9)
-    SS_r[0] = 695700.*kmtoau  # Sun
-    SS_r[1] = 2440.53*kmtoau  # Mercury
-    SS_r[2] = 6051.8*kmtoau  # Venus
-    SS_r[3] = 6378.136*kmtoau  # Earth
-    SS_r[4] = 3396.19*kmtoau  # Mars
-    SS_r[5] = 71492.*kmtoau  # Jupiter system
-    SS_r[6] = 60268.*kmtoau  # Saturn system
-    SS_r[7] = 25559.*kmtoau  # Uranus system
-    SS_r[8] = 24764.*kmtoau  # Neptune system
+    # import the following hard-coded constants:
+    # Planet physical parameters
+    # SS_GM[0:9] in km^3 s^–2
+    # SS_r[0:9] all in au
+    import hard_coded_constants as const
 
     # calculate planet masses in solar masses
-    mass = SS_GM[planet_id[obj]]/SS_GM[planet_id['sun']]
-    rad = SS_r[planet_id[obj]]
+    mass = const.SS_GM[planet_id[obj]]/const.SS_GM[planet_id['sun']]
+    rad = const.SS_r[planet_id[obj]]
 
     # we don't actually need to query for the Sun because
     # we are working in heliocentric coordinates
@@ -97,12 +73,14 @@ def query_horizons_planets(obj='', epoch=2455000):
     try:
         data = json.loads(response.text)
     except ValueError:
+        print("horizons_api.query_horizons_planets failed")
         print("Unable to decode JSON results from Horizons API request")
         return 0, mass, rad, x, v
     # pull the lines we need from the resulting plain text return
     try:
         xvline = data["result"].split("X =")[1].split("\n")
     except:
+        print("horizons_api.query_horizons_planets failed")
         print("Unable to find \"X =\" in Horizons API request result:")
         print(data["result"])
         return 0, mass, rad, x, v
@@ -118,6 +96,7 @@ def query_horizons_planets(obj='', epoch=2455000):
         v[1] = float(xvline[1].split("VY=")[1].split()[0])*365.25
         v[2] = float(xvline[1].split("VZ=")[1].split()[0])*365.25
     except:
+        print("horizons_api.query_horizons_planets failed")
         print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API request result")
         return 0, mass, rad, x, v
 
@@ -134,19 +113,19 @@ def query_sb_from_jpl(des='', clones=0):
     to heliocentric cartesian positions and velocities
 
     inputs:
-    :param des: string, the designation for the object in the SBDB
-    :param clones: integer, number of times to clone using the
-                   covariance matrix
+        des: string, the designation for the object in the SBDB
+        clones (optional): integer, number of times to clone using the
+                           covariance matrix
 
     outputs:
-    :return flag: integer, 1 if query worked, 0 otherwise)
-    :return x: np array (size clones+1), cartesian heliocentric x (au)
-            y: np array (size clones+1), cartesian heliocentric y (au)
-            z: np array (size clones+1), cartesian heliocentric z (au)
-    :return vx: np array (size clones+1), cartesian heliocentric vx (au)
-            vy: np array (size clones+1), cartesian heliocentric vy (au)
-            vz: np array (size clones+1), cartesian heliocentric vz (au)
-    all return values set to 0 if unsuccessful
+        flag: integer, 1 if query worked, 0 otherwise)
+        x: np array (size clones+1), cartesian heliocentric x (au)
+        y: np array (size clones+1), cartesian heliocentric y (au)
+        z: np array (size clones+1), cartesian heliocentric z (au)
+        vx: np array (size clones+1), cartesian heliocentric vx (au)
+        vy: np array (size clones+1), cartesian heliocentric vy (au)
+        vz: np array (size clones+1), cartesian heliocentric vz (au)
+        all return values set to 0 if unsuccessful
     """
     pdes, destype = tools.mpc_designation_translation(des)
 
@@ -155,6 +134,7 @@ def query_sb_from_jpl(des='', clones=0):
         # orbit and associated covariance matrix
         obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
     except:
+        print("horizons_api.query_sb_from_jpl failed")
         print("JPL small body database browser query failed")
         return 0, 0., 0., 0., 0., 0., 0., 0.
         
@@ -182,6 +162,7 @@ def query_sb_from_jpl(des='', clones=0):
             cepoch = np.float64(str(objcov['epoch']).split()[0])
             oepoch = np.float64(str(obj['orbit']['epoch']).split()[0])
             if(cepoch != oepoch and clones > 0):
+                print("horizons_api.query_sb_from_jpl failed")
                 warningstring = ("JPL small body database browser query did not"
                                + "return a best fit orbit at the same epoch as "
                                + "the covariance matrix. Query Failed.")
@@ -198,6 +179,7 @@ def query_sb_from_jpl(des='', clones=0):
                               + "the results should be used with caution")
                 print(textwrap.fill(warningstring, 80))
             elif(arc < 30.):
+                print("horizons_api.query_sb_from_jpl failed")
                 warningstring = ("WARNING!!! The object's observational arc is "
                               + "less than 30 days which probably means the "
                               + "orbit is of too low quality for useful "
@@ -217,6 +199,7 @@ def query_sb_from_jpl(des='', clones=0):
             bfargperi = np.float64(str(objorbit['w']).split()[0])
             bftp = np.float64(str(objorbit['tp']).split()[0])
         except:
+            print("horizons_api.query_sb_from_jpl failed")
             warningstring = ("JPL small body database browser query did not "
                           + "return the expected data for the orbit and "
                           + "covariance matrix")
@@ -224,6 +207,7 @@ def query_sb_from_jpl(des='', clones=0):
             return 0, 0., 0., 0., 0., 0., 0., 0.
     
     if(bfecc >= 1. or bfecc < 0.):
+        print("horizons_api.query_sb_from_jpl failed")
         print("orbital eccentricity not between 0 and 1, cannot proceed")
         return 0, 0., 0., 0., 0., 0., 0., 0.
     
@@ -246,7 +230,7 @@ def query_sb_from_jpl(des='', clones=0):
         url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
     else:
         url += "&OUT_UNITS='AU-D'&COMMAND='"
-        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
     
     # run the query and exit if it fails
@@ -254,6 +238,7 @@ def query_sb_from_jpl(des='', clones=0):
     try:
         data = json.loads(response.text)
     except ValueError:
+        print("horizons_api.query_sb_from_jpl failed")
         print("Unable to decode JSON results from Horizons API request")
         return 0, 0., 0., 0., 0., 0., 0., 0.
     
@@ -262,6 +247,7 @@ def query_sb_from_jpl(des='', clones=0):
         gmpart = data["result"].split("Keplerian GM")[1]
         gm = np.float64(gmpart.split("\n")[0].split()[1])
     except:
+        print("horizons_api.query_sb_from_jpl failed")
         print("\nunable to pull the GM value from the horizons results:\n")
         print(data["result"])
         return 0, 0., 0., 0., 0., 0., 0., 0.
@@ -278,6 +264,7 @@ def query_sb_from_jpl(des='', clones=0):
     i, x0, y0, z0, vx0, vy0, vz0 = tools.aei_to_xv(
                     GM=gm, a=a0, e=bfecc, inc=i0, node=O0, argperi=w0, ma=ma0)
     if(i < 1):
+        print("horizons_api.query_sb_from_jpl failed")
         print("failed to convert to cartesian inside query_sb_from_jpl")
         return 0, 0., 0., 0., 0., 0., 0., 0.
 
@@ -315,6 +302,7 @@ def query_sb_from_jpl(des='', clones=0):
                         tools.aei_to_xv(GM=gm, a=a, e=ecc[j], inc=inc[j],
                                 node=node[j], argperi=argperi[j], ma=ma)
             if(i < 1):
+                print("horizons_api.query_sb_from_jpl failed")
                 print("failed to convert to cartesian "
                       + "inside cloning part of query_sb_from_jpl")
                 return 0, 0., 0., 0., 0., 0., 0., 0.
@@ -339,19 +327,19 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
     positions and velocities
 
     inputs:
-    :param des: string or list of strings, the designation for the
-                object or list of objects
-    :param (optional) epoch: (JD) defaults to Jan 1, 2022
+        des: string or list of strings, the designation for the
+             object or list of objects
+        epoch (optional): (JD) defaults to Jan 1, 2022
 
     outputs:
-    :return flag: integer, 1 if query worked, 0 otherwise)
-    :return x: np array (size=len(des)), cartesian heliocentric x (au)
-            y: np array (size=len(des)), cartesian heliocentric y (au)
-            z: np array (size=len(des)), cartesian heliocentric z (au)
-    :return vx: np array (size=len(des)), cartesian heliocentric vx (au)
-            vy: np array (size=len(des)), cartesian heliocentric vy (au)
-            vz: np array (size=len(des)), cartesian heliocentric vz (au)
-    all return values set to 0 if unsuccessful
+        flag: integer, 1 if query worked, 0 otherwise
+        x: np array (size=len(des)), cartesian heliocentric x (au)
+        y: np array (size=len(des)), cartesian heliocentric y (au)
+        z: np array (size=len(des)), cartesian heliocentric z (au)
+        vx: np array (size=len(des)), cartesian heliocentric vx (au)
+        vy: np array (size=len(des)), cartesian heliocentric vy (au)
+        vz: np array (size=len(des)), cartesian heliocentric vz (au)
+        all return values set to 0 if unsuccessful
     """
 
     # if the user provided just a single string as the designation
@@ -387,13 +375,14 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
         else:
             url += "&OUT_UNITS='AU-D'&COMMAND='"
-            url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+            url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
 
         # run the query and exit if it fails
         response = requests.get(url)
         try:
             data = json.loads(response.text)
         except ValueError:
+            print("horizons_api.query_sb_from_horizons failed")
             print("Unable to decode JSON results from Horizons API request for %s"
                   % (des[n]))
             return 0, x, y, z, vx, vy, vz
@@ -401,6 +390,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
         try:
             data = json.loads(response.text)
         except ValueError:
+            print("horizons_api.query_sb_from_horizons failed")
             print("Unable to decode JSON results from Horizons API request for %s"
                    % (des[n]))
             return 0, x, y, z, vx, vy, vz
@@ -409,6 +399,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
         try:
             xvline = data["result"].split("X =")[1].split("\n")
         except:
+            print("horizons_api.query_sb_from_horizons failed")
             print("Unable to find \"X =\" in Horizons API request result for %s:"
                   % (des[n]))
             print(data["result"])
@@ -425,8 +416,13 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             vy[n] = float(xvline[1].split("VY=")[1].split()[0]) * 365.25
             vz[n] = float(xvline[1].split("VZ=")[1].split()[0]) * 365.25
         except:
+            print("horizons_api.query_sb_from_horizons failed")
             print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API "
                   "request result for %s" %(des[n]))
             return 0, x, y, z, vx, vy, vz
 
-    return 1, x, y, z, vx, vy, vz
+    if(ntp == 1):
+        #return just single values instead of numpy arrays
+        return 1, x[0], y[0], z[0], vx[0], vy[0], vz[0]
+    else:
+        return 1, x, y, z, vx, vy, vz
