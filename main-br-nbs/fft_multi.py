@@ -43,7 +43,7 @@ def prop_calc(j, astdys):
         series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         ds = int(len(series)/10)
 
-        series = series[int(0*ds):int(2*ds)]
+        series = series[int(1*ds):int(3*ds)]
 
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
@@ -137,8 +137,8 @@ def prop_calc(j, astdys):
     #Yk_f[0]=0
 
         
-    gind = np.argmax(Yh)    
-    sind = np.argmax(Yp)
+    gind = np.argmax(np.abs(Yh[1:]))+1    
+    sind = np.argmax(np.abs(Yp[1:]))+1
     g = freq[gind]  
     s = freq[sind]
 
@@ -150,7 +150,7 @@ def prop_calc(j, astdys):
     s7 = -2.99266093/rev
     s8 = -0.69251386/rev
 
-
+    #print(g,s,g6,s6)
     z1 = abs(g+s-g6-s6)
     z2 = abs(g+s-g5-s7)
     z3 = abs(g+s-g5-s6)
@@ -160,7 +160,7 @@ def prop_calc(j, astdys):
     z7 = abs(g-3*g6+2*g5)
     z8 = abs(2*(g-g6)+s-s6)
     z9 = abs(3*(g-g6)+s-s6)
-        
+    #print(z1)
     z1_g = (-s+g6+s6)
     z2_g = (-s+g5+s7)
     z3_g = (-s+g5+s6)
@@ -250,14 +250,10 @@ def prop_calc(j, astdys):
 
     freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
     freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
-    #print(freq1)
-    #print(freq2)
+
     #freq1 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z4,z5,z7,z8,z9]
     #freq2 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z6,z8,z9]
-    
-    #freq1 = [g5,g6,g7,g8,z4]
-    #freq2 = [s6,s7,s8,z4]
-    
+
     #print('1:',secresind2)
     secresind1 = []
     secresind2 = []
@@ -282,6 +278,8 @@ def prop_calc(j, astdys):
     limit_ind = np.where(freq >= freqlim)[0]
 
     #'''
+    #print(secresind1,freq1)
+    #print(secresind2,freq2)
     for i in range(len(secresind1)):
         if secresind1[i] == gind:
             continue
@@ -437,7 +435,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        #j = range(840,880)
+        j = range(22,23)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
@@ -446,5 +444,5 @@ if __name__ == '__main__':
         print(pe_df)
 
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_0_2.csv')
+        pe_df.to_csv('data_files/prop_elem_AstFam_families_test.csv')
 
