@@ -43,7 +43,7 @@ def prop_calc(j, astdys):
         series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         ds = int(len(series)/10)
 
-        series = series[int(5*ds):int(7*ds)]
+#        series = series[int(5*ds):int(7*ds)]
 
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
@@ -444,5 +444,5 @@ if __name__ == '__main__':
         print(pe_df)
 
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_5_7.csv')
+        pe_df.to_csv('data_files/prop_elem_AstFam_families_new.csv')
 
