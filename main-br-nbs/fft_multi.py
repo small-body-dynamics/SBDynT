@@ -199,12 +199,13 @@ def prop_calc(j, astdys):
     #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0]]
 
 #Knezevic and Milani frequencies
+    print(g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9)
+    print(s6,s7,s8,z1,z2,z3,z6,z8,z9)
     secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z4)[0][0]]
     secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z4)[0][0]]
 
     
     #Actual Milani and Knezevic
-    
     secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
     secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
     
@@ -244,8 +245,7 @@ def prop_calc(j, astdys):
 
     #freq1 = [g5,g6,g7,g8,z1_g,z2_g,z3_g,z4_g,z5_g,z8_g,z9_g]
     #freq2 = [s6,s7,s8,z2_s,z3_s,z6_s]
-    print(g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9)
-    print(s6,s7,s8,z1,z2,z3,z6,z8,z9)
+
     freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
     freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
     print(freq1)
