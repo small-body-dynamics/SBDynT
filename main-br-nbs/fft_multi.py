@@ -160,7 +160,6 @@ def prop_calc(j, astdys):
     z7 = abs(g-3*g6+2*g5)
     z8 = abs(2*(g-g6)+s-s6)
     z9 = abs(3*(g-g6)+s-s6)
-    
         
     z1_g = (-s+g6+s6)
     z2_g = (-s+g5+s7)
@@ -208,14 +207,6 @@ def prop_calc(j, astdys):
     
     secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
     secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
-
-    g5 = 4.25749319/rev
-    g6 = 28.24552984/rev
-    g7 = 3.08675577/rev
-    g8 = 0.67255084/rev
-    s6 = -26.34496354/rev
-    s7 = -2.99266093/rev
-    s8 = -0.69251386/rev
     
             #'''
             #'''
@@ -250,24 +241,26 @@ def prop_calc(j, astdys):
             continue
         secresde.append(int(np.where(freq >= de[i])[0][0]))
     '''
-    #z7_g,
-    #z1_s,z8_s,z9_s
-    freq1 = [g5,g6,g7,g8,z1_g,z2_g,z3_g,z4_g,z5_g,z8_g,z9_g]
-    freq2 = [s6,s7,s8,z2_s,z3_s,z6_s]
-    
+
+    #freq1 = [g5,g6,g7,g8,z1_g,z2_g,z3_g,z4_g,z5_g,z8_g,z9_g]
+    #freq2 = [s6,s7,s8,z2_s,z3_s,z6_s]
+    print(g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9)
+    print(s6,s7,s8,z1,z2,z3,z6,z8,z9)
     freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
     freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
-    
+    print(freq1)
+    print(freq2)
     #freq1 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z4,z5,z7,z8,z9]
     #freq2 = [g5,g6,g7,g8,s6,s7,s8,z1,z2,z3,z6,z8,z9]
     
     #freq1 = [g5,g6,g7,g8,z4]
     #freq2 = [s6,s7,s8,z4]
     
-    print('1:',secresind1)
+    print('1:',secresind2)
     secresind1 = []
     secresind2 = []
     for i in freq1:
+        #print(i)
         try:
             secresind1.append(np.where(freq>=i)[0][0])
         except:
@@ -280,7 +273,7 @@ def prop_calc(j, astdys):
         except:
             continue
     print('2:',secresind2)
-    print(secresind1,secresind2)
+    #print(secresind1,secresind2)
     #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1_g)[0][0],np.where(freq >= z2_g)[0][0],np.where(freq >= z3_g)[0][0],np.where(freq >= z4_g)[0][0],np.where(freq >= z5_g)[0][0],np.where(freq >= z7_g)[0][0],np.where(freq >= z8_g)[0][0],np.where(freq >= z9_g)[0][0]]
     #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1_s)[0][0],np.where(freq >= z2_s)[0][0],np.where(freq >= z3_s)[0][0],np.where(freq >= z6_s)[0][0],np.where(freq >= z8_s)[0][0],np.where(freq >= z9_s)[0][0]]
 
@@ -442,7 +435,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        #j = range(51,53)
+        j = range(51,53)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
