@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2015 XR384",
-    "objnum": 4262,
-    "objtype": "Distance",
-    "run_success": true
-}

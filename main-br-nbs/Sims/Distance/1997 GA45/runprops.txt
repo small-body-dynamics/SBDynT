@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "1997 GA45",
-    "objnum": 1099,
-    "objtype": "Distance",
-    "run_success": true
-}

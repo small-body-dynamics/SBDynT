@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2020 MG53",
-    "objnum": 4816,
-    "objtype": "Distance",
-    "run_success": true
-}

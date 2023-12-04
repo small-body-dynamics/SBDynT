@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2010 SB41",
-    "objnum": 2221,
-    "objtype": "Distance",
-    "run_success": true
-}

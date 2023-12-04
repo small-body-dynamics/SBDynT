@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "Varda",
-    "objnum": 208,
-    "objtype": "Distance",
-    "run_success": true
-}

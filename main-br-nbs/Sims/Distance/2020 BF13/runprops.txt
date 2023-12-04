@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2020 BF13",
-    "objnum": 4680,
-    "objtype": "Distance",
-    "run_success": true
-}

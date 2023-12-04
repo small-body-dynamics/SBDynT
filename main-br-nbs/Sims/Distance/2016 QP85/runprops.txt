@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2016 QP85",
-    "objnum": 4398,
-    "objtype": "Distance",
-    "run_success": true
-}

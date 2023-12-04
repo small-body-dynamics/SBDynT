@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2015 PZ330",
-    "objnum": 3824,
-    "objtype": "Distance",
-    "run_success": true
-}

@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2016 PW84",
-    "objnum": 4387,
-    "objtype": "Distance",
-    "run_success": true
-}

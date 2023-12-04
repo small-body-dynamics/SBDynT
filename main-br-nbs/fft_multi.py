@@ -42,7 +42,9 @@ def prop_calc(j, astdys):
         #print(arc1,j)
         series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         ds = int(len(series)/10)
+
         series = series[int(0*ds):int(2*ds)]
+
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
         #series = bin_to_df.bin_to_df(objname,archive)
@@ -191,6 +193,12 @@ def prop_calc(j, astdys):
     secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z4)[0][0]]
     secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z4)[0][0]]
 
+    
+    #Actual Milani and Knezevic
+    
+    secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z4)[0][0],np.where(freq >= z5)[0][0],np.where(freq >= z7)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+    secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1)[0][0],np.where(freq >= z2)[0][0],np.where(freq >= z3)[0][0],np.where(freq >= z6)[0][0],np.where(freq >= z8)[0][0],np.where(freq >= z9)[0][0]]
+
     g5 = 4.25749319/rev
     g6 = 28.24552984/rev
     g7 = 3.08675577/rev
@@ -223,8 +231,7 @@ def prop_calc(j, astdys):
 
     de = np.abs(np.array([g5,g6,g7,g8,s6,s7,s8,g-g5,g-g6,g5-g6,s-s7,s-s6,s7-s6,g+s-s7-g5,g+s-s7-g6,g+s-s6-g5,g+s-s6-g6,2*g-2*s,g-2*g5+g6,g+g5-2*g6,2*g-g5-g6,-g+s+g5-s7,-g+s+g6-s7,-g+s+g5-s6,-g+s+g6-s6,g-g5+s7-s6,g-g5-s7+s6,g-g6+s7-s6,g-g6-s7+s6,2*g-s-s7,2*g-s-s6,-g+2*s-g5,-g+2*s-g6,2*g-2*s7,2*g-2*s6,2*g-s7-s6,g-s+g5-s7,g-s+g5-s6,g-s+g6-s7,g-s+g6-s6,g+g5-2*s7,g+g6-2*s7,g+g5-2*s6,g+g6-2*s6,g+g5-s7-s6,g+g6-s7-s6,s-2*s7+s6,s+s7-2*s6,2*s-s7-s6,s+g5-g6-s7,s-g5+g6-s7,s+g5-g6-s6,s-g5+g6-s6,2*s-2*g5,2*s-2*g6,2*s-g5-g6,s-2*g5+s7,s-2*g5+s6,s-2*g6+s7,s-2*g6+s6,s-g5-g6+s7,s-g5-g6+s6,2*g-2*g5,2*g-2*g6,2*s-2*s7,2*s-2*s6,g-2*g6+g7,g-3*g6+2*g5,2*(g-g6)+(s-s6),g+g5-g6-g7,g-g5-g6+g7,g+g5-2*g6-s6+s7,3*(g-g6)+(s-s6)]))/rev
     #Knezevic and Milani frequencies
-    secresind1 = []
-    secresind2 = []
+
     
     secresde = []
             
@@ -245,7 +252,9 @@ def prop_calc(j, astdys):
     
     #freq1 = [g5,g6,g7,g8,z4]
     #freq2 = [s6,s7,s8,z4]
-    
+    '''
+    secresind1 = []
+    secresind2 = []
     for i in freq1:
         #if 1/i < 10000:
         #    continue
@@ -254,7 +263,8 @@ def prop_calc(j, astdys):
         #if 1/i < 10000:
         #    continue
         secresind2.append(np.where(freq>=i)[0][0])
-    
+    '''  
+    print(secresind1,secresind2)
     #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1_g)[0][0],np.where(freq >= z2_g)[0][0],np.where(freq >= z3_g)[0][0],np.where(freq >= z4_g)[0][0],np.where(freq >= z5_g)[0][0],np.where(freq >= z7_g)[0][0],np.where(freq >= z8_g)[0][0],np.where(freq >= z9_g)[0][0]]
     #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1_s)[0][0],np.where(freq >= z2_s)[0][0],np.where(freq >= z3_s)[0][0],np.where(freq >= z6_s)[0][0],np.where(freq >= z8_s)[0][0],np.where(freq >= z9_s)[0][0]]
 
@@ -264,7 +274,7 @@ def prop_calc(j, astdys):
     for i in range(len(secresind1)):
         if secresind1[i] == gind:
             continue
-        if abs(secresind1[i]-gind) < 3:
+        if abs(secresind1[i] - gind) < 4:
             continue
 
         if spread > 0:
@@ -277,7 +287,7 @@ def prop_calc(j, astdys):
     for i in range(len(secresind2)):
         if secresind2[i] == sind:
             continue
-        if abs(secresind2[i]-sind) < 3:
+        if abs(secresind2[i] - sind) < 4:
             continue
 
         if spread > 0:
@@ -416,13 +426,13 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        #j = range(600,650)
+        j = range(51,53)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
-        print(data)
+        #print(data)
         pe_df = pd.DataFrame(data,columns = pe_cols)
         print(pe_df)
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_0_2.csv')
 
+        pe_df.to_csv('data_files/prop_elem_AstFam_families_0_2.csv')
