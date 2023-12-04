@@ -22,13 +22,5 @@ module load python-mpi4py/3.0
 export LD_LIBRARY_PATH=/apps/gcc/8.3.0/lib64
 
 mpiexec -n 100 python -W ignore fft_multi.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi13.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi24.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi35.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi46.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi57.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi68.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi79.py AstFam_families
-mpiexec -n 100 python -W ignore fft_multi810.py AstFam_families
 
 exit 0
