@@ -435,7 +435,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        j = range(51,53)
+        j = range(840,880)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
