@@ -1,7 +1,0 @@
-{
-    "objname": "2013 TX171",
-    "objnum": 2781,
-    "objtype": "Distance",
-    "err_message": "Simulation failed during initialization. Might not be findable in JPL Horizons",
-    "run_success": false
-}

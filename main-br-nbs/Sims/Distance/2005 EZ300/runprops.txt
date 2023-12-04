@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2005 EZ300",
-    "objnum": 1045,
-    "objtype": "Distance",
-    "run_success": true
-}

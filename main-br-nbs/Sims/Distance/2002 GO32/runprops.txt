@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2002 GO32",
-    "objnum": 1478,
-    "objtype": "Distance",
-    "run_success": true
-}

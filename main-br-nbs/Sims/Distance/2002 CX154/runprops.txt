@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2002 CX154",
-    "objnum": 148,
-    "objtype": "Distance",
-    "run_success": true
-}

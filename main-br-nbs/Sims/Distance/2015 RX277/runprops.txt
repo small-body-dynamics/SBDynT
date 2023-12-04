@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2015 RX277",
-    "objnum": 3861,
-    "objtype": "Distance",
-    "run_success": true
-}

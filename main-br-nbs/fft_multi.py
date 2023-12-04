@@ -407,7 +407,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        #j = range(600,650)
+        j = range(51,53)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
@@ -415,5 +415,5 @@ if __name__ == '__main__':
         pe_df = pd.DataFrame(data,columns = pe_cols)
         print(pe_df)
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_7_9.csv')
-v
+        pe_df.to_csv('data_files/prop_elem_test108.csv')
+

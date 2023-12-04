@@ -1,8 +1,0 @@
-{
-    "tmax": -1000000000.0,
-    "tout": 1000000.0,
-    "objname": "2020 KR54",
-    "objnum": 4760,
-    "objtype": "Distance",
-    "run_success": true
-}
