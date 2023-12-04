@@ -43,7 +43,7 @@ def prop_calc(j, astdys):
         series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         ds = int(len(series)/10)
 
-        series = series[int(8*ds):int(10*ds)]
+        series = series[int(7*ds):int(9*ds)]
 
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
@@ -141,6 +141,16 @@ def prop_calc(j, astdys):
     sind = np.argmax(Yp)
     g = freq[gind]  
     s = freq[sind]
+
+    g5 = 4.25749319/rev
+    g6 = 28.24552984/rev
+    g7 = 3.08675577/rev
+    g8 = 0.67255084/rev
+    s6 = -26.34496354/rev
+    s7 = -2.99266093/rev
+    s8 = -0.69251386/rev
+
+
     z1 = abs(g+s-g6-s6)
     z2 = abs(g+s-g5-s7)
     z3 = abs(g+s-g5-s6)
@@ -209,7 +219,7 @@ def prop_calc(j, astdys):
     
             #'''
             #'''
-            
+    '''        
     z1 = 2*g6-g5
     z2 = 2*g6-g7
     z3 = -2*g5+3*g6
@@ -218,7 +228,7 @@ def prop_calc(j, astdys):
     z6 = -g5+2*g6+s6-s7
     z7 = g5-s6+s7
     z8 = 2*g5-g7
-
+    
     g=g*rev
     s=s*rev
     g5=g5*rev
@@ -228,7 +238,7 @@ def prop_calc(j, astdys):
     s6=s6*rev
     s7=s7*rev
     s8=s8*rev
-
+    
     de = np.abs(np.array([g5,g6,g7,g8,s6,s7,s8,g-g5,g-g6,g5-g6,s-s7,s-s6,s7-s6,g+s-s7-g5,g+s-s7-g6,g+s-s6-g5,g+s-s6-g6,2*g-2*s,g-2*g5+g6,g+g5-2*g6,2*g-g5-g6,-g+s+g5-s7,-g+s+g6-s7,-g+s+g5-s6,-g+s+g6-s6,g-g5+s7-s6,g-g5-s7+s6,g-g6+s7-s6,g-g6-s7+s6,2*g-s-s7,2*g-s-s6,-g+2*s-g5,-g+2*s-g6,2*g-2*s7,2*g-2*s6,2*g-s7-s6,g-s+g5-s7,g-s+g5-s6,g-s+g6-s7,g-s+g6-s6,g+g5-2*s7,g+g6-2*s7,g+g5-2*s6,g+g6-2*s6,g+g5-s7-s6,g+g6-s7-s6,s-2*s7+s6,s+s7-2*s6,2*s-s7-s6,s+g5-g6-s7,s-g5+g6-s7,s+g5-g6-s6,s-g5+g6-s6,2*s-2*g5,2*s-2*g6,2*s-g5-g6,s-2*g5+s7,s-2*g5+s6,s-2*g6+s7,s-2*g6+s6,s-g5-g6+s7,s-g5-g6+s6,2*g-2*g5,2*g-2*g6,2*s-2*s7,2*s-2*s6,g-2*g6+g7,g-3*g6+2*g5,2*(g-g6)+(s-s6),g+g5-g6-g7,g-g5-g6+g7,g+g5-2*g6-s6+s7,3*(g-g6)+(s-s6)]))/rev
     #Knezevic and Milani frequencies
 
@@ -239,6 +249,7 @@ def prop_calc(j, astdys):
         if de[i] < 10000:
             continue
         secresde.append(int(np.where(freq >= de[i])[0][0]))
+    '''
     #z7_g,
     #z1_s,z8_s,z9_s
     freq1 = [g5,g6,g7,g8,z1_g,z2_g,z3_g,z4_g,z5_g,z8_g,z9_g]
@@ -252,18 +263,23 @@ def prop_calc(j, astdys):
     
     #freq1 = [g5,g6,g7,g8,z4]
     #freq2 = [s6,s7,s8,z4]
-    '''
+    
+    print('1:',secresind1)
     secresind1 = []
     secresind2 = []
     for i in freq1:
-        #if 1/i < 10000:
-        #    continue
-        secresind1.append(np.where(freq>=i)[0][0])
+        try:
+            secresind1.append(np.where(freq>=i)[0][0])
+        except:
+            continue
     for i in freq2:
         #if 1/i < 10000:
         #    continue
-        secresind2.append(np.where(freq>=i)[0][0])
-    '''  
+        try:
+            secresind2.append(np.where(freq>=i)[0][0])
+        except:
+            continue
+    print('2:',secresind2)
     print(secresind1,secresind2)
     #secresind1 = [np.where(freq >= g5)[0][0],np.where(freq >= g6)[0][0],np.where(freq >= g7)[0][0],np.where(freq >= g8)[0][0],np.where(freq >= z1_g)[0][0],np.where(freq >= z2_g)[0][0],np.where(freq >= z3_g)[0][0],np.where(freq >= z4_g)[0][0],np.where(freq >= z5_g)[0][0],np.where(freq >= z7_g)[0][0],np.where(freq >= z8_g)[0][0],np.where(freq >= z9_g)[0][0]]
     #secresind2 = [np.where(freq >= s6)[0][0],np.where(freq >= s7)[0][0],np.where(freq >= s8)[0][0],np.where(freq >= z1_s)[0][0],np.where(freq >= z2_s)[0][0],np.where(freq >= z3_s)[0][0],np.where(freq >= z6_s)[0][0],np.where(freq >= z8_s)[0][0],np.where(freq >= z9_s)[0][0]]
@@ -426,7 +442,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        j = range(51,53)
+        #j = range(51,53)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
@@ -435,4 +451,5 @@ if __name__ == '__main__':
         print(pe_df)
 
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_8_10.csv')
+        pe_df.to_csv('data_files/prop_elem_AstFam_families_7_9.csv')
+
