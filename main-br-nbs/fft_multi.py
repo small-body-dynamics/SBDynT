@@ -43,7 +43,7 @@ def prop_calc(j, astdys):
         series = bin_to_df.bin_to_df('AstFam_families',str(j),arc1,astdys,'8planet')
         ds = int(len(series)/10)
 
-        series = series[int(1*ds):int(3*ds)]
+        series = series[int(0*ds):int(2*ds)]
 
         #archive = rebound.SimulationArchive(filename+'/archive.bin')
         #print(len(archive),'len archive')
@@ -435,7 +435,7 @@ if __name__ == '__main__':
 
         multi_prop = functools.partial(prop_calc, astdys=astdys)
         j = range(len(astdys))
-        j = range(22,23)
+        #j = range(22,23)
         #begin = datetime.now()
         data = pool.map(multi_prop, j)
         gp_vals = np.zeros((len(astdys),9))
@@ -444,5 +444,5 @@ if __name__ == '__main__':
         print(pe_df)
 
 
-        pe_df.to_csv('data_files/prop_elem_AstFam_families_test.csv')
+        pe_df.to_csv('data_files/prop_elem_AstFam_families_0_2.csv')
 
