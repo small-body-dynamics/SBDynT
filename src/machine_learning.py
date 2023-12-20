@@ -214,9 +214,11 @@ def ML_parse_features(data):
 def compute_ML_features_from_dbase_file(fname,kbo_id=1):
     '''
     Load data from file and calculate features
-    fname=file name that contains simulation data; MUST contain outputs only every 1000 years, only contain lines from expected object
-      Will only take first lines lines from fname, which should be times [0,1E3,2E3,...,99E3,100E3]
-    col_order=indexes for columns: time, a (semi-major axis), eccentriciy, inclination, Omega (longitude of ascending node), omega (argument of pericenter)
+    fname=file name that contains simulation data; 
+        MUST contain outputs only every 1000 years, only contain lines from expected object
+        Will only take first lines lines from fname, which should be times [0,1E3,2E3,...,99E3,100E3]
+    col_order=indexes for columns: time, a (semi-major axis), eccentriciy, 
+        inclination, Omega (longitude of ascending node), omega (argument of pericenter)
     Returns features for ML classification
     '''
 
@@ -266,7 +268,7 @@ def compute_ML_features_from_dbase_file(fname,kbo_id=1):
             argperi=data_sb['peri'][j] * np.pi / 180.,
             ma=data_sb['MA'][j] * np.pi / 180.)
 
-        [xrf, yrf, zrf] = tools.rotating_frame_xyz(x=x, y=y, z=z,
+        [xrf, yrf, zrf, vxrf, vyrf, vzrf] = tools.rotating_frame_cartesian(x=x, y=y, z=z,
             node=data_pl['node'][j] * np.pi / 180.,
             inc=data_pl['inc'][j] * np.pi / 180.,
             argperi=data_pl['peri'][j] * np.pi / 180.,
