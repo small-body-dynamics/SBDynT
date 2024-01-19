@@ -208,6 +208,29 @@ def ML_parse_features(data):
                        cosphbar[-1,resorder]*cosphbar[-1,resorder])
         features += [temp]
 
+    #calculate the correlations between a and e, a and i, and e and i
+
+    temp =  max_corelation(data[:,1],data[:,2])
+    features += [temp]
+    temp =  max_corelation(data[:,1],data[:,3])
+    features += [temp]
+    temp =  max_corelation(data[:,2],data[:,3])
+    features += [temp]
+
+    #calculate spectral fractions for a, e, i
+    temp1, temp2, temp3 = spectral_characteristics(data[:,1])
+    features += [temp1]
+    features += [temp2]
+    features += [temp3]
+    temp1, temp2, temp3 = spectral_characteristics(data[:,2])
+    features += [temp1]
+    features += [temp2]
+    features += [temp3]
+    temp1, temp2, temp3 = spectral_characteristics(data[:,3])
+    features += [temp1]
+    features += [temp2]
+    features += [temp3]
+
     return np.array(features).reshape(1,-1)  # make sure features is a 2d array
 
 
@@ -301,3 +324,31 @@ def compute_ML_features_from_dbase_file(fname,kbo_id=1):
     # features = parse(data)
 
     return features
+
+def max_corelation(d1, d2):
+    d1 = (d1 - np.mean(d1)) / (np.std(d1))
+    d2 = (d2 - np.mean(d2)) / (np.std(d2))  
+    cmax = (np.correlate(d1, d2, 'full')/len(d1)).max()
+    return cmax
+
+
+def spectral_characteristics(data):
+    Y = np.fft.rfft(data)
+    jmax = len(Y)
+    Y = Y[1:jmax]
+    Y = np.abs(Y)**2.
+    arr1 = Y.argsort()    
+    sorted_Y = Y[arr1[::-1]]
+    ytot = 0.
+    for Y in (sorted_Y):
+        ytot+=Y
+    norm_Y = sorted_Y/ytot
+    count=0
+    maxnorm_Y = sorted_Y/sorted_Y[0]
+    for j in range(0,jmax-1):
+        if(maxnorm_Y[j] > 0.05):
+            count+=1
+    sf = 1.0*count/(jmax-1.)
+    maxpower = sorted_Y[0]
+    max3 = sorted_Y[0] + sorted_Y[1] + sorted_Y[2]
+    return sf, maxpower, max3

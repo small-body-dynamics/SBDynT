@@ -22,11 +22,19 @@ def aei_to_xv(GM=1., a=1, e=0., inc=0., node=0., argperi=0., ma=0.):
         x, y, z = cartesian positions (units set by GM)
         vx, vy, vz = cartesian velocities (units set by GM)
     """
-
+    
+    x = np.double(0.)
+    y = np.double(0.)
+    z = np.double(0.)
+    vx = np.double(0.)
+    vy = np.double(0.)
+    vz = np.double(0.)
+    
     # based on M. Duncan's routines in swift
     if(e >= 1. or e < 0. or a < 0.):
-        print("orbital eccentricity not between 0 and 1, cannot proceed")
-        return 0, 0., 0., 0., 0., 0., 0.
+        print("in tools.aei_to_xv, the provided orbital eccentricity is")
+        print("not between 0 and 1, so cannot proceed with conversion")
+        return 0,  x, y, z, vx, vy, vz
 
     sp = np.sin(argperi)
     cp = np.cos(argperi)
@@ -442,7 +450,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
         print("Problem reading the simulation archive file")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == 0. and tmax == 0.):
         #user didn't set these, so we will read the whole thing
@@ -500,7 +508,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     if(imin==nout and imax==0):
         print("tools.read_sa_for_sbody failed")
         print("There were no simulation archives in the desired time range")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
         t = t[imin:imax+1]
         a = a[:,imin:imax+1]
@@ -554,7 +562,7 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
     if(nout <1):
         print("tools.read_sa_for_sbody_cartesian failed")
         print("Problem reading the simulation archive file")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == 0. and tmax == 0.):
         #user didn't set these, so we will read the whole thing
@@ -607,7 +615,7 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
     if(imin==nout and imax==0):
         print("tools.rread_sa_for_sbody_cartesian failed")
         print("There were no simulation archives in the desired time range")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
         t = t[imin:imax+1]
         x = x[:,imin:imax+1]
@@ -720,7 +728,7 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
 #################################################################
 #################################################################
 # Read in a simulation archive and return the small body's
-# rotatee cartesian position coordinates in a frame with an x-y
+# rotated cartesian position coordinates in a frame with an x-y
 # plane matching a planet's plane and the planet located
 # on the x-axis (useful for plotting resonant populations)
 #################################################################
@@ -756,7 +764,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     elif not(planet in planets):
         print("tools.calc_rotating_frame failed")
         print("specified planet is not in the list of planets (typo?)")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     #read the planet orbit for the necessary rotation information
     plflag, apl,epl,ipl,nodepl,aperipl,mapl,t = \
@@ -766,7 +774,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     if(not plflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in planet's orbital history")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
     #read in the last simulation snapshot to get the value of GMsum for 
@@ -782,7 +790,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     if(not tpflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in small body's cartesian positions")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
     nout=len(t)
