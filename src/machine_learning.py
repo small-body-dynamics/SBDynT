@@ -26,6 +26,21 @@ def ML_parse_features(data):
     means = np.mean(data[:, 1:cmax], axis=0)
     stdev = np.std(data[:, 1:cmax], axis=0)
 
+    amin = mins[0]
+    amax = maxes[0]
+    amean = means[0]
+    astd = stdev[0]
+
+    emin = mins[1]
+    emax = maxes[1]
+    emean = means[1]
+    estd = stdev[1]
+
+    imin = mins[2]
+    imax = maxes[2]
+    imean = means[2]
+    istd = stdev[2]    
+
     # Take time derivatives
     diffs = data[1:, :] - data[:-1, :]
     #correct the angular means, dels, and diffs for wrapping
@@ -230,6 +245,94 @@ def ML_parse_features(data):
     features += [temp1]
     features += [temp2]
     features += [temp3]
+
+
+    #Do some binning in the a, e, and i-distributions
+
+    a1 = amin
+    a2 = amean-0.75*astd
+    a3 = amean-0.375*astd
+    a4 = amean+0.375*astd
+    a5 = amean+0.75*astd
+    a6 = amax
+
+    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
+        abins = [a1,a2,a3,a4,a5,a6]
+    else:
+        da = (amax-amin)/8.
+        a2 =amin + 2.*da
+        a3 = a2 + da
+        a4 = a3 + 2.*da
+        a5 = a4 + da
+        abins = [a1,a2,a3,a4,a5,a6]
+        
+    acounts, tbins = np.histogram(data[:,1],bins=abins)
+
+    #average ratio of extreme-a density to middle-a density
+    temp = (acounts[0] + acounts[4])/(2.*acounts[2])
+    features += [temp]
+
+    #ratio of extreme-low-a density to extreme high-a density
+    temp = (acounts[0]/acounts[4])
+    features += [temp]
+
+
+    a1 = emin
+    a2 = emean-0.75*estd
+    a3 = emean-0.375*estd
+    a4 = emean+0.375*estd
+    a5 = emean+0.75*estd
+    a6 = emax
+
+    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
+        ebins = [a1,a2,a3,a4,a5,a6]
+    else:
+        de = (emax-emin)/8.
+        a2 =emin + 2.*de
+        a3 = a2 + de
+        a4 = a3 + 2.*de
+        a5 = a4 + de
+        ebins = [a1,a2,a3,a4,a5,a6]
+
+    ecounts, tbins = np.histogram(data[:,2],bins=ebins)
+
+    #average ratio of extreme-a density to middle-a density
+    temp = (ecounts[0] + ecounts[4])/(2.*ecounts[2])
+    features += [temp]
+
+    #ratio of extreme-low-a density to extreme high-a density
+    temp = (ecounts[0]/ecounts[4])
+    features += [temp]
+
+
+    a1 = imin
+    a2 = imean-0.75*istd
+    a3 = imean-0.375*istd
+    a4 = imean+0.375*istd
+    a5 = imean+0.75*istd
+    a6 = imax
+
+    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
+        ibins = [a1,a2,a3,a4,a5,a6]
+    else:
+        di = (imax-imin)/8.
+        a2 =imin + 2.*di
+        a3 = a2 + di
+        a4 = a3 + 2.*di
+        a5 = a4 + di
+        ibins = [a1,a2,a3,a4,a5,a6]
+
+    icounts, tbins = np.histogram(data[:,3],bins=ibins)
+
+    #average ratio of extreme-a density to middle-a density
+    temp = (icounts[0] + icounts[4])/(2.*icounts[2])
+    features += [temp]
+
+    #ratio of extreme-low-a density to extreme high-a density
+    temp = (icounts[0]/icounts[4])
+    features += [temp]
+
+
 
     return np.array(features).reshape(1,-1)  # make sure features is a 2d array
 
