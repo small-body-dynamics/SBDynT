@@ -33,9 +33,10 @@ for i in range(8):
 horizon_planets = pd.DataFrame(plan_vals, columns=plan_cols)    
 if filetype != 'Generic':
     astdys = pd.read_csv('data_files/'+filetype+'_data.csv')
-    
-    #print(astdys)
-    for i in range(1640,len(astdys)):
+    if not os.path.isdir('Sims/'+filetype):
+        os.mkdir('Sims/'+filetype)
+    print(astdys)
+    for i in range(len(astdys)):
     #for i in range(1465,1500):
     #for i in arange:
         #print(i)
@@ -61,6 +62,7 @@ if filetype != 'Generic':
         #print(horizon_data['sbx'])
         horizon_data['flag'][:] = flag
         horizon_data['epoch'][:] = epoch
+        print(sbx)
         horizon_data['sbx'] = sbx
         horizon_data['sby'] = sby
         horizon_data['sbz'] = sbz
@@ -166,68 +168,65 @@ elif filetype == "DEEP":
         horizon_planets.to_csv(filename+'/horizon_planets.csv')
         
     
+
+elif filetype == "Generic":
     
-    #vals = [flag,epoch,sbx,sby,sbz,sbvx,sbvy,sbvz]
-    horizon_data = pd.DataFrame(vals,columns=['flag','epoch','sbx','sby','sbz','sbvx','sbvy','sbvz'])
-    horizon_planets = pd.DataFrame(plan_vals, columns=plan_cols)
-    planet_id = {1: 'mercury', 2: 'venus', 3:'earth', 4:'mars', 5: 'jupiter', 6 : 'saturn', 7 : 'uranus', 8 : 'neptune'}
+    objname = str(sys.argv[2])
+    print(objname)
+    #objname = str(objects[i])
+    filename = 'Sims/'+filetype + '/' + objname
+    if not os.path.isdir(filename):
+        os.mkdir(filename)
+    sbody = objname    
+    des=sbody
+    ntp = 1 + clones
+    sbx = np.zeros(ntp)
+    sby = np.zeros(ntp)
+    sbz = np.zeros(ntp)
+    sbvx = np.zeros(ntp)
+    sbvy = np.zeros(ntp)
+    sbvz = np.zeros(ntp)
     
-    print(astdys)
-    for i in range(len(astdys)):
-    #for i in range(len(objects)):
-    #for i in arange:
-        #print(i)
-        objname = str(astdys['Name'].iloc[i])
-        print(objname)
-        #objname = str(objects[i])
-        filename = filetype + '/' + objname
-        if not os.path.isdir(filename):
-            os.mkdir(filename)
-        sbody = objname    
-        des=sbody
-        ntp = 1 + clones
-        sbx = np.zeros(ntp)
-        sby = np.zeros(ntp)
-        sbz = np.zeros(ntp)
-        sbvx = np.zeros(ntp)
-        sbvy = np.zeros(ntp)
-        sbvz = np.zeros(ntp)
-    
-        flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
-        horizon_data['flag'] = [flag]
-        horizon_data['epoch'] = epoch
-        horizon_data['sbx'] = sbx
-        horizon_data['sby'] = sby
-        horizon_data['sbz'] = sbz
-        horizon_data['sbvx'] = sbvx
-        horizon_data['sbvy'] = sbvy
-        horizon_data['sbvz'] = sbvz
+    flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = horizons_api.query_sb_from_jpl(des=des,clones=clones)
+    horizon_data['flag'][:] = flag
+    horizon_data['epoch'][:] = epoch
+    print(sbx)
+    horizon_data['sbx'][:] = sbx
+    horizon_data['sby'][:] = sby
+    horizon_data['sbz'][:] = sbz
+    horizon_data['sbvx'][:] = sbvx
+    horizon_data['sbvy'][:] = sbvy
+    horizon_data['sbvz'][:] = sbvz
         
-        horizon_data.to_csv(filename+'/horizon_data.csv')  
+    horizon_data.to_csv(filename+'/horizon_data.csv')  
     
-        notplanets = [1,2,3,4]
-        planets = [5,6,7,8]
-                    
-        for pl in notplanets:
-            flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=planet_id[pl],epoch=epoch)
-            horizon_planets['mass_'+str(pl)] = mass
-            horizon_planets['radius_'+str(pl)] = radius
-            horizon_planets['x_'+str(pl)] = x
-            horizon_planets['y_'+str(pl)] = y
-            horizon_planets['z_'+str(pl)] = z
-            horizon_planets['vx_'+str(pl)] = vx
-            horizon_planets['vy_'+str(pl)] = vy
-            horizon_planets['vz_'+str(pl)] = vz
     
-        for pl in planets:
-            flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=planet_id[pl], epoch=epoch)
-            horizon_planets['mass_'+str(pl)] = mass
-            horizon_planets['radius_'+str(pl)] = radius
-            horizon_planets['x_'+str(pl)] = x
-            horizon_planets['y_'+str(pl)] = y
-            horizon_planets['z_'+str(pl)] = z
-            horizon_planets['vx_'+str(pl)] = vx
-            horizon_planets['vy_'+str(pl)] = vy
-            horizon_planets['vz_'+str(pl)] = vz
+    notplanets = [1,2,3,4]
+    planets = [5,6,7,8]
+                 
     
+    for pl in notplanets:
+        flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=planet_id[pl],epoch=epoch)
+        horizon_planets['mass_'+str(pl)] = mass
+        horizon_planets['radius_'+str(pl)] = radius
+        horizon_planets['x_'+str(pl)] = x
+        horizon_planets['y_'+str(pl)] = y
+        horizon_planets['z_'+str(pl)] = z
+        horizon_planets['vx_'+str(pl)] = vx
+        horizon_planets['vy_'+str(pl)] = vy
+        horizon_planets['vz_'+str(pl)] = vz
+    for pl in planets:
+        flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=planet_id[pl], epoch=epoch)
+        horizon_planets['mass_'+str(pl)] = mass
+        horizon_planets['radius_'+str(pl)] = radius
+        horizon_planets['x_'+str(pl)] = x
+        horizon_planets['y_'+str(pl)] = y
+        horizon_planets['z_'+str(pl)] = z
+        horizon_planets['vx_'+str(pl)] = vx
+        horizon_planets['vy_'+str(pl)] = vy
+        horizon_planets['vz_'+str(pl)] = vz
         horizon_planets.to_csv(filename+'/horizon_planets.csv')
+        
+    
+    
+    

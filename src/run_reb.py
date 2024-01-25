@@ -226,7 +226,7 @@ def initialize_simulation(planets=['Jupiter','Saturn','Uranus','Neptune'], des='
     print('done')
     #print('Init_megno')
     
-    sim.init_megno()
+    #sim.init_megno()
 
     print(epoch)
     return 1, epoch, sim

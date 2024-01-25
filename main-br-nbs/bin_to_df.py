@@ -125,7 +125,7 @@ def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 
             series['ax'] = ax
             series['ay'] = ay
             series['az'] = az
-            if planets == '4planet':
+            if planet_set == '4planet':
                 series['hj'] = hpl[:,0]
                 series['kj'] = kpl[:,0]
                 series['pj'] = ppl[:,0]
@@ -188,10 +188,10 @@ def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 
         o = tp.calculate_orbit(com)
         on = tpn.calculate_orbit(com)
         #print(sim.integrator)
-        if sim.integrator == 'whfast':
-            megno[j] = sim.calculate_megno()
-        if sim.integrator == 'ias15':
-            megno[j] = sim.calculate_megno()
+        #if sim.integrator == 'whfast':
+        #    megno[j] = sim.calculate_megno()
+        #if sim.integrator == 'ias15':
+        #    megno[j] = sim.calculate_megno()
         t[j] = sim.t
         a[j] = o.a
         an[j] = on.a
@@ -257,7 +257,7 @@ def bin_to_df(folder,objname,archive, astdys,planet_set = '4planet', clonenum = 
     series['ax'] = ax
     series['ay'] = ay
     series['az'] = az
-    
+    print(planet_set)
     if planet_set == '4planet':
         series['hj'] = hpl[:,0]
         series['kj'] = kpl[:,0]

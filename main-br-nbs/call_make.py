@@ -1,4 +1,8 @@
-import os
-#import make_series
-for i in range(1185):
-    os.system("python make_series.py "+str(i))
+import make_function
+import sys
+
+objname = str(sys.argv[1])
+objtype = str(sys.argv[2])
+numplanets = str(sys.argv[3])
+
+make_function.makef(objname,objtype,numplanets)
