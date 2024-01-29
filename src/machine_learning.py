@@ -78,7 +78,9 @@ def ML_parse_features(data):
     dxdt = diffs[:, 1:cmax] / diffs[:, 0,np.newaxis]
 
     mindxdt = np.amin(dxdt, axis=0)
+    absmindxdt = np.amin(np.abs(dxdt), axis=0)
     meandxdt = np.mean(dxdt, axis=0)
+    absmaxdxdt = np.amax(np.abs(dxdt), axis=0)
     maxdxdt = np.amax(dxdt, axis=0)
     deldxdt = maxdxdt - mindxdt
 
@@ -87,9 +89,9 @@ def ML_parse_features(data):
     deldxdt_norm = deldxdt/meandxdt
 
     # rearrange data into the order I want
-    # arrs = [initials,finals,mins,means,maxes,stdev,dels,mindxdt,meandxdt,maxdxdt,deldxdt]
+    # arrs = [mins,means,maxes,absmaxes,stdev,dels,absmindxdt,mindxdt,meandxdt,maxdxdt,absmaxdxdt,deldxdt]
     arrs = [mins, means, maxes, stdev, stdev_norm, dels, dels_norm,
-            mindxdt, meandxdt, maxdxdt, deldxdt, deldxdt_norm]
+            absmindxdt, mindxdt, meandxdt, maxdxdt, absmaxdxdt, deldxdt, deldxdt_norm]
     inds = [0, 1, 2, 3, 4, 5, 6]  # a, e, i, Omega, omega, pomega, q
     features = []
 
