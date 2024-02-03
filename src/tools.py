@@ -478,10 +478,12 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
         for j in range(0,ntp):
             #the hash format for clones
             tp_hash = sbody + "_" + str(j)
+            #print(tp_hash)
             #except the best fit is just the designation:
             if(j==0):
-                tp_hash = sbody
+                tp_hash = str(sbody)
             try:
+                #print(tp_hash,'hash')
                 p = sim.particles[tp_hash]
             except:
                 print("tools.read_sa_for_sbody failed")

@@ -185,7 +185,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     else:
         sbx += sx; sby += sy; sbz += sz
         sbvx += svx; sbvy += svy; sbvz += svz
-        sbhash = des 
+        sbhash = str(des) 
         sim.add(m=0., x=sbx, y=sby, z=sbz,
                 vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
 
