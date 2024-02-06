@@ -83,6 +83,9 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
     elif(tmax >1e9 and deltat > 1e4):
         tscale = 1e3
         timelabel = "time (kyr)"
+    else:
+        tscale =1.
+        timelabel = "time (yr)"
 
 
     
