@@ -15,7 +15,7 @@ import scipy.signal as signal
 import run_reb
 import tools
 
-def prop_calc(archive,objname):
+def prop_calc(objname, filename='Single'):
     
     """
     Calculate prop elements of small celestial bodies from simulation archive files, using a given file list of names.
@@ -42,8 +42,9 @@ def prop_calc(archive,objname):
     
 #    print(objname)
     try:       
+        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
+        archive = rebound.SimulationArchive(fullfile)
         nump = len(archive[0].particles)
-        
         flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
 
         
@@ -340,16 +341,30 @@ def prop_calc(archive,objname):
 
 if __name__ == "__main__":
     filename = str(sys.argv[1])
-    names_df = pd.read_csv('../data/data_files/'+filename+'_data.csv')
-    data = []
-    for i,objname in enumerate(names_df['Name']):
-        fullfile = '../data/'+filename+'/'+str(i)+'/archive.bin'
-        archive = rebound.SimulationArchive(fullfile)
-        data_line = prop_calc(archive,objname)
-        #print(data_line)
-        data.append(data_line)
-    column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
-    data_df = pd.DataFrame(data,columns=column_names)
-    data_df.to_csv('../data/results/Test_prop_elem.csv')
-        
     
+    if filename != 'Single':
+    
+        names_df = pd.read_csv('../data/data_files/'+filename+'_data.csv')
+        data = []
+        for i,objname in enumerate(names_df['Name']):
+            fullfile = '../data/'+filename+'/'+str(i)+'/archive.bin'
+            #archive = rebound.SimulationArchive(fullfile)
+            data_line = prop_calc(objname,fullfile)
+            #print(data_line)
+            data.append(data_line)
+        column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
+        data_df = pd.DataFrame(data,columns=column_names)
+        data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
+        
+    else:
+        column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
+        objname = str(sys.argv[2])
+        fullfile = '../data/'+filename+'/'+objname+'/archive.bin'
+        #archive = rebound.SimulationArchive(fullfile)
+        data_line = prop_calc(objname,fullfile)
+        data_df = pd.DataFrame(data_line,columns = column_names)
+        data_df.to_csv('../data/Single/'+objname+'/'+objname+'_prop_elem.csv')
+        
+                       
+
+        
