@@ -15,6 +15,23 @@ import scipy.signal as signal
 import run_reb
 import tools
 
+def prop_multi(filename):
+    names_df = pd.read_csv('../data/data_files/'+filename+'_data.csv')
+    data = []
+    for i,objname in enumerate(names_df['Name']):
+        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
+        #archive = rebound.SimulationArchive(fullfile)
+        data_line = prop_calc(str(objname),filename)
+        #print(data_line)
+        data.append(data_line)
+    column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
+    #print(data)
+    data_df = pd.DataFrame(data,columns=column_names)
+    data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
+        
+
+
+
 def prop_calc(objname, filename='Single'):
     
     """
@@ -38,8 +55,7 @@ def prop_calc(objname, filename='Single'):
         
         If an error occurs in the code, then outputs is instead returned as [objname,0,0,0,0,0,0,0].
         
-    """
-    
+    """    
 #    print(objname)
     try:       
         fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
@@ -64,7 +80,7 @@ def prop_calc(objname, filename='Single'):
     h_init = (e_init)*np.sin(lan_init+aop_init)
     k_init = (e_init)*np.cos(lan_init+aop_init)
 
-    
+    #print(t_init,fullfile,objname)
     dt = t_init[1]
     n = len(h_init)
     #print('dt = ', dt)
