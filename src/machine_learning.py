@@ -15,6 +15,7 @@ def ML_parse_features(data):
     # time,a,e,inc(rad),node(rad),argperi(rad),
     #    6          7          8                9
     # longperi(rad),q,rotating-frame r, rotating-frame phi(rad)
+    # tisserand parameter (10)
     cmax = 8
 
     # Take stats of simulations
@@ -192,7 +193,7 @@ def ML_parse_features(data):
     if (not (rbinavg[0] == 0)):
         temp = (rbinmax[0] - rbinmin[0]) / rbinavg[0]
     else:
-        temp = 0
+        temp = 0.
     features += [temp]
     features += [rbinstd[0]]
 
@@ -202,7 +203,7 @@ def ML_parse_features(data):
     if (not (rbinavg[n] == 0)):
         temp = (rbinmax[n] - rbinmin[n]) / rbinavg[n]
     else:
-        temp = 0
+        temp = 0.
     features += [temp]
     features += [rbinstd[n]]
 
@@ -212,7 +213,7 @@ def ML_parse_features(data):
     if (not (rbinavg[n] == 0)):
         temp = (rbinmax[n] - rbinmin[n]) / rbinavg[n]
     else:
-        temp = 0
+        temp = 0.
     features += [temp]
     features += [rbinstd[n]]
 
@@ -262,7 +263,7 @@ def ML_parse_features(data):
         abins = [a1,a2,a3,a4,a5,a6]
     else:
         da = (amax-amin)/8.
-        a2 =amin + 2.*da
+        a2 = amin + 2.*da
         a3 = a2 + da
         a4 = a3 + 2.*da
         a5 = a4 + da
@@ -271,13 +272,80 @@ def ML_parse_features(data):
     acounts, tbins = np.histogram(data[:,1],bins=abins)
 
     #average ratio of extreme-a density to middle-a density
-    temp = (acounts[0] + acounts[4])/(2.*acounts[2])
-    features += [temp]
-
+    if(acounts[2] == 0):
+        acounts[2] = 1
+    em_a = (acounts[0] + acounts[4])/(2.*acounts[2])
+    features += [em_a]
     #ratio of extreme-low-a density to extreme high-a density
-    temp = (acounts[0]/acounts[4])
-    features += [temp]
+    if(acounts[4] == 0):
+        acounts[4] = 1
+    lh_a = (acounts[0]/acounts[4])
+    features += [lh_a]
 
+    #repeat but across a couple time bins
+    dj = data[:,1].size//4
+
+    
+    acounts, tbins = np.histogram(data[0:dj,1],bins=abins)
+    if(acounts[2] == 0):
+        acounts[2] = 1
+    em1 = (acounts[0] + acounts[4])/(2.*acounts[2])
+    #ratio of extreme-low-a density to extreme high-a density
+    if(acounts[4] == 0):
+        acounts[4] = 1
+    lh1 = (acounts[0]/acounts[4])
+ 
+    acounts, tbins = np.histogram(data[dj:2*dj,1],bins=abins)
+    if(acounts[2] == 0):
+        acounts[2] = 1
+    em2 = (acounts[0] + acounts[4])/(2.*acounts[2])
+    #ratio of extreme-low-a density to extreme high-a density
+    if(acounts[4] == 0):
+        acounts[4] = 1
+    lh2 = (acounts[0]/acounts[4])
+    
+    acounts, tbins = np.histogram(data[2*dj:3*dj,1],bins=abins)
+    if(acounts[2] == 0):
+        acounts[2] = 1
+    em3 = (acounts[0] + acounts[4])/(2.*acounts[2])
+    #ratio of extreme-low-a density to extreme high-a density
+    if(acounts[4] == 0):
+        acounts[4] = 1
+    lh3 = (acounts[0]/acounts[4])
+
+
+    acounts, tbins = np.histogram(data[3*dj:4*dj,1],bins=abins)
+    if(acounts[2] == 0):
+        acounts[2] = 1
+    em4 = (acounts[0] + acounts[4])/(2.*acounts[2])
+    #ratio of extreme-low-a density to extreme high-a density
+    if(acounts[4] == 0):
+        acounts[4] = 1
+    lh4 = (acounts[0]/acounts[4])
+
+    min_em = min(em1,em2,em3,em4)
+    max_em = max(em1,em2,em3,em4)
+
+    temp = max_em - min_em
+    features += [temp]
+    temp = temp/em_a
+    features += [temp]
+    features += [min_em]
+    features += [max_em]
+    
+
+    min_lh = min(lh1,lh2,lh3,lh4)
+    max_lh = max(lh1,lh2,lh3,lh4)
+
+    temp = max_lh - min_lh
+    features += [temp]
+    temp = temp/lh_a
+    features += [temp]
+    features += [min_lh]
+    features += [max_lh]
+
+
+    #eccentricity distribution
 
     a1 = emin
     a2 = emean-0.75*estd
@@ -299,9 +367,13 @@ def ML_parse_features(data):
     ecounts, tbins = np.histogram(data[:,2],bins=ebins)
 
     #average ratio of extreme-a density to middle-a density
+    if(ecounts[2] == 0):
+        ecounts[2] = 1
     temp = (ecounts[0] + ecounts[4])/(2.*ecounts[2])
     features += [temp]
-
+    
+    if(ecounts[4] == 0):
+        ecounts[4] = 1
     #ratio of extreme-low-a density to extreme high-a density
     temp = (ecounts[0]/ecounts[4])
     features += [temp]
@@ -327,12 +399,48 @@ def ML_parse_features(data):
     icounts, tbins = np.histogram(data[:,3],bins=ibins)
 
     #average ratio of extreme-a density to middle-a density
+    if(icounts[2] == 0):
+        icounts[2] = 1    
     temp = (icounts[0] + icounts[4])/(2.*icounts[2])
     features += [temp]
 
     #ratio of extreme-low-a density to extreme high-a density
+    if(ecounts[4] == 0):
+        ecounts[4] = 1
     temp = (icounts[0]/icounts[4])
     features += [temp]
+
+    #some data features based on the tisserand paramter:
+    mintn = np.amin(data[:, 10])
+    features+=[mintn]
+    meantn = np.mean(data[:, 10])
+    features+=[meantn]
+    maxtn = np.amax(data[:, 10])
+    features+=[maxtn]
+    
+    stdevtn = np.std(data[:, 10])
+    features+=[stdevtn]
+    stdev_norm_tn = stdevtn/meantn
+    features+=[stdev_norm_tn]
+    
+    deltn = maxtn - mintn
+    features+=[deltn]
+    dels_norm_tn = deltn/meantn
+    features+=[dels_norm_tn]
+
+    difftn = data[1:,10] - data[:-1,10]
+    dtndt = difftn[:] / diffs[:, 0]
+
+    mindtndt = np.amin(dtndt)
+    features+=[mindtndt]
+    meandtndt = np.mean(dtndt)
+    features+=[meandtndt]
+    maxdtndt = np.amax(dtndt)
+    features+=[maxdtndt]
+    deldtndt = maxdtndt - mindtndt
+    features+=[deldtndt]
+
+
 
 
 
@@ -373,6 +481,7 @@ def compute_ML_features_from_dbase_file(fname,kbo_id=1):
     q_sb = np.zeros(lines)
     i_sb = np.zeros(lines)
     t_sb = np.zeros(lines)
+    tiss_sb = np.zeros(lines)
     node_sb = np.zeros(lines)
     peri_sb = np.zeros(lines)
     rrf = np.zeros(lines)
@@ -388,6 +497,8 @@ def compute_ML_features_from_dbase_file(fname,kbo_id=1):
         t_sb[i] = data_sb['t'][j]
         node_sb[i] = data_sb['node'][j]*np.pi/180.
         peri_sb[i] = data_sb['peri'][j]*np.pi/180.
+        tiss_sb[i] = data_pl['a'][j]/data_sb['a'][j]
+        tiss_sb[i] += 2.*np.cos(i_sb[i])*np.sqrt(data_sb['a'][j]/data_pl['a'][j]*(1.-e_sb[i]*e_sb[i]))
 
         [flag, x, y, z, vx, vy, vz] = tools.aei_to_xv(
             GM=1., a=data_sb['a'][j],e=data_sb['e'][j],
@@ -423,6 +534,7 @@ def compute_ML_features_from_dbase_file(fname,kbo_id=1):
     data = np.concatenate((data, q_sb[:, np.newaxis]), axis=1)
     data = np.concatenate((data, rrf[:, np.newaxis]), axis=1)
     data = np.concatenate((data, phirf[:, np.newaxis]), axis=1)
+    data = np.concatenate((data, tiss_sb[:, np.newaxis]), axis=1)
 
     # Compute features
     features = ML_parse_features(data)
