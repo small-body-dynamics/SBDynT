@@ -780,7 +780,7 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
             rbinstd[nr] += (rph_count[nr, n] - rbinavg[nr]) * (
                         rph_count[nr, n] - rbinavg[nr])
         if (not (rbinavg[nr] == 0)):
-            rbinstd[nr] = np.sqrt(rbinstd[nr] / nphbin) / rbinavg[nr]
+            rbinstd[nr] = np.sqrt(rbinstd[nr] / nphbin) #/ rbinavg[nr]
         else:
             rbinstd[nr] = 0.
 
@@ -800,7 +800,7 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
 
     n_peri_empty = nempty[0]
     n_apo_empty = nempty[-1]
-    nadj_peri_empty = nadjempty[0]
+    nadj_peri_empty = nadjempty[-1]
     nadj_apo_empty = nadjempty[-1]
 
     navg_peri = rbinavg[0]
