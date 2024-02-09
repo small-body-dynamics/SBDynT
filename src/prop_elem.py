@@ -80,13 +80,9 @@ def prop_calc(objname, filename='Single'):
     h_init = (e_init)*np.sin(lan_init+aop_init)
     k_init = (e_init)*np.cos(lan_init+aop_init)
 
-    #print(t_init,fullfile,objname)
     dt = t_init[1]
     n = len(h_init)
-    #print('dt = ', dt)
-    #print('n = ', n)
     freq = np.fft.rfftfreq(n,d=dt)
-    #print(len(freq), 'L: length of frequency array')
     rev = 1296000
 
     #particle eccentricity vectors
@@ -350,6 +346,8 @@ def prop_calc(objname, filename='Single'):
 
         sini_f = np.sqrt(p_f*p_f + q_f*q_f)
         ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
+        
+        
    
         outputs.append([np.mean(ecc_f),np.mean(sini_f),np.mean(a_f)])
 
@@ -360,7 +358,7 @@ if __name__ == "__main__":
     
     if filename != 'Single':
     
-        names_df = pd.read_csv('../data/data_files/'+filename+'_data.csv')
+        names_df = pd.read_csv('../data/data_files/'+filename+'.csv')
         data = []
         for i,objname in enumerate(names_df['Name']):
             fullfile = '../data/'+filename+'/'+str(i)+'/archive.bin'

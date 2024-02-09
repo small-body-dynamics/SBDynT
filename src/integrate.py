@@ -28,7 +28,7 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
 
     
 def integrate_multi(filename,tmax = 1e7,tout=1e3):
-    names_df = pd.read_csv('../data/data_files/' + filename + '_data.csv')
+    names_df = pd.read_csv('../data/data_files/' + filename + '.csv')
         
         # Iterate over each object and integrate
     for i in range(len(names_df)):
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         # Add specific handling for Generic type if needed
     else:
         # Load data file for the given objtype
-        names_df = pd.read_csv('../data/data_files/' + objtype + '_data.csv')
+        names_df = pd.read_csv('../data/data_files/' + objtype + '.csv')
         
         # Iterate over each object and integrate
         for i in range(len(names_df)):

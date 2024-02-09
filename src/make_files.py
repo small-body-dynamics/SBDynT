@@ -21,7 +21,7 @@ def make(des,clones=0,filename='Single'):
 
 def multi_make(filename,clones=0):
     
-    name_list = pd.read_csv('../data/data_files/' + filename + '_data.csv')
+    name_list = pd.read_csv('../data/data_files/' + filename + '.csv')
     
     # Create main data directory if it doesn't exist
     main_data_directory = os.path.join('../data', filename)
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
 
     if filetype != 'Single':
-        name_list = pd.read_csv('../data/data_files/' + filetype + '_data.csv')
+        name_list = pd.read_csv('../data/data_files/' + filetype + '.csv')
     
         # Create main data directory if it doesn't exist
         main_data_directory = os.path.join('../data', filetype)
