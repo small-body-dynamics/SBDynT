@@ -558,13 +558,13 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     tn_del = tn_max - tn_min
 
 
-    a_mean = np.mean(q)
+    a_mean = np.mean(a)
     e_mean = np.mean(ec)
     i_mean = np.mean(inc)
     q_mean = np.mean(q)
     tn_mean = np.mean(tn)
 
-    a_std = np.std(q)
+    a_std = np.std(a)
     e_std = np.std(ec)
     i_std = np.std(inc)
     q_std = np.std(q)
