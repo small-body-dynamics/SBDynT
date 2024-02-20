@@ -13,6 +13,7 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
         file = '../data/' + objtype + '/' + str(objname)
         
         # Load the simulation from the archive
+        print(file)
         sim2 = rebound.Simulation(file + "/archive.bin")
         
         # Uncomment if you need to print simulation information
@@ -55,5 +56,5 @@ if __name__ == "__main__":
         # Iterate over each object and integrate
         for i in range(len(names_df)):
             print('Obj #',i)
-            integrate(objtype, i)
+            integrate_multi(objtype, 1e5,1e3)
             

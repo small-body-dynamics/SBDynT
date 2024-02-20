@@ -10,9 +10,11 @@ import run_reb
 
 def make(des,clones=0,filename='Single'):
     planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-    obj_directory = '../data/'+filename+'/'+des
+    planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+    obj_directory = '../data/'+filename+'/'+str(des)
+    #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
-    flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=des, clones=clones)
+    flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
     # Save the initial state to an archive file
     archive_file = os.path.join(obj_directory, "archive.bin")
@@ -72,7 +74,7 @@ if __name__ == "__main__":
         #print(objname)
     
         # Create directory for each object
-            obj_directory = os.path.join(main_data_directory, str(i))
+            obj_directory = os.path.join(main_data_directory, str(objname))
             os.makedirs(obj_directory, exist_ok=True)
     
             des = objname
@@ -85,7 +87,7 @@ if __name__ == "__main__":
             sbvz = np.zeros(ntp)
     
             # Initialize simulation
-            make(obj_directory,des,clones)
+            make(str(des),clones,filetype)
            
     
     else:
@@ -103,6 +105,6 @@ if __name__ == "__main__":
         sbvz = np.zeros(ntp)
     
             # Initialize simulation
-        make(obj_directory,des,clones)
+        make(str(des),clones)
         
         
