@@ -18,22 +18,6 @@ import tools
 import functools
 import schwimmbad
 
-def prop_multi(filename):
-    names_df = pd.read_csv('../data/data_files/'+filename+'_data.csv')
-    data = []
-    for i,objname in enumerate(names_df['Name']):
-        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
-        #archive = rebound.SimulationArchive(fullfile)
-        data_line = prop_calc(str(objname),filename)
-        #print(data_line)
-        data.append(data_line)
-    column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
-    #print(data)
-    data_df = pd.DataFrame(data,columns=column_names)
-    data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
-        
-
-
 
 def prop_calc(objname, filename='Single',objdes=None):
     
@@ -41,8 +25,8 @@ def prop_calc(objname, filename='Single',objdes=None):
     Calculate prop elements of small celestial bodies from simulation archive files, using a given file list of names.
 
     Parameters:
-        objname (int): Index of the celestial body in the dataset.
-        datatype (str): Name of the file containing the list of names, and the directory containing the arxhive.bin files. 
+        objname (int): Name/designation of the celestial body in the dataset.
+        filename (str): Name of the file containing the list of names, and the directory containing the arxhive.bin files. 
 
     Returns:
         outputs: A list containing calculated proper elements, or  
@@ -61,9 +45,16 @@ def prop_calc(objname, filename='Single',objdes=None):
     """    
 #    print(objname)
     try:       
-        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
+        fullfile = '../data/'+filename+'/'+str(objname)+'/archive_1e8.bin'
         #print(fullfile)
         archive = rebound.SimulationArchive(fullfile)
+        
+        try:
+            earth = archive[0].particles['earth']
+            small_planets_flag = True
+        except:
+            small_planets_flag = False
+        
         nump = len(archive[0].particles)
         flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
 
@@ -126,6 +117,17 @@ def prop_calc(objname, filename='Single',objdes=None):
     g = freq[gind]  
     s = freq[sind]
 
+    # g1s1 -> g4s4 taken from Murray and Dermott SSD Table 7.1
+    g1 = 5.46326/rev
+    s1 = -5.20154/rev
+    g2 = 7.34474/rev
+    s2 = -6.57080/rev
+    g3 = 17.32832/rev
+    s3 = -18.74359/rev
+    g4 = 18.00233/rev
+    s4 = -17.63331/rev
+    
+    # g5s6 -> g8s8 taken directly from OrbFit software.
     g5 = 4.25749319/rev
     g6 = 28.24552984/rev
     g7 = 3.08675577/rev
@@ -145,9 +147,13 @@ def prop_calc(objname, filename='Single',objdes=None):
     z8 = abs(2*(g-g6)+s-s6)
     z9 = abs(3*(g-g6)+s-s6)
 
-    freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-    freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
-
+    if small_planets_flag:
+        freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
+        freq2 = [s1,s2,s3,s4,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+    else:
+        freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
+        freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
+    
     secresind1 = []
     secresind2 = []
     for i in freq1:
@@ -269,15 +275,7 @@ def prop_calc(objname, filename='Single',objdes=None):
         sind = np.argmax(np.abs(Yp[1:]))+1
         g = freq[gind]  
         s = freq[sind]
-    
-        g5 = 4.25749319/rev
-        g6 = 28.24552984/rev
-        g7 = 3.08675577/rev
-        g8 = 0.67255084/rev
-        s6 = -26.34496354/rev
-        s7 = -2.99266093/rev
-        s8 = -0.69251386/rev
-    
+        
         #print(g,s,g6,s6)
         z1 = abs(g+s-g6-s6)
         z2 = abs(g+s-g5-s7)
@@ -289,9 +287,12 @@ def prop_calc(objname, filename='Single',objdes=None):
         z8 = abs(2*(g-g6)+s-s6)
         z9 = abs(3*(g-g6)+s-s6)
     
-    
-        freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-        freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
+        if small_planets_flag:
+            freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
+            freq2 = [s1,s2,s3,s4,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+        else:
+            freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
+            freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
     
         secresind1 = []
         secresind2 = []
@@ -380,6 +381,6 @@ if __name__ == "__main__":
         #print(data)
         column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
         data_df = pd.DataFrame(data,columns=column_names)
-        data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
+        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi.csv')
         
     

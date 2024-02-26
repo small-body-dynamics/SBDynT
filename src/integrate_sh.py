@@ -8,6 +8,17 @@ import horizons_api
 import tools
 
 def integrate(objname, objtype):
+    """
+    Integrate the given archive.bin file which has been prepared.
+
+    Parameters:
+        objname (str or int): Index of the celestial body in the names file.
+        objtype (str): Name of the file containing the list of names, and the directory containing the archive.bin files. 
+
+    Returns:
+        None
+        
+    """    
     try:
         # Construct the file path
         file = '../data/' + objtype + '/' + str(objname)

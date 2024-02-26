@@ -1,7 +1,0 @@
-{
-    "tmax": 100000000.0,
-    "tout": 2500.0,
-    "objname": "2004 KE19",
-    "runtype": "4planet",
-    "run_success": true
-}
