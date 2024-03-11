@@ -15,10 +15,10 @@ def integrate(objname, objtype):
         # Load the simulation from the archive
         print(file)
         sim2 = rebound.Simulation(file + "/archive.bin")
-        sma = sim2[0].particles[str(objname)].a
+        sma = sim2.particles[str(objname)].a
         
         if sma > 25:
-            tmax = 1e8
+            tmax = 1e6
             tout = 1e3
         else:
             tmax = 1e7
@@ -33,7 +33,7 @@ def integrate(objname, objtype):
 
     # Rest of the integration code
 
-    sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename= "/tmp/archive_$CASE_NUM.bin", deletefile=True)
+    sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename= "/tmp/archive_"+str(objname)+".bin", deletefile=True)
 
 if __name__ == "__main__":
     # Check if the required command-line arguments are provided

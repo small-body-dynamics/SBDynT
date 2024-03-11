@@ -9,8 +9,8 @@ import run_reb
 
 
 def make(des,clones=0,filename='Single'):
-    planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-    planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+    planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+    #planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
     obj_directory = '../data/'+filename+'/'+str(des)
     #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
