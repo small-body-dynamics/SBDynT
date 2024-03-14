@@ -55,7 +55,7 @@ def prop_calc(objname, filename='Single'):
         #for i in range(len(archive[0].particles)):
         #    if archive[0].particles[i].hash == 'mercury':
         #        small_planets_flag = True
-        
+        small_planets_flag = False
         nump = len(archive[0].particles)
         flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
 
@@ -370,7 +370,7 @@ def prop_multi(filename):
         data.append(data_line)
     column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
     data_df = pd.DataFrame(data,columns=column_names)
-    data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
+    data_df.to_csv('../data/results/'+filename+'_norock_prop_elem.csv')
     return data
 
 if __name__ == "__main__":
@@ -387,7 +387,7 @@ if __name__ == "__main__":
         #archive = rebound.SimulationArchive(fullfile)
         data_line = prop_calc(objname,fullfile)
         data_df = pd.DataFrame(data_line,columns = column_names)
-        data_df.to_csv('../data/Single/'+objname+'/'+objname+'_prop_elem.csv')
+        data_df.to_csv('../data/Single/'+objname+'/'+objname+'_prop_elem_prop.csv')
         
                        
 

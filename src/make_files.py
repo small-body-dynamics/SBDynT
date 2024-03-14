@@ -23,7 +23,7 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
         
     """ 
     if rocky_planets:
-        planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+        planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
     else:
         planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
     
@@ -83,12 +83,12 @@ if __name__ == "__main__":
     filetype = str(sys.argv[1])
     
     if filetype != 'Single':
-        if len(sys.argv > 2):
+        if len(sys.argv) > 2:
             rockp = sys.argv[2]
         else: 
             rockp = False
 
-        if len(sys.argv > 3):
+        if len(sys.argv) > 3:
             clones = int(sys.argv[3])
         else:
             clones = 0
@@ -98,12 +98,12 @@ if __name__ == "__main__":
     else:
         objname = str(sys.argv[2])
         
-        if len(sys.argv > 3):
+        if len(sys.argv) > 3:
             rockp = sys.argv[3]
         else: 
             rockp = False
 
-        if len(sys.argv > 4):
+        if len(sys.argv) > 4:
             clones = int(sys.argv[4])
         else:
             clones = 0

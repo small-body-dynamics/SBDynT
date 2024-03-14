@@ -63,7 +63,7 @@ if __name__ == "__main__":
         # Load data file for the given objtype
         names_df = pd.read_csv('../data/data_files/' + objtype + '.csv')
         
-        run = functools.partial(integrate, tmax=1e8, tout=1e3, objtype=objtype)
+        run = functools.partial(integrate, tmax=1e7, tout=1e3, objtype=objtype)
 
         des = np.array(names_df['Name'])
 
