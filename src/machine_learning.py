@@ -4,531 +4,9 @@ sys.path.insert(0, '../src')
 import tools
 
 
-def ML_parse_features(data):
-    """
-    ML_parse_features(data) computes the necessary features to classify
-    Returns features for classification
-    """
-
-    # column to stop at for the standard analysis (column +1)
-    # 0    1 2  3        4          5
-    # time,a,e,inc(rad),node(rad),argperi(rad),
-    #    6          7          8                9
-    # longperi(rad),q,rotating-frame r, rotating-frame phi(rad)
-    # tisserand parameter (10)
-    cmax = 8
-
-    # Take stats of simulations
-
-    mins = np.amin(data[:, 1:cmax], axis=0)
-    maxes = np.amax(data[:, 1:cmax], axis=0)
-    dels = maxes - mins
-
-    means = np.mean(data[:, 1:cmax], axis=0)
-    stdev = np.std(data[:, 1:cmax], axis=0)
-
-    amin = mins[0]
-    amax = maxes[0]
-    amean = means[0]
-    astd = stdev[0]
-
-    emin = mins[1]
-    emax = maxes[1]
-    emean = means[1]
-    estd = stdev[1]
-
-    imin = mins[2]
-    imax = maxes[2]
-    imean = means[2]
-    istd = stdev[2]    
-
-
-    # Take time derivatives
-    diffs = data[1:, :] - data[:-1, :]
-    #correct the angular means, dels, and diffs for wrapping
-    # correct the differencs
-    for j in range(4,7):
-        for k in range(1,len(diffs[:,j])):
-            dif1 = np.abs(data[k,j] - data[k-1,j])
-            dif2 = np.abs(data[k,j] + 2.*np.pi - data[k-1,j])
-            dif3 = np.abs(data[k, j] - (data[k-1,j] + 2.*np.pi))
-            if(dif2 < dif1 and dif2 < dif3):
-                diffs[k-1,j] = data[k,j] + 2.*np.pi - data[k-1,j]
-            elif(dif3 < dif1 and dif3 < dif2):
-                diffs[k-1,j] = data[k,j] - (data[k-1,j] + 2.*np.pi)
-            #otherwise it keeps the standard difference from above
-
-    #correct the deltas, means for wrapping
-    for j in range(3,6):
-        #original, 0-2pi diff
-        del1 = maxes[j] - mins[j]
-        #re-center -pi to pi (index j+1 because we removed the time axis)
-        tempangle = np.copy(data[:,j+1])
-        tempangle = tools.arraymod2pi0(tempangle)
-        del2 = np.amax(tempangle) - np.amin(tempangle)
-        if(del2 < del1):
-            dels[j] = del2
-            mean2 = np.mean(tempangle)
-            if(mean2<0):
-                mean2+=2.*np.pi
-            means[j] = mean2
-            stdev[j] = np.std(tempangle)
-        #otherwise keep original 0-2pi values
-
-    # divide by time difference and
-    # add on new axis to time to give same dimensionality as the numerator
-    dxdt = diffs[:, 1:cmax] / diffs[:, 0,np.newaxis]
-
-    mindxdt = np.amin(dxdt, axis=0)
-    absmindxdt = np.amin(np.abs(dxdt), axis=0)
-    meandxdt = np.mean(dxdt, axis=0)
-    absmaxdxdt = np.amax(np.abs(dxdt), axis=0)
-    maxdxdt = np.amax(dxdt, axis=0)
-    deldxdt = maxdxdt - mindxdt
-
-    stdev_norm = stdev/means
-    dels_norm = dels/means
-    deldxdt_norm = deldxdt/meandxdt
-
-    # rearrange data into the order I want
-    # arrs = [mins,means,maxes,absmaxes,stdev,dels,absmindxdt,mindxdt,meandxdt,maxdxdt,absmaxdxdt,deldxdt]
-    arrs = [mins, means, maxes, stdev, stdev_norm, dels, dels_norm,
-            absmindxdt, mindxdt, meandxdt, maxdxdt, absmaxdxdt, deldxdt, deldxdt_norm]
-    inds = [0, 1, 2, 3, 4, 5, 6]  # a, e, i, Omega, omega, pomega, q
-    features = []
-
-    for i in inds:
-        for a in arrs:
-            features += [a[i]]
-
-    # add in the features based on the rotating frame positions
-    r = data[:, 8]
-    ph = data[:, 9]
-
-    qmin = np.amin(r)
-    Qmax = np.amax(r) + 0.01
-
-    nrbin = 10.
-    nphbin = 20.
-    dr = (Qmax - qmin) / nrbin
-    dph = (2. * np.pi) / nphbin
-    # center on the planet in phi
-    phmin = -dph / 2.
-
-    # radial plus aziumthal binning
-    # indexing is radial bin, phi bin: rph_count[rbin,phibin]
-    rph_count = np.zeros((int(nrbin), int(nphbin)))
-    # radial only binning
-    r_count = np.zeros(int(nrbin))
-
-    # for calculating the average sin(ph) and cos(ph)
-    # indexing is   sinphbar[rbin,resorder]
-    sinphbar = np.zeros((int(nrbin), 5))
-    cosphbar = np.zeros((int(nrbin), 5))
-
-
-    # divide into radial and azimuthal bins
-    nmax = len(r)
-    for n in range(0, nmax):
-        rbin = int(np.floor((r[n] - qmin) / dr))
-        for resorder in range(1,5):
-            tcos = np.cos(float(resorder)*ph[n])
-            tsin = np.sin(float(resorder)*ph[n])
-            sinphbar[rbin,resorder]+=tsin
-            cosphbar[rbin,resorder]+=tcos
-        r_count[rbin]+=1.
-        phbin = int(np.floor((ph[n] - phmin) / dph))
-        if (phbin == int(nphbin)):
-            phbin = 0
-        rph_count[rbin, phbin] += 1
-
-    # perihelion distance bin stats
-    nqempty = np.zeros(int(nrbin))
-    nadjempty = np.zeros(int(nrbin))
-    rbinmin = np.zeros(int(nrbin))
-    rbinmax = np.zeros(int(nrbin))
-    rbinavg = np.zeros(int(nrbin))
-    rbinstd = np.zeros(int(nrbin))
-
-    for nr in range(0, int(nrbin)):
-        rbinmin[nr] = 1e9
-        for resorder in range(1,5):
-            sinphbar[nr,resorder] = sinphbar[nr,resorder]/r_count[nr]
-            cosphbar[nr,resorder] = cosphbar[nr,resorder]/r_count[nr]
-        for n in range(0, int(nphbin)):
-            if (rph_count[nr, n] == 0):
-                nqempty[nr] += 1
-            if (rph_count[nr, n] < rbinmin[nr]):
-                rbinmin[nr] = rph_count[nr, n]
-            if (rph_count[nr, n] > rbinmax[nr]):
-                rbinmax[nr] = rph_count[nr, n]
-            rbinavg[nr] += rph_count[nr, n]
-        rbinavg[nr] = rbinavg[nr] / nphbin
-
-        for n in range(0, int(nphbin)):
-            rbinstd[nr] += (rph_count[nr, n] - rbinavg[nr]) * (
-                        rph_count[nr, n] - rbinavg[nr])
-        if (not (rbinavg[nr] == 0)):
-            rbinstd[nr] = np.sqrt(rbinstd[nr] / nphbin) / rbinavg[nr]
-        else:
-            rbinstd[nr] = 0.
-
-        if (rph_count[nr, 0] == 0):
-            nadjempty[nr] = 1
-            for n in range(1, int(np.floor(nphbin / 2.)) + 1):
-                if (rph_count[nr, n] == 0):
-                    nadjempty[nr] += 1
-                if (rph_count[nr, n] != 0):
-                    break
-            for n in range(int(nphbin) - 1, int(np.floor(nphbin / 2.)), -1):
-                if (rph_count[nr, n] == 0):
-                    nadjempty[nr] += 1
-                if (rph_count[nr, n] != 0):
-                    break
-
-
-    nqempty = nqempty / nphbin
-    nadjempty = nadjempty / nphbin
-
-    features += [nqempty[0]]
-    features += [nadjempty[0]]
-    if (not (rbinavg[0] == 0)):
-        temp = (rbinmax[0] - rbinmin[0]) / rbinavg[0]
-    else:
-        temp = 0.
-    features += [temp]
-    features += [rbinstd[0]]
-
-    n = 5
-    features += [nqempty[n]]
-    features += [nadjempty[n]]
-    if (not (rbinavg[n] == 0)):
-        temp = (rbinmax[n] - rbinmin[n]) / rbinavg[n]
-    else:
-        temp = 0.
-    features += [temp]
-    features += [rbinstd[n]]
-
-    n = -2
-    features += [nqempty[n]]
-    features += [nadjempty[n]]
-    if (not (rbinavg[n] == 0)):
-        temp = (rbinmax[n] - rbinmin[n]) / rbinavg[n]
-    else:
-        temp = 0.
-    features += [temp]
-    features += [rbinstd[n]]
-
-    #add the rayleigh z-test statistics at perihelion and aphelion
-    for resorder in range(1, 5):
-        temp = np.sqrt(sinphbar[0,resorder]*sinphbar[0,resorder] +
-                       cosphbar[0,resorder]*cosphbar[0,resorder])
-        features += [temp]
-        temp = np.sqrt(sinphbar[-1,resorder]*sinphbar[-1,resorder] +
-                       cosphbar[-1,resorder]*cosphbar[-1,resorder])
-        features += [temp]
-
-
-
-    # rph_count[rbin,phibin]
-
-    spatial_counts = rph_count.flatten()
-    nz_minval = np.min(spatial_counts[np.nonzero(spatial_counts)])
-    nz_avg = np.mean(spatial_counts[np.nonzero(spatial_counts)])
-    nz_std = np.std(spatial_counts[np.nonzero(spatial_counts)])
-    avg =  np.mean(spatial_counts)
-    std =  np.std(spatial_counts)
-    features += [avg]
-    features += [nz_avg]
-    deltaavg = nz_avg-avg
-    features += [deltaavg]
-    features += [std]
-    features += [nz_std]
-    deltastd = std - nz_std
-    features += [deltastd]
-    n_empty=0
-    n_almost_empty=0
-    
-    for n in range(0,len(spatial_counts)):
-        if(spatial_counts[n]==0):
-            n_empty += 1
-        if(spatial_counts[n]<7):
-            n_almost_empty += 1
-    features += [n_empty]
-    features += [n_almost_empty]
-
-
-
-
-
-    #calculate the correlations between a and e, a and i, and e and i
-    temp =  max_corelation(data[:,1],data[:,2])
-    features += [temp]
-    temp =  max_corelation(data[:,1],data[:,3])
-    features += [temp]
-    temp =  max_corelation(data[:,2],data[:,3])
-    features += [temp]
-
-    #calculate spectral fractions
-    deltat = data[2,0] - data[1,0]
-    #a
-    temp1, temp2, temp3, f1, f2, f3 = spectral_characteristics(data[:,1],deltat)
-    features += [temp1]
-    features += [temp2]
-    features += [temp3]
-    features += [f1]
-    features += [f2]
-    features += [f3]
-    
-
-    # eccentricity, via e*sin(varpi)
-    hec = data[:,2]*np.sin(data[:,6])
-    temp1, temp2, temp3, f1, f2, f3 = spectral_characteristics(hec,deltat)
-    features += [temp1]
-    features += [temp2]
-    features += [temp3]
-    features += [f1]
-    features += [f2]
-    features += [f3]
-
-
-    # inclination, via sin(i)sin(Omega)
-    pinc = np.sin(data[:,3])*np.sin(data[:,4])
-    temp1, temp2, temp3, f1, f2, f3 = spectral_characteristics(pinc,deltat)
-    features += [temp1]
-    features += [temp2]
-    features += [temp3]
-    features += [f1]
-    features += [f2]
-    features += [f3]
-
-
-    #amd
-    amd = 1. - np.sqrt(1.- data[:,2]*data[:,2])*np.cos(data[:,3])
-    amd = amd*np.sqrt(data[:,1])
-    temp1, temp2, temp3, f1, f2, f3 = spectral_characteristics(amd,deltat)
-    features += [temp1]
-    features += [temp2]
-    features += [temp3]
-    features += [f1]
-    features += [f2]
-    features += [f3]
-
-
-
-    #Do some binning in the a, e, and i-distributions
-
-    a1 = amin
-    a2 = amean-0.75*astd
-    a3 = amean-0.375*astd
-    a4 = amean+0.375*astd
-    a5 = amean+0.75*astd
-    a6 = amax
-
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        abins = [a1,a2,a3,a4,a5,a6]
-    else:
-        da = (amax-amin)/8.
-        a2 = amin + 2.*da
-        a3 = a2 + da
-        a4 = a3 + 2.*da
-        a5 = a4 + da
-        abins = [a1,a2,a3,a4,a5,a6]
-        
-    acounts, tbins = np.histogram(data[:,1],bins=abins)
-
-    #average ratio of extreme-a density to middle-a density
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em_a = (acounts[0] + acounts[4])/(2.*acounts[2])
-    features += [em_a]
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh_a = (acounts[0]/acounts[4])
-    features += [lh_a]
-
-    #repeat but across a couple time bins
-    dj = data[:,1].size//4
-
-    
-    acounts, tbins = np.histogram(data[0:dj,1],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em1 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh1 = (acounts[0]/acounts[4])
- 
-    acounts, tbins = np.histogram(data[dj:2*dj,1],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em2 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh2 = (acounts[0]/acounts[4])
-    
-    acounts, tbins = np.histogram(data[2*dj:3*dj,1],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em3 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh3 = (acounts[0]/acounts[4])
-
-
-    acounts, tbins = np.histogram(data[3*dj:4*dj,1],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em4 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh4 = (acounts[0]/acounts[4])
-
-    min_em = min(em1,em2,em3,em4)
-    max_em = max(em1,em2,em3,em4)
-
-    temp = max_em - min_em
-    features += [temp]
-    temp = temp/em_a
-    features += [temp]
-    features += [min_em]
-    features += [max_em]
-    
-
-    min_lh = min(lh1,lh2,lh3,lh4)
-    max_lh = max(lh1,lh2,lh3,lh4)
-
-    temp = max_lh - min_lh
-    features += [temp]
-    temp = temp/lh_a
-    features += [temp]
-    features += [min_lh]
-    features += [max_lh]
-
-
-    #eccentricity distribution
-
-    a1 = emin
-    a2 = emean-0.75*estd
-    a3 = emean-0.375*estd
-    a4 = emean+0.375*estd
-    a5 = emean+0.75*estd
-    a6 = emax
-
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        ebins = [a1,a2,a3,a4,a5,a6]
-    else:
-        de = (emax-emin)/8.
-        a2 =emin + 2.*de
-        a3 = a2 + de
-        a4 = a3 + 2.*de
-        a5 = a4 + de
-        ebins = [a1,a2,a3,a4,a5,a6]
-
-    ecounts, tbins = np.histogram(data[:,2],bins=ebins)
-
-    #average ratio of extreme-a density to middle-a density
-    if(ecounts[2] == 0):
-        ecounts[2] = 1
-    temp = (ecounts[0] + ecounts[4])/(2.*ecounts[2])
-    features += [temp]
-    
-    if(ecounts[4] == 0):
-        ecounts[4] = 1
-    #ratio of extreme-low-a density to extreme high-a density
-    temp = (ecounts[0]/ecounts[4])
-    features += [temp]
-
-
-    a1 = imin
-    a2 = imean-0.75*istd
-    a3 = imean-0.375*istd
-    a4 = imean+0.375*istd
-    a5 = imean+0.75*istd
-    a6 = imax
-
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        ibins = [a1,a2,a3,a4,a5,a6]
-    else:
-        di = (imax-imin)/8.
-        a2 =imin + 2.*di
-        a3 = a2 + di
-        a4 = a3 + 2.*di
-        a5 = a4 + di
-        ibins = [a1,a2,a3,a4,a5,a6]
-
-    icounts, tbins = np.histogram(data[:,3],bins=ibins)
-
-    #average ratio of extreme-a density to middle-a density
-    if(icounts[2] == 0):
-        icounts[2] = 1    
-    temp = (icounts[0] + icounts[4])/(2.*icounts[2])
-    features += [temp]
-
-    #ratio of extreme-low-a density to extreme high-a density
-    if(ecounts[4] == 0):
-        ecounts[4] = 1
-    temp = (icounts[0]/icounts[4])
-    features += [temp]
-
-    #some data features based on the tisserand paramter:
-    mintn = np.amin(data[:, 10])
-    features+=[mintn]
-    meantn = np.mean(data[:, 10])
-    features+=[meantn]
-    maxtn = np.amax(data[:, 10])
-    features+=[maxtn]
-    
-    stdevtn = np.std(data[:, 10])
-    features+=[stdevtn]
-    stdev_norm_tn = stdevtn/meantn
-    features+=[stdev_norm_tn]
-    
-    deltn = maxtn - mintn
-    features+=[deltn]
-    dels_norm_tn = deltn/meantn
-    features+=[dels_norm_tn]
-
-    difftn = data[1:,10] - data[:-1,10]
-    dtndt = difftn[:] / diffs[:, 0]
-
-    mindtndt = np.amin(dtndt)
-    features+=[mindtndt]
-    meandtndt = np.mean(dtndt)
-    features+=[meandtndt]
-    maxdtndt = np.amax(dtndt)
-    features+=[maxdtndt]
-    deldtndt = maxdtndt - mindtndt
-    features+=[deldtndt]
-
-
-
-
-
-    return np.array(features).reshape(1,-1)  # make sure features is a 2d array
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     """
-    ML_parse_features(data) computes the necessary features to classify
-    Returns features for classification
+    calculate data features from a time-series
     """
 
     ########################################################
@@ -538,12 +16,19 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     #
     ########################################################
     ########################################################
+    
+    #calculate mean motions
+    mm = 2*np.pi/np.power(a,1.5)
+
+
+    mm_min=np.amin(mm)
     a_min=np.amin(a)
     e_min=np.amin(ec)
     i_min=np.amin(inc)
     q_min=np.amin(q)
     tn_min=np.amin(tn)
 
+    mm_max=np.amax(mm)
     a_max=np.amax(a)
     e_max=np.amax(ec)
     i_max=np.amax(inc)
@@ -551,6 +36,7 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     tn_max=np.amax(tn)
 
 
+    mm_del = mm_max - mm_min
     a_del = a_max - a_min
     e_del = e_max - e_min
     i_del = i_max - i_min
@@ -558,23 +44,27 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     tn_del = tn_max - tn_min
 
 
+    mm_mean = np.mean(mm)
     a_mean = np.mean(a)
     e_mean = np.mean(ec)
     i_mean = np.mean(inc)
     q_mean = np.mean(q)
     tn_mean = np.mean(tn)
 
+    mm_std = np.std(mm)
     a_std = np.std(a)
     e_std = np.std(ec)
     i_std = np.std(inc)
     q_std = np.std(q)
     tn_std = np.std(tn)
 
+    mm_std_norm = mm_std/mm_mean
     a_std_norm = a_std/a_mean
     e_std_norm = e_std/e_mean
     i_std_norm = i_std/i_mean
     q_std_norm = q_std/q_mean
 
+    mm_del_norm = mm_del/mm_mean
     a_del_norm = a_del/a_mean
     e_del_norm = e_del/e_mean
     i_del_norm = i_del/i_mean
@@ -583,16 +73,16 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
 
 
     #arg peri 0-2pi
-    argperi_min=np.amin(argperi)
-    argperi_max=np.amax(argperi)
+    argperi_min = np.amin(argperi)
+    argperi_max = np.amax(argperi)
     argperi_del = argperi_max - argperi_min
     argperi_mean = np.mean(argperi)
     argperi_std = np.std(argperi)
 
     #recenter arg peri around 0 and repeat
     argperi_zero = tools.arraymod2pi0(argperi)
-    argperi_min2=np.amin(argperi_zero)
-    argperi_max2=np.amax(argperi_zero)
+    argperi_min2 = np.amin(argperi_zero)
+    argperi_max2 = np.amax(argperi_zero)
     argperi2_del = argperi_max - argperi_min
     argperi_mean2 = np.mean(argperi_zero)
     argperi_std2 = np.std(argperi_zero)
@@ -606,6 +96,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     #calculate time derivatives
     dt = time[1:] - time[:-1] 
 
+    dmm_dt = mm[1:] - mm[:-1]
+    dmm_dt = dmm_dt/dt
     da_dt = a[1:] - a[:-1]
     da_dt = da_dt/dt
     de_dt = ec[1:] - ec[:-1]
@@ -630,6 +122,14 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     dpomega_dt = temp[1:] - temp[:-1]
     dpomega_dt = dpomega_dt/dt
 
+    
+    mmdot_min = np.amin(dmm_dt)
+    mmdot_max = np.amax(dmm_dt)
+    mmdot_mean = np.mean(dmm_dt)
+    mmdot_std = np.std(dmm_dt)
+    mmdot_std_norm = mmdot_std/mmdot_mean
+    mmdot_del = mmdot_max - mmdot_min
+    mmdot_del_norm = mmdot_del/mmdot_mean
     
     adot_min = np.amin(da_dt)
     adot_max = np.amax(da_dt)
@@ -698,10 +198,6 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     tndot_std_norm = tndot_std/tndot_mean
     tndot_del = tndot_max - tndot_min
     tndot_del_norm = tndot_del/tndot_mean
-
-
-    #absmindxdt = np.amin(np.abs(dxdt), axis=0)
-    #absmaxdxdt = np.amax(np.abs(dxdt), axis=0)
 
 
     ########################################################
@@ -896,141 +392,22 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     #compare visit distributions
 
 
-    a1 = a_min
-    a2 = a_mean-0.75*a_std
-    a3 = a_mean-0.375*a_std
-    a4 = a_mean+0.375*a_std
-    a5 = a_mean+0.75*a_std
-    a6 = a_max
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        abins = [a1,a2,a3,a4,a5,a6]
-    else:
-        da = (a_max-a_min)/8.
-        a2 = a_min + 2.*da
-        a3 = a2 + da
-        a4 = a3 + 2.*da
-        a5 = a4 + da
-        abins = [a1,a2,a3,a4,a5,a6]
-    acounts, tbins = np.histogram(a,bins=abins)
-
-    #average ratio of extreme-a density to middle-a density
-    if(acounts[2] == 0):
-        acounts[2] = 1 #avoid a nan
-    em_a = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh_a = (acounts[0]/acounts[4])
-
-    #repeat across a couple time bins (might help identify intermittent resonant libration)
-    dj = a.size//4
-    acounts, tbins = np.histogram(a[0:dj],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em1 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh1 = (acounts[0]/acounts[4])
- 
-    acounts, tbins = np.histogram(a[dj:2*dj],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em2 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh2 = (acounts[0]/acounts[4])
+    em_a, lh_a, min_em_a, max_em_a, delta_em_a, delta_em_a_norm, min_lh_a, max_lh_a, delta_lh_a, delta_lh_a_norm =  histogram_features(a,a_min,a_max,a_mean,a_std)
+    em_e, lh_e, min_em_e, max_em_e, delta_em_e, delta_em_e_norm, min_lh_e, max_lh_e, delta_lh_e, delta_lh_e_norm =  histogram_features(ec,e_min,e_max,e_mean,e_std)
+    em_i, lh_i, min_em_i, max_em_i, delta_em_i, delta_em_i_norm, min_lh_i, max_lh_i, delta_lh_i, delta_lh_i_norm =  histogram_features(inc,i_min,i_max,i_mean,i_std)
     
-    acounts, tbins = np.histogram(a[2*dj:3*dj],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em3 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh3 = (acounts[0]/acounts[4])
+    em_a2, lh_a2, min_em_a2, max_em_a2, delta_em_a2, delta_em_a_norm2, min_lh_a2, max_lh_a2, delta_lh_a2, delta_lh_a_norm2 =  alt_histogram_features(a,a_min,a_max,a_mean,a_std)
+    em_e2, lh_e2, min_em_e2, max_em_e2, delta_em_e2, delta_em_e_norm2, min_lh_e2, max_lh_e2, delta_lh_e2, delta_lh_e_norm2 =  alt_histogram_features(ec,e_min,e_max,e_mean,e_std)
+    em_i2, lh_i2, min_em_i2, max_em_i2, delta_em_i2, delta_em_i_norm2, min_lh_i2, max_lh_i2, delta_lh_i2, delta_lh_i_norm2 =  alt_histogram_features(inc,i_min,i_max,i_mean,i_std)
 
-
-    acounts, tbins = np.histogram(a[3*dj:4*dj],bins=abins)
-    if(acounts[2] == 0):
-        acounts[2] = 1
-    em4 = (acounts[0] + acounts[4])/(2.*acounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(acounts[4] == 0):
-        acounts[4] = 1
-    lh4 = (acounts[0]/acounts[4])
-
-    min_em_a = min(em1,em2,em3,em4)
-    max_em_a = max(em1,em2,em3,em4)
-
-    delta_em_a = max_em_a - min_em_a
-    delta_em_a_norm = delta_em_a/em_a    
-
-    min_lh_a = min(lh1,lh2,lh3,lh4)
-    max_lh_a = max(lh1,lh2,lh3,lh4)
-
-    delta_lh_a = max_lh_a - min_lh_a
-    delta_lh_a_norm = delta_lh_a/lh_a
-
-
-    #eccentricity distribution
-    a1 = e_min
-    a2 = e_mean-0.75*e_std
-    a3 = e_mean-0.375*e_std
-    a4 = e_mean+0.375*e_std
-    a5 = e_mean+0.75*e_std
-    a6 = e_max
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        ebins = [a1,a2,a3,a4,a5,a6]
-    else:
-        de = (e_max-e_min)/8.
-        a2 = e_min + 2.*de
-        a3 = a2 + de
-        a4 = a3 + 2.*de
-        a5 = a4 + de
-        ebins = [a1,a2,a3,a4,a5,a6]
-
-    ecounts, tbins = np.histogram(ec,bins=ebins)
-
-    #average ratio of extreme-a density to middle-a density
-    if(ecounts[2] == 0):
-        ecounts[2] = 1
-    em_e = (ecounts[0] + ecounts[4])/(2.*ecounts[2])
-    if(ecounts[4] == 0):
-        ecounts[4] = 1
-    #ratio of extreme-low-a density to extreme high-a density
-    lh_e = (ecounts[0]/ecounts[4])
-
-    #inclination distribution
-    a1 = i_min
-    a2 = i_mean-0.75*i_std
-    a3 = i_mean-0.375*i_std
-    a4 = i_mean+0.375*i_std
-    a5 = i_mean+0.75*i_std
-    a6 = i_max
-    if(a1 < a2 and a2 < a3 and a4 < a5 and a5 < a6):
-        ibins = [a1,a2,a3,a4,a5,a6]
-    else:
-        di = (i_max-i_min)/8.
-        a2 =i_min + 2.*di
-        a3 = a2 + di
-        a4 = a3 + 2.*di
-        a5 = a4 + di
-        ibins = [a1,a2,a3,a4,a5,a6]
-
-    icounts, tbins = np.histogram(inc,bins=ibins)
-    #average ratio of extreme-a density to middle-a density
-    if(icounts[2] == 0):
-        icounts[2] = 1    
-    em_i = (icounts[0] + icounts[4])/(2.*icounts[2])
-    #ratio of extreme-low-a density to extreme high-a density
-    if(ecounts[4] == 0):
-        ecounts[4] = 1
-    lh_i = (icounts[0]/icounts[4])
-
+    da1 = (a_mean-a_min)/(a_max-a_mean)
+    da2 = (a_max-a_mean)/(a_mean-a_min)
+    da_symmetry = np.amax([da1,da2])
+   
 
     features = [
+        mm_min,mm_mean,mm_max,mm_std,mm_std_norm,mm_del,mm_del_norm,
+        mmdot_min,mmdot_mean,mmdot_max,mmdot_std,mmdot_std_norm,mmdot_del,mmdot_del_norm,
         a_min,a_mean,a_max,a_std,a_std_norm,a_del,a_del_norm,
         adot_min,adot_mean,adot_max,adot_std,adot_std_norm,adot_del,adot_del_norm,
         e_min,e_mean,e_max,e_std,e_std_norm,e_del,e_del_norm,
@@ -1053,22 +430,14 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
         aecorr,aicorr,eicorr, 
         asf,amaxpower,amaxpower3,af1,af2,af3,esf,emaxpower,emaxpower3,ef1,ef2,ef3,isf,imaxpower,imaxpower3,if1,if2,if3,
         amdsf,amdmaxpower,amdmaxpower3,amdf1,amdf2,amdf3,
+        da_symmetry,
         em_a,lh_a,min_em_a,max_em_a,delta_em_a,delta_em_a_norm,min_lh_a,max_lh_a,delta_lh_a,delta_lh_a_norm,
         em_e,lh_e,em_i,lh_i,
+        em_a2,lh_a2,min_em_a2,max_em_a2,delta_em_a2,delta_em_a_norm2,min_lh_a2,max_lh_a2,delta_lh_a2,delta_lh_a_norm2,
+        em_e2,lh_e2,em_i2,lh_i2,
         ]
    
     return np.array(features)  # make sure features is a numpy array
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1213,3 +582,149 @@ def spectral_characteristics(data,dt):
     maxpower = sorted_Y[0]
     max3 = sorted_Y[0] + sorted_Y[1] + sorted_Y[2]
     return sf, maxpower, max3, f1, f2, f3
+
+def histogram_features(x,xmin,xmax,xmean,xstd):
+    x1 = xmin
+    x2 = xmean-0.75*xstd
+    x3 = xmean-0.375*xstd
+    x4 = xmean+0.375*xstd
+    x5 = xmean+0.75*xstd
+    x6 = xmax
+    if(x1 < x2 and x2 < x3 and x4 < x5 and x5 < x6):
+        xbins = [x1,x2,x3,x4,x5,x6]
+    else:
+        dx = (xmax-xmin)/8.
+        x2 = xmin + 2.*dx
+        x3 = x2 + dx
+        x4 = x3 + 2.*dx
+        x5 = x4 + dx
+        xbins = [x1,x2,x3,x4,x5,x6]
+    xcounts, tbins = np.histogram(x,bins=xbins)
+
+    #average ratio of extreme-x density to middle-x density
+    if(xcounts[2] == 0):
+        xcounts[2] = 1 #avoid a nan
+    em_x = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    #ratio of extreme-low-x density to extreme high-x density
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh_x = (xcounts[0]/xcounts[4])
+
+    #repeat across a couple time bins 
+    dj = x.size//4
+    xcounts, tbins = np.histogram(x[0:dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em1 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh1 = (xcounts[0]/xcounts[4])
+ 
+    xcounts, tbins = np.histogram(x[dj:2*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em2 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh2 = (xcounts[0]/xcounts[4])
+    
+    xcounts, tbins = np.histogram(x[2*dj:3*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em3 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh3 = (xcounts[0]/xcounts[4])
+
+
+    xcounts, tbins = np.histogram(x[3*dj:4*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em4 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh4 = (xcounts[0]/xcounts[4])
+
+    min_em_x = min(em1,em2,em3,em4)
+    max_em_x = max(em1,em2,em3,em4)
+
+    delta_em_x = max_em_x - min_em_x
+    delta_em_x_norm = delta_em_x/em_x    
+
+    min_lh_x = min(lh1,lh2,lh3,lh4)
+    max_lh_x = max(lh1,lh2,lh3,lh4)
+
+    delta_lh_x = max_lh_x - min_lh_x
+    delta_lh_x_norm = delta_lh_x/lh_x
+
+    return  em_x, lh_x, min_em_x, max_em_x, delta_em_x, delta_em_x_norm, min_lh_x, max_lh_x, delta_lh_x, delta_lh_x_norm
+
+
+def alt_histogram_features(x,xmin,xmax,xmean,xstd):
+    dx = (xmax-xmin)/8.
+    x1 = xmin
+    x2 = xmin + 2.*dx
+    x3 = x2 + dx
+    x4 = x3 + 2.*dx
+    x5 = x4 + dx
+    x6 = xmax
+    xbins = [x1,x2,x3,x4,x5,x6]
+    xcounts, tbins = np.histogram(x,bins=xbins)
+
+    #average ratio of extreme-x density to middle-x density
+    if(xcounts[2] == 0):
+        xcounts[2] = 1 #avoid a nan
+    em_x = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    #ratio of extreme-low-x density to extreme high-x density
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh_x = (xcounts[0]/xcounts[4])
+
+    #repeat across a couple time bins 
+    dj = x.size//4
+    xcounts, tbins = np.histogram(x[0:dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em1 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh1 = (xcounts[0]/xcounts[4])
+ 
+    xcounts, tbins = np.histogram(x[dj:2*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em2 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh2 = (xcounts[0]/xcounts[4])
+    
+    xcounts, tbins = np.histogram(x[2*dj:3*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em3 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh3 = (xcounts[0]/xcounts[4])
+
+
+    xcounts, tbins = np.histogram(x[3*dj:4*dj],bins=xbins)
+    if(xcounts[2] == 0):
+        xcounts[2] = 1
+    em4 = (xcounts[0] + xcounts[4])/(2.*xcounts[2])
+    if(xcounts[4] == 0):
+        xcounts[4] = 1
+    lh4 = (xcounts[0]/xcounts[4])
+
+    min_em_x = min(em1,em2,em3,em4)
+    max_em_x = max(em1,em2,em3,em4)
+
+    delta_em_x = max_em_x - min_em_x
+    delta_em_x_norm = delta_em_x/em_x    
+
+    min_lh_x = min(lh1,lh2,lh3,lh4)
+    max_lh_x = max(lh1,lh2,lh3,lh4)
+
+    delta_lh_x = max_lh_x - min_lh_x
+    delta_lh_x_norm = delta_lh_x/lh_x
+
+    return  em_x, lh_x, min_em_x, max_em_x, delta_em_x, delta_em_x_norm, min_lh_x, max_lh_x, delta_lh_x, delta_lh_x_norm

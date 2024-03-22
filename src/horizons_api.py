@@ -105,7 +105,7 @@ def query_horizons_planets(obj='', epoch=2459580.5):
 ###############################################################################
 
 
-def query_sb_from_jpl(des='', clones=0):
+def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -116,6 +116,9 @@ def query_sb_from_jpl(des='', clones=0):
         des: string, the designation for the object in the SBDB
         clones (optional): integer, number of times to clone using the
                            covariance matrix
+        find_3_sigma (optional): boolean, if True and clones==2, the
+                           returned clones will be approximately 3-
+                           sigma min and max semimajor axis clones
 
     outputs:
         flag: integer, 1 if query worked, 0 otherwise)
@@ -127,6 +130,13 @@ def query_sb_from_jpl(des='', clones=0):
         vz: np array (size clones+1), cartesian heliocentric vz (au)
         all return values set to 0 if unsuccessful
     """
+    
+    if(find_3_sigma and clones != 2):
+        print("horizons_api.query_sb_from_jpl failed")
+        print("if using find_3_sigma, clones must = 2")
+        return 0, 0., 0., 0., 0., 0., 0., 0.
+
+
     pdes, destype = tools.mpc_designation_translation(des)
 
     try:
@@ -272,8 +282,40 @@ def query_sb_from_jpl(des='', clones=0):
         covmat = (obj['orbit']['covariance']['data'])
         mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
         # sample the covariance matrix into temporary arrays
-        ecc, q, tp, node, argperi, inc = \
-            np.random.multivariate_normal(mean, covmat, clones).T
+        if(find_3_sigma):
+            #sample the covariance matrix 6000 times, sort by semimajor
+            #axis and pull the top and bottom ~0.1% as 3-sigma values
+            tecc, tq, ttp, tnode, targperi, tinc = \
+                np.random.multivariate_normal(mean, covmat, 6000).T
+            tempa = tq/(1.-tecc)
+            sorted_a_index = np.argsort(tempa)
+            #check to make sure the 3-sigma orbits are e=0-1
+            #if not, find ones that are
+            if(tecc[sorted_a_index[8]] < 0):
+                stop=0
+                for i in range(0,5991):
+                    if(ecc[sorted_a_index[i]] >= 0 and stop == 0):
+                    c1 = sorted_a_index[i]
+                    stop = 1
+            else:
+                c1 = sorted_a_index[8]
+            if(tecc[sorted_a_index[5991]] > 1.):
+                stop=0
+                for i in range(5999,8,-1):
+                    if(ecc[sorted_a_index[i]] < 1. and stop == 0):
+                        c2 = sorted_a_index[i]
+                        stop = 1
+            else:
+                c2 = sorted_a_index[5991]
+            ecc = [tecc[c1],tecc[c2]].to_numpy()
+            q = [tq[c1],tq[c2]].to_numpy()
+            tp = [tp[c1],tp[c2]].to_numpy()
+            node = [tnode[c1],tnode[c2]].to_numpy()
+            argperi = [targperi[c1],targperi[c2]].to_numpy()
+            inc = [tinc[c1],tinc[c2]].to_numpy()
+        else:
+            ecc, q, tp, node, argperi, inc = \
+                np.random.multivariate_normal(mean, covmat, clones).T
         node = node*deg2rad
         argperi = argperi*deg2rad
         inc = inc*deg2rad
@@ -292,7 +334,7 @@ def query_sb_from_jpl(des='', clones=0):
         vy[0] = vy0
         vz[0] = vz0
         
-        # convert clones into standarcd elements then cartesian coordinates
+        # convert clones into standard elements then cartesian coordinates
         for j in range(clones):
             a = q[j]/(1.-ecc[j])
             mm = gm/(a*a*a)  # mean motion
