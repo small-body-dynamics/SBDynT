@@ -23,13 +23,14 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
         
     """ 
     if rocky_planets:
-        planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+        planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
     else:
         planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
     
     obj_directory = '../data/'+filename+'/'+str(des)
     #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
+    print(list(planet_id.values()), str(des), clones)
     flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
     # Save the initial state to an archive file

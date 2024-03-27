@@ -87,8 +87,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
         tsim.units = ('yr', 'AU', 'Msun')
         tsim.add(m=1.0, x=0., y=0., z=0., vx=0., vy=0., vz=0.)
         for pl in notplanets:
-            flag, mass, radius, [x, y, z], [vx, vy, vz] = \
-                horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
+            flag, mass, radius, [x, y, z], [vx, vy, vz] = horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
             if(flag < 1):
                 print("run_reb.add_planets failed at \
                     horizons_api.query_horizons_planets for ", pl)
@@ -300,6 +299,7 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     
     # add the planets and return the position/velocity corrections for
     # missing planets
+    print(planets)
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):

@@ -31,6 +31,9 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
         
         # Load the simulation from the archive
         print(file)
+        if os.path.isfile(file+'/archive_init.bin') == False:
+            print('No init file') 
+            return 0
         sim2 = rebound.Simulation(file + "/archive_init.bin")
         
         # Uncomment if you need to print simulation information
@@ -38,11 +41,13 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
         
     except Exception as error:
         # Raise a specific exception with an informative error message
+        return 0
         raise ValueError(f"Failed to integrate {objtype} {objname}. Error: {error}")
 
     # Rest of the integration code
 
     sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+    return 1
 
     
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ def prop_calc(objname, filename='Single',objdes=None):
     """    
 #    print(objname)
     try:       
-        fullfile = '../data/'+filename+'/'+str(objname)+'/archive_1e8.bin'
+        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
         #print(fullfile)
         archive = rebound.SimulationArchive(fullfile)
         
