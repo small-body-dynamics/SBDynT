@@ -83,12 +83,12 @@ if __name__ == "__main__":
     filetype = str(sys.argv[1])
     
     if filetype != 'Single':
-        if len(sys.argv > 2):
+        if len(sys.argv) > 2:
             rockp = sys.argv[2]
         else: 
             rockp = False
 
-        if len(sys.argv > 3):
+        if len(sys.argv) > 3:
             clones = int(sys.argv[3])
         else:
             clones = 0
@@ -98,12 +98,12 @@ if __name__ == "__main__":
     else:
         objname = str(sys.argv[2])
         
-        if len(sys.argv > 3):
+        if len(sys.argv) > 3:
             rockp = sys.argv[3]
         else: 
             rockp = False
 
-        if len(sys.argv > 4):
+        if len(sys.argv) > 4:
             clones = int(sys.argv[4])
         else:
             clones = 0
