@@ -30,6 +30,7 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
     obj_directory = '../data/'+filename+'/'+str(des)
     #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
+    print(list(planet_id.values()), str(des), clones)
     flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
     # Save the initial state to an archive file
