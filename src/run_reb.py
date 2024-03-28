@@ -125,12 +125,16 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
 
 def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
                                    'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0):
+                          des='', clones=0, find_3_sigma=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
         des: string, small body designation
         clones (optional): integer, number of clones - defaults to 0
+        find_3_sigma (optional): boolean,  if True and clones==2, the
+                           returned clones will be approximately 3-
+                           sigma min and max semimajor axis clones
+
     outputs:
         flag: integer, 0 if failed, 1 if successful
         epoch: float, date of the simulation start (JD)
@@ -156,7 +160,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
 
     # get the small body's position and velocity
     flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = \
-        horizons_api.query_sb_from_jpl(des=des, clones=clones)
+        horizons_api.query_sb_from_jpl(des=des, clones=clones, find_3_sigma=find_3_sigma)
     if(flag < 1):
         print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim

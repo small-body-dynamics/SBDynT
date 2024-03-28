@@ -1,7 +1,15 @@
 import sys
 import numpy as np
+import pandas as pd
 sys.path.insert(0, '../src')
 import tools
+import run_reb
+
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
+from datetime import date
+
 
 
 def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
@@ -73,6 +81,11 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
 
 
     #arg peri 0-2pi
+
+    argperi = tools.arraymod2pi(argperi)
+    node = tools.arraymod2pi(node)
+    pomega = tools.arraymod2pi(pomega)
+
     argperi_min = np.amin(argperi)
     argperi_max = np.amax(argperi)
     argperi_del = argperi_max - argperi_min
@@ -208,7 +221,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     ########################################################
     ########################################################
 
-
+    phirf = tools.arraymod2pi(phirf)
+    
     #divide heliocentric distance into 10 bins and theta_n
     #into 20 bins
     qmin = np.amin(rh) - 0.01
@@ -438,12 +452,6 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
         ]
    
     return np.array(features)  # make sure features is a numpy array
-
-
-
-
-
-
 
 
 
@@ -728,3 +736,328 @@ def alt_histogram_features(x,xmin,xmax,xmean,xstd):
     delta_lh_x_norm = delta_lh_x/lh_x
 
     return  em_x, lh_x, min_em_x, max_em_x, delta_em_x, delta_em_x_norm, min_lh_x, max_lh_x, delta_lh_x, delta_lh_x_norm
+
+
+def read_TNO_training_data(training_file):
+    all_TNOs = pd.read_csv(training_file, skipinitialspace=True, index_col=False, low_memory=False)
+    all_TNOs = all_TNOs.drop(columns='junk')
+    
+    filtered1_TNOs = all_TNOs[all_TNOs['a_max']<1000.0].copy()
+    filtered2_TNOs = filtered1_TNOs[filtered1_TNOs['a_delta_short']<30.0].copy()
+    filtered_TNOs = filtered2_TNOs[filtered2_TNOs['a_delta']<100.0].copy()
+
+    filtered_TNOs['l5'] = filtered_TNOs.apply(label5_particle, axis=1)
+    filtered_TNOs['l6'] = filtered_TNOs.apply(label6_particle, axis=1)
+    filtered_TNOs['l7'] = filtered_TNOs.apply(label_particle_7, axis=1)
+
+
+    return filtered_TNOs
+
+
+def train_and_test_TNO_classifier(training_file):
+    dataset = read_TNO_training_data(training_file)
+    perm_drop_features = ['r_o_a','des', 'particle', 'clone', 'cloneclass', 'l1', 'l2', 'l3', 'l4','l5','l6','l7',
+                      'p', 'q', 'mio', 'res_char', 'm', 'n',
+                      "avg_grid","avg_grid_short",
+                      'i_delta_normed', 'i_delta_normed_short',
+                      'e_delta_normed', 'e_delta_normed_short',
+                      'e_sigma_normed', 'e_sigma_normed_short',
+                      'i_sigma_normed','i_sigma_normed_short',
+                      'adot_delta_normed', 'edot_delta_normed', 'idot_delta_normed', 'qdot_delta_normed',
+                      'adot_std_normed', 'edot_std_normed', 'idot_std_normed', 'qdot_std_normed',
+                      'adot_delta_normed_short', 'edot_delta_normed_short', 
+                      'idot_delta_normed_short', 'qdot_delta_normed_short',
+                      'adot_std_normed_short', 'edot_std_normed_short',
+                      'idot_std_normed_short', 'qdot_std_normed_short',               
+                      "rzperi_1","rzperi_2","rzperi_3","rzperi_4","rzperi_5",
+                      "rzperi_6","rzperi_7","rzperi_8","rzperi_9","rzperi_10",
+                      "rzperi_1_short","rzperi_2_short","rzperi_3_short","rzperi_4_short","rzperi_5_short",
+                      "rzperi_6_short","rzperi_7_short","rzperi_8_short","rzperi_9_short","rzperi_10_short",
+                      "rzapo_1","rzapo_2","rzapo_3","rzapo_4","rzapo_5",
+                      "rzapo_6","rzapo_7","rzapo_8","rzapo_9","rzapo_10",
+                      "rzapo_1_short","rzapo_2_short","rzapo_3_short","rzapo_4_short","rzapo_5_short",
+                      "rzapo_6_short","rzapo_7_short","rzapo_8_short","rzapo_9_short","rzapo_10_short",]
+
+    perm_drop_features = ['r_o_a','des', 'clone', 'particle', 'cloneclass', 'l1', 'l2', 'l3', 'l4','l5','l6','l7',
+                'p', 'q',
+                'mio', 'res_char', 'm', 'n',
+                "avg_grid","avg_grid_short",
+                                "mm_min", "mm_mean", "mm_max", "mm_sigma", "mm_sigma_normed", "mm_delta","mm_delta_normed", 
+                "mmdot_min", "mmdot_mean", "mmdot_max","mmdot_std","mmdot_std_normed","mmdot_delta","mmdot_delta_normed",
+                'a_min','a_max',
+                'i_delta_normed', 'i_delta_normed_short',
+                'e_delta_normed', 'e_delta_normed_short',
+                'e_sigma_normed', 'e_sigma_normed_short',
+                'i_sigma_normed','i_sigma_normed_short',
+                'adot_delta_normed', 'edot_delta_normed', 'idot_delta_normed', 'qdot_delta_normed',
+                'adot_std_normed', 'edot_std_normed', 'idot_std_normed', 'qdot_std_normed',
+                'adot_delta_normed_short', 'edot_delta_normed_short', 
+                'idot_delta_normed_short', 'qdot_delta_normed_short',
+                'adot_std_normed_short', 'edot_std_normed_short',
+                'idot_std_normed_short', 'qdot_std_normed_short',               
+                "rzperi_1","rzperi_2","rzperi_3","rzperi_4","rzperi_5",
+                "rzperi_6","rzperi_7","rzperi_8","rzperi_9","rzperi_10",
+                "rzperi_1_short","rzperi_2_short","rzperi_3_short","rzperi_4_short","rzperi_5_short",
+                "rzperi_6_short","rzperi_7_short","rzperi_8_short","rzperi_9_short","rzperi_10_short",
+                "rzapo_1","rzapo_2","rzapo_3","rzapo_4","rzapo_5",
+                "rzapo_6","rzapo_7","rzapo_8","rzapo_9","rzapo_10",
+                "rzapo_1_short","rzapo_2_short","rzapo_3_short","rzapo_4_short","rzapo_5_short",
+                "rzapo_6_short","rzapo_7_short","rzapo_8_short","rzapo_9_short","rzapo_10_short",  
+                
+                "adj_empty_Qa_sec", "adj_empty_Qa_sec_short",
+                "nstd_q_sec_normed","ndel_q_sec_normed",
+                "nstd_q_sec_normed_short","ndel_q_sec_normed_short",
+                "nstd_Qa_sec_normed","ndel_Qa_sec_normed",
+                "nstd_Qa_sec_normed_short","ndel_Qa_sec_normed_short",
+                
+                'navg_Qa_sec_short', 'navg_Qa_sec', 
+                'navg_q_sec_short', 'navg_q_sec',
+                
+                
+                'min_aminmax_to_mean_density_ratio_short', 'max_aminmax_to_mean_density_ratio_short',
+                'min_aminmax_to_mean_density_ratio', 'max_aminmax_to_mean_density_ratio',
+                'min_amin_to_amax_density_ratio_short', 'max_amin_to_amax_density_ratio_short',
+                'min_amin_to_amax_density_ratio', 'max_amin_to_amax_density_ratio',
+                
+                #'Omdot_min_short', 'Omdot_mean_short', 'Omdot_max_short', 
+                'Omdot_std_short', 
+                #'Omdot_std_normed_short', 
+                'Omdot_delta_short', 
+                #'Omdot_delta_normed_short', 
+                'o_min_short', 
+                'o_mean_short', 'o_max_short', 'o_sigma_short', 'o_delta_short', 
+                #'odot_min_short', 
+                #'odot_mean_short', 'odot_max_short', 
+                'odot_sigma_short', 
+                #'odot_sigma_normed_short', 
+                'odot_delta_short', 
+                #'odot_delta_normed_short', 
+                #'podot_min_short', 'podot_mean_short', 
+                #'podot_max_short', 
+                'podot_std_short', 
+                #'podot_std_normed_short', 
+                'podot_delta_short', 
+                #'podot_delta_normed_short',
+                
+                
+                #'tn_sigma_short', 'tn_delta_short', 
+                'tndot_min_short', 'tndot_mean_short', 'tndot_max_short', 
+                'tndot_std_short', 'tndot_delta_short', 
+                'tndot_std_normed_short','tndot_delta_normed_short',
+                'tndot_min', 'tndot_mean', 'tndot_max', 
+                'tndot_std', 'tndot_delta', 
+                'tndot_std_normed','tndot_delta_normed',
+                
+                #'delta_aminmax_to_mean_density_ratio',
+                'delta_aminmax_to_mean_density_ratio_normed', 
+                #'delta_amin_to_amax_density_ratio',
+                'delta_amin_to_amax_density_ratio_normed',
+                
+                
+                
+                
+                #"asf", "amaxpower","amaxpower3",
+                #"af1",
+                #"af2","af3",
+                #"af1_short",
+                #"af2_short","af3_short",
+
+                "esf_short", "emaxpower_short","emaxpower3_short",
+                #"ef1","ef2","ef3",
+                "ef1_short","ef2_short","ef3_short",
+
+                "isf_short", "imaxpower_short","imaxpower3_short",
+                #"if1","if2","if3",
+                "if1_short","if2_short","if3_short",
+                
+                #"amdsf", "amdmaxpower","amdmaxpower3",
+                #"amdf1_short","amdf2_short","amdf3_short",
+                #"amdf1","amdf2","amdf3",
+                
+                
+                "n_almost_empty_short", "n_almost_empty",
+                
+                'grid_deltaavg_short', 'grid_deltaavg',
+                
+                
+               ]
+
+
+
+    feature_names = dataset.columns.to_list()
+    features_remaining = []
+    for i in range(0,len(dataset.columns)):
+        if(dataset.columns[i] not in (perm_drop_features)):
+            features_remaining.append(dataset.columns[i])
+    
+    clasfeat = 'l5'
+    all_types1 = list( set(dataset[clasfeat]) )
+    types1_dict = { all_types1[i] : i for i in range( len(all_types1) ) }
+    int1_dict = { i : all_types1[i] for i in range( len(all_types1) ) }
+    classes1 = dataset[clasfeat].map(types1_dict)
+    rs=283
+    features_train, features_test, classes_train, classes_test = train_test_split(
+                        dataset, classes1, test_size=0.333, random_state=rs)
+
+    ids_train = features_train['particle'].to_numpy()
+    ids_test = features_test['particle'].to_numpy()
+
+    features_train.drop(perm_drop_features, axis=1, inplace=True)
+    features_train = features_train.to_numpy()
+
+    features_test.drop(perm_drop_features, axis=1, inplace=True)
+    features_test = features_test.to_numpy()
+
+    rs = 42
+    clf = GradientBoostingClassifier(max_leaf_nodes = None, min_impurity_decrease=0.0, min_weight_fraction_leaf = 0.0, 
+                                     min_samples_leaf = 1, min_samples_split=3, 
+                                     criterion = 'friedman_mse',subsample = 0.9, learning_rate=0.15,
+                                     max_depth=8, max_features='log2', 
+                                     n_estimators=300, random_state=rs)
+    clf.fit(features_train, classes_train)
+
+    classes_predict = clf.predict(features_test)
+    score = accuracy_score(classes_test, classes_predict)
+
+    return clf, score, classes_train, classes_test, features_train, features_test, features_remaining, int1_dict
+
+def label5_particle(row):
+    newlabel = 'none'
+    if (row['cloneclass'] == 'detached' or row['cloneclass'] == 'classical'):
+        newlabel = 'class-det'
+    else:
+        newlabel= row['cloneclass']
+    return newlabel
+
+def label6_particle(row):
+    newlabel = 'none'
+    if (row['cloneclass'] == 'detached' or row['cloneclass'] == 'classical'):
+        newlabel = 'class-det'
+    elif (row['cloneclass'] == 'Nresonant'):
+        if (row['res_char']== 'im' or row['res_char']== 'rm'):
+            newlabel = 'mixed-res'
+        else:
+            newlabel = 'res'
+    else:
+        newlabel= row['cloneclass']
+    return newlabel
+
+def label_particle_7(row):
+    newlabel = 'none'
+    if ( row['res_char']== 'am' or row['res_char']== 'a'):
+        newlabel = 'res-interacting'
+    elif (row['res_char']== 'i' or row['res_char']== 'im' or row['res_char']== 'r' or row['res_char']== 'rm'):
+        newlabel = 'res'
+    else:
+        newlabel = 'nonres'
+    if(row['cloneclass']=='scattering'):
+        newlabel= row['cloneclass']
+    return newlabel
+
+
+
+
+
+def run_TNO_integration_for_ML(tno='',clones=2):
+    '''
+    '''
+
+    if(clones==2):
+        find_3_sigma=True
+    else:
+        find_3_sigma=False
+
+    today = date.today()
+    datestring = today.strftime("%b-%d-%Y")
+
+    flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
+                          des=tno, clones=clones, find_3_sigma=find_3_sigma)
+
+    sim_2 = sim.copy()
+
+    shortarchive = datestring + "-" + tno + "-short-archive.bin"
+    flag, sim = run_reb.run_simulation(sim,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
+    
+    longarchive = datestring + "-" + tno + "-long-archive.bin"
+    flag, sim_2 = run_reb.run_simulation(sim_2,tmax=10e6,tout=1000.,filename=longarchive,deletefile=True)
+
+
+    flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=tno,archivefile=shortarchive,nclones=clones)
+    pomega = peri+ node 
+    flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=shortarchive)
+    q = a*(1.-ec)
+    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+                                                                    archivefile=shortarchive, nclones=clones)
+    rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
+    phirf = np.arctan2(yr, xr)
+    tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
+
+    flag, l_a, l_ec, l_inc, l_node, l_peri, l_ma, l_t = tools.read_sa_for_sbody(sbody=tno,archivefile=longarchive,nclones=clones)
+    l_pomega = l_peri+ l_node 
+    flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=longarchive)
+    l_q = l_a*(1.-l_ec)
+    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+                                                                    archivefile=longarchive, nclones=clones)
+    l_rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
+    l_phirf = np.arctan2(yr, xr)
+    l_tiss = apl/l_a + 2.*np.cos(l_inc)*np.sqrt(l_a/apl*(1.-l_ec*l_ec))
+
+    #first list is the always removed set
+    index_remove = [25, 27, 32, 34, 39, 41, 46, 48, 53, 55, 93, 95, 116, 117, 118, 119, 120, 121, 122, 
+                    123, 124, 125, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 147, 234, 236, 241, 
+                    243, 248, 250, 255, 257, 262, 264, 302, 304, 325, 326, 327, 328, 329, 330, 331, 332, 
+                    333, 334, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 356]
+
+    #set to remove for current best classifier (subject to change)
+    index_remove = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 25, 27, 32, 34, 39, 41, 46, 48, 
+                    53, 55, 93, 95, 101, 102, 103, 104, 105, 106, 107, 110, 112, 114, 116, 117, 118, 119, 
+                    120, 121, 122, 123, 124, 125, 127, 128, 130, 132, 134, 135, 136, 137, 138, 139, 140, 
+                    141, 142, 143, 147, 149, 152, 183, 184, 186, 187, 188, 190, 234, 236, 241, 243, 248, 
+                    250, 255, 257, 262, 264, 268, 270, 272, 273, 274, 275, 276, 280, 282, 287, 289, 302, 
+                    304, 310, 311, 312, 313, 314, 315, 316, 319, 321, 323, 325, 326, 327, 328, 329, 330, 
+                    331, 332, 333, 334, 336, 337, 339, 341, 343, 344, 345, 346, 347, 348, 349, 350, 351, 
+                    352, 356, 358, 361, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 392, 
+                    393, 396, 397]
+
+
+    n=0
+    short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
+                                        pomega[n],q[n],rrf[n],phirf[n],tiss[n])
+    long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
+                                        l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
+
+    all_features = np.concatenate((long_features, short_features),axis=0)
+    temp_features = np.delete(all_features,index_remove)
+    features = np.array([temp_features])
+
+    for n in range(1,clones+1):
+        short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
+                                        pomega[n],q[n],rrf[n],phirf[n],tiss[n])
+        long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
+                                        l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
+        all_features = np.concatenate((long_features, short_features),axis=0)
+        temp_features = np.delete(all_features,index_remove)
+        features = np.append(features,[temp_features],axis=0)
+   
+    return features, shortarchive, longarchive
+
+
+
+
+
+def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
+    nclas = len(classes_dictionary)
+    print("Clone number, most probable class, probability of most probable class, ",end ="")
+    for n in range(nclas):
+        print("probability of %s," % classes_dictionary[n],end ="")
+    print("\n",end ="")
+    format_string = "%d, %s, "
+    for n in range(nclas-1):
+        format_string+="%e, "
+    format_string+="%e,\n"
+    for n in range(0,clones+1):
+        print("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]),end ="")
+        for j in range(nclas):
+            print("%e, " % class_probs[n][j] ,end ="")
+        print("\n",end ="")
+

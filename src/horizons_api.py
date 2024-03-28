@@ -295,8 +295,8 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                 stop=0
                 for i in range(0,5991):
                     if(ecc[sorted_a_index[i]] >= 0 and stop == 0):
-                    c1 = sorted_a_index[i]
-                    stop = 1
+                        c1 = sorted_a_index[i]
+                        stop = 1
             else:
                 c1 = sorted_a_index[8]
             if(tecc[sorted_a_index[5991]] > 1.):
@@ -307,12 +307,12 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                         stop = 1
             else:
                 c2 = sorted_a_index[5991]
-            ecc = [tecc[c1],tecc[c2]].to_numpy()
-            q = [tq[c1],tq[c2]].to_numpy()
-            tp = [tp[c1],tp[c2]].to_numpy()
-            node = [tnode[c1],tnode[c2]].to_numpy()
-            argperi = [targperi[c1],targperi[c2]].to_numpy()
-            inc = [tinc[c1],tinc[c2]].to_numpy()
+            ecc = np.array([tecc[c1],tecc[c2]])
+            q = np.array([tq[c1],tq[c2]])
+            tp = np.array([ttp[c1],ttp[c2]])
+            node = np.array([tnode[c1],tnode[c2]])
+            argperi = np.array([targperi[c1],targperi[c2]])
+            inc = np.array([tinc[c1],tinc[c2]])
         else:
             ecc, q, tp, node, argperi, inc = \
                 np.random.multivariate_normal(mean, covmat, clones).T
