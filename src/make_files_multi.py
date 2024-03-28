@@ -37,12 +37,12 @@ def make(i,names,rocky_planets=False,clones=0,filename='Single'):
     
     print(list(planet_id.values()),str(des),clones)
     #Start Simulation using JPL Horizons
-    #flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
+    flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
     #Start simulation using state vector
     
     
-    
+    '''
     epoch = 2457388.50000
     x = (names['x'].iloc[i])
     y = (names['y'].iloc[i])
@@ -54,7 +54,7 @@ def make(i,names,rocky_planets=False,clones=0,filename='Single'):
     sb = [epoch,x,y,z,vx,vy,vz]
     #print(sb)
     flag, epoch, sim = run_reb.initialize_simulation_from_sv(planets=list(planet_id.values()), des=str(des), clones=clones,sb=sb)
-    
+    '''
     # Save the initial state to an archive file
     archive_file = os.path.join(obj_directory, "archive_init.bin")
     sim.save(archive_file)
