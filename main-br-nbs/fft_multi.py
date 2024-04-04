@@ -503,5 +503,5 @@ if __name__ == '__main__':
         #print(pe_df)
 
 
-        pe_df.to_csv('data_files/prop_elem_'+datatype+'_saveall.csv')
+        pe_df.to_csv('data_files/prop_elem_'+datatype+'.csv')
 
