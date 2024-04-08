@@ -35,7 +35,7 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
             print('No init file') 
             return 0
         sim2 = rebound.Simulation(file + "/archive_init.bin")
-        
+        sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
         # Uncomment if you need to print simulation information
         # print(sim2, sim2.particles)
         
@@ -46,7 +46,6 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
 
     # Rest of the integration code
 
-    sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
     return 1
 
     
