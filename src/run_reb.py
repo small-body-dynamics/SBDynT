@@ -95,7 +95,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
                 return 0, sim, 0.,0.,0.,0.,0.,0.
             tsim.add(m=mass, r=radius, x=x, y=y, z=z, vx=vx, vy=vy, vz=vz)
         # calculate the barycenter of the sun + missing planets
-        com = tsim.calculate_com()
+        com = tsim.com()
         # reset the corrections to the positions and velocities
         sx = -com.x; sy = -com.y; sz = -com.z
         svx = -com.vx; svy = -com.vy; svz = -com.vz
@@ -304,8 +304,8 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
         return 0, sim
 
     #set up the simulation archive 
-    sim.automateSimulationArchive(filename, interval=tout,
-                                  deletefile=deletefile)
+    sim.save_to_file(filename, interval=tout,
+                                  delete_file=deletefile)
 
     #run until tmax
     sim.integrate(tmax)
