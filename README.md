@@ -10,7 +10,7 @@ import sys<br>
 sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
 
 The following packages must be installed:<br>
-rebound<br>
+rebound -- Version 4+<br>
 numpy<br>
 astroquery
 
