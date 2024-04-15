@@ -387,7 +387,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         vy[0] = vy0
         vz[0] = vz0
         
-        # convert clones into standarcd elements then cartesian coordinates
+        # convert clones into standard elements then cartesian coordinates
         for j in range(clones):
             a = q[j]/(1.-ecc[j])
             mm = gm/(a*a*a)  # mean motion
