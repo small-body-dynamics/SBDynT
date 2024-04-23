@@ -63,7 +63,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
 
 
     #read the simulation archive and calculate resonant angles
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
 
     nout = len(sa)
 
@@ -87,8 +87,8 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
     for i,sim in enumerate(sa):
         #calculate the planet's orbit relative to the barycenter
         pl = sim.particles[planet]
-        com = sim.calculate_com()
-        o_pl = pl.calculate_orbit(com)
+        com = sim.com()
+        o_pl = pl.orbit(com)
         #planet's mean longitude for the resonant angles
         lamda_pl = o_pl.Omega+o_pl.omega+o_pl.M
 
@@ -107,7 +107,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
                 print("resonances.read_sa_for_resonance failed")
                 print("Problem finding a particle with that hash in the archive")
                 return 0, a, e, inc, node, aperi, ma, phi, t, ''
-            o = tp.calculate_orbit(com)
+            o = tp.orbit(com)
             a[j,i] = o.a
             e[j,i] = o.e
             inc[j,i] = o.inc
@@ -207,6 +207,8 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         tmax = t[-1]
 
     deltat = tmax-tmin
+    timelabel = "time (yr)"
+    tscale =1.
 
     if(tmax >=1e4 and deltat>1e3):
         tscale = 1e3

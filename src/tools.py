@@ -314,7 +314,7 @@ def mpc_designation_translation(obj):
 # reads the simulation archive files into barycentric orbital 
 # element arrays by hash
 #################################################################
-def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
+def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='bary'):
     """
     Reads the simulation archive file produced by the run_reb
     routines
@@ -323,6 +323,8 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
         tmin (optional, float): minimum time to return (years)
         tmax (optional, float): maximum time to return (years)
             if not set, the entire time range is returned
+        center (optional, string): 'bary' for barycentric orbits 
+            (default) and 'helio' for heliocentric orbits
     output:
         flag (int): 1 if successful and 0 if there was a problem
         a (1-d float array): semimajor axis (au)
@@ -337,7 +339,7 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
     
     #read the simulation archive and return the orbit of the
     #desired particle or planet with the provided hash
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_by_hash failed")
@@ -351,9 +353,13 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
     if( not(obj_hash in planets) and obj_hash.lower() in planets):
         obj_hash = obj_hash.lower()
 
-    if(tmin == 0. and tmax == 0.):
+    if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
         tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
         tmax = sa[-1].t
 
     a = np.zeros(nout)
@@ -364,9 +370,7 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
     ma = np.zeros(nout)
     t = np.zeros(nout)
     
-    imin = nout
-    imax = 0
-        
+    it=0
     for i,sim in enumerate(sa):
         if(sim.t < tmin or sim.t > tmax):
             #skip this 
@@ -379,34 +383,34 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
             print("Problem finding a particle with that hash in the archive")
             return 0, a, e, inc, node, aperi, ma, t
 
-        if(i<imin):
-            imin=i
-        if(i>imax):
-            imax=i
-        com = sim.calculate_com()
-        o = p.calculate_orbit(com)
+        if(center == 'bary'):
+            com = sim.com()
+        else:
+            com = sim.particles[0]
+        o = p.orbit(com)
 
-        t[i] = sim.t
+        t[it] = sim.t
 
-        a[i] = o.a
-        e[i] = o.e
-        inc[i] = o.inc
-        node[i] = o.Omega
-        aperi[i] = o.omega
-        ma[i] = o.M
+        a[it] = o.a
+        e[it] = o.e
+        inc[it] = o.inc
+        node[it] = o.Omega
+        aperi[it] = o.omega
+        ma[it] = o.M
+        it+=1
 
-    if(imin==nout and imax==0):
+    if(it==0):
         print("tools.read_sa_by_hash failed")
         print("There were no simulation archives in the desired time range")
         return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
     else:
-        t = t[imin:imax+1]
-        a = a[imin:imax+1]
-        e = e[imin:imax+1]
-        inc = inc[imin:imax+1]
-        node = node[imin:imax+1]
-        aperi = aperi[imin:imax+1]
-        ma = ma[imin:imax+1]
+        t = t[0:it]
+        a = a[0:it]
+        e = e[0:it]
+        inc = inc[0:it]
+        node = node[0:it]
+        aperi = aperi[0:it]
+        ma = ma[0:it]
     
     return 1, a, e, inc, node, aperi, ma, t
 #################################################################
@@ -417,7 +421,7 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
 # reads the simulation archive files into barycentric orbital 
 # element arrays
 #################################################################
-def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
+def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,center='bary'):
     """
     Reads the simulation archive file produced by the run_reb
     routines for the small body's orbital evolution
@@ -426,7 +430,9 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
         nclones (optional): number of clones, defaults to zero
         tmin (optional, float): minimum time to return (years)
         tmax (optional, float): maximum time to return (years)
-            if not set, the entire time range is returned        
+            if not set, the entire time range is returned    
+        center (optional, string): 'bary' for barycentric orbits 
+            (default) and 'helio' for heliocentric orbits            
     output:
         ## if nclones=0, all arrays are 1-d
         flag (int): 1 if successful and 0 if there was a problem
@@ -445,17 +451,22 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
 
     
     #read the simulation archive and calculate resonant angles
-    print(archivefile)
-    sa = rebound.SimulationArchive(archivefile)
+
+    sa = rebound.Simulationarchive(archivefile)
+
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
         print("Problem reading the simulation archive file")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
-    if(tmin == 0. and tmax == 0.):
+    if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
         tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
         tmax = sa[-1].t
 
     ntp = nclones+1
@@ -467,23 +478,12 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     ma = np.zeros([ntp,nout])
     t = np.zeros(nout)
         
-    imin = nout
-    imax = 0
-        
+    it=0
     for i,sim in enumerate(sa):
         if(sim.t < tmin or sim.t > tmax):
             #skip this 
             continue
-
-        #calculate the object's orbit relative to the barycenter
-        com = sim.calculate_com()
-    
-        if(i<imin):
-            imin=i
-        if(i>imax):
-            imax=i
-
-        t[i] = sim.t
+        t[it] = sim.t
         for j in range(0,ntp):
             #the hash format for clones
             tp_hash = sbody + "_" + str(j)
@@ -498,26 +498,34 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
                 return 0, a, e, inc, node, aperi, ma, t
 
 
-            o = p.calculate_orbit(com)
-            a[j,i] = o.a
-            e[j,i] = o.e
-            inc[j,i] = o.inc
-            node[j,i] = o.Omega
-            aperi[j,i] = o.omega
-            ma[j,i] = o.M
+            if(center == 'bary'):
+                #calculate the object's orbit relative to the barycenter
+                com = sim.com()
+            else:
+                com = sim.particles[0]
 
-    if(imin==nout and imax==0):
+            o = p.orbit(com)
+
+            a[j,it] = o.a
+            e[j,it] = o.e
+            inc[j,it] = o.inc
+            node[j,it] = o.Omega
+            aperi[j,it] = o.omega
+            ma[j,it] = o.M
+        it+=1
+
+    if(it==0):
         print("tools.read_sa_for_sbody failed")
         print("There were no simulation archives in the desired time range")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
-        t = t[imin:imax+1]
-        a = a[:,imin:imax+1]
-        e = e[:,imin:imax+1]
-        inc = inc[:,imin:imax+1]
-        node = node[:,imin:imax+1]
-        aperi = aperi[:,imin:imax+1]
-        ma = ma[:,imin:imax+1]
+        t = t[0:it]
+        a = a[:,0:it]
+        e = e[:,0:it]
+        inc = inc[:,0:it]
+        node = node[:,0:it]
+        aperi = aperi[:,0:it]
+        ma = ma[:,0:it]
 
     if(nclones == 0):
         return 1, a[0,:], e[0,:], inc[0,:], node[0,:], aperi[0,:], ma[0,:], t
@@ -530,7 +538,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
 # reads the simulation archive files into barycentric cartesian 
 # position arrays for a small body
 #################################################################
-def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
+def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None):
     """
     Reads the simulation archive file produced by the run_reb
     routines for the small body's orbital evolution
@@ -558,16 +566,20 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
 
     
         #read the simulation archive and calculate resonant angles
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody_cartesian failed")
         print("Problem reading the simulation archive file")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
-    if(tmin == 0. and tmax == 0.):
+    if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
         tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
         tmax = sa[-1].t
 
     ntp = nclones+1
@@ -579,20 +591,13 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
     vz = np.zeros([ntp,nout])
     t = np.zeros(nout)
         
-    imin = nout
-    imax = 0
+    it=0
         
     for i,sim in enumerate(sa):
         if(sim.t < tmin or sim.t > tmax):
             #skip this 
             continue
-
-        if(i<imin):
-            imin=i
-        if(i>imax):
-            imax=i
-
-        t[i] = sim.t
+        t[it] = sim.t
         for j in range(0,ntp):
             #the hash format for clones
             tp_hash = sbody + "_" + str(j)
@@ -606,25 +611,26 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
                 print("Problem finding a particle with that hash in the archive")
                 return 0, x, y, z, vx, vy, vz, t
 
-            x[j,i] = p.x
-            y[j,i] = p.y
-            z[j,i] = p.z
-            vx[j,i] = p.vx
-            vy[j,i] = p.vy
-            vz[j,i] = p.vz
+            x[j,it] = p.x
+            y[j,it] = p.y
+            z[j,it] = p.z
+            vx[j,it] = p.vx
+            vy[j,it] = p.vy
+            vz[j,it] = p.vz
+        it+=1
 
-    if(imin==nout and imax==0):
+    if(it==0):
         print("tools.rread_sa_for_sbody_cartesian failed")
         print("There were no simulation archives in the desired time range")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
-        t = t[imin:imax+1]
-        x = x[:,imin:imax+1]
-        y = y[:,imin:imax+1]
-        z = z[:,imin:imax+1]
-        vx = vx[:,imin:imax+1]
-        vy = vy[:,imin:imax+1]
-        vz = vz[:,imin:imax+1]
+        t = t[0:it]
+        x = x[:,0:it]
+        y = y[:,0:it]
+        z = z[:,0:it]
+        vx = vx[:,0:it]
+        vy = vy[:,0:it]
+        vz = vz[:,0:it]
 
     if(nclones == 0):
         return 1, x[0,:], y[0,:], z[0,:], vx[0,:], vy[0,:], vz[0,:], t
@@ -734,7 +740,7 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
 # on the x-axis (useful for plotting resonant populations)
 #################################################################
 def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
-                        tmin=0., tmax=0.):
+                        tmin=None, tmax=None):
     """
     Calculate the position of a small body in the rotating frame 
     input:
@@ -781,7 +787,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     #read in the last simulation snapshot to get the value of GMsum for 
     #the sun plus that planet
     tsim = rebound.Simulation(archivefile)
-    com = tsim.calculate_com()
+    com = tsim.com()
     GMcom = com.m*tsim.G
     tsim = None
 

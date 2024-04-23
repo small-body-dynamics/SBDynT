@@ -64,6 +64,9 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
         tmax = t[-1]
 
     deltat = tmax-tmin
+    timelabel = "time (yr)"
+    tscale =1.
+
 
     if(tmax >=1e4 and deltat>1e3):
         tscale = 1e3
@@ -202,6 +205,8 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         tmax = t[-1]
 
     deltat = tmax-tmin
+    timelabel = "time (yr)"
+    tscale =1.
 
     if(tmax >=1e4 and deltat>1e3):
         tscale = 1e3

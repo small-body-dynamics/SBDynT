@@ -10,7 +10,7 @@ import sys<br>
 sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
 
 The following packages must be installed:<br>
-rebound<br>
+rebound -- Version 4+<br>
 numpy<br>
 astroquery
 
@@ -27,4 +27,4 @@ We have also modified code originally written by [Rachel Smullen](https://github
 Development of these tools also include contributions from Renu Malhotra, Darin Ragozzine, Federica Spoto, Severance Graham, Henry Hsieh, and Marco Micheli.
 
 ### Funding Acknowledgements 
-This work is supported by NASA grant 80NSSC22K0512. Early development was supported by the Preparing for Astrophysics with LSST Program, funded by the Heising Simons Foundation through grant 2021-2975, and administered by Las Cumbres Observatory.
+This work is supported by NASA grant 80NSSC23K0886 (formerly grant 80NSSC22K0512). Early development was supported by the Preparing for Astrophysics with LSST Program, funded by the Heising Simons Foundation through grant 2021-2975, and administered by Las Cumbres Observatory.

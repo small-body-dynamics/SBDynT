@@ -119,7 +119,6 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         find_3_sigma (optional): boolean, if True and clones==2, the
                            returned clones will be approximately 3-
                            sigma min and max semimajor axis clones
-
     outputs:
         flag: integer, 1 if query worked, 0 otherwise)
         x: np array (size clones+1), cartesian heliocentric x (au)
@@ -130,12 +129,11 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         vz: np array (size clones+1), cartesian heliocentric vz (au)
         all return values set to 0 if unsuccessful
     """
-    
+
     if(find_3_sigma and clones != 2):
         print("horizons_api.query_sb_from_jpl failed")
         print("if using find_3_sigma, clones must = 2")
         return 0, 0., 0., 0., 0., 0., 0., 0.
-
 
     pdes, destype = tools.mpc_designation_translation(des)
 
@@ -145,9 +143,48 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
     except:
         print("horizons_api.query_sb_from_jpl failed")
-        print("JPL small body database browser query failed")
+        print("first attempted JPL small body database browser query failed, returning:")
+        print(obj)
         return 0, 0., 0., 0., 0., 0., 0., 0.
-        
+    
+
+    #some objects can't be found with their packed designation, 
+    #so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj['code']
+    except KeyError:
+        errorcode = None
+    
+    if(errorcode == 200):
+        #try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
+        except:
+            print("horizons_api.query_sb_from_jpl failed")
+            print("second attempted JPL small body database browser query failed, returning:")
+            print(obj)
+            return 0, 0., 0., 0., 0., 0., 0., 0.
+
+    #check to see if the user-provided designation is the same type as the primary one
+    #if the user gave a provisional designation, but the object is numbered, the SBDB
+    #query won't return the most up-to-date orbit (even though the darned system knows
+    #the provisional designation corresponds to the numbered object...grr
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj['object']['des'])
+    if(sbdbdestype != destype):
+        try:
+            newdes = obj['object']['des']
+            obj = SBDB.query(newdes, full_precision=True, covariance='mat', phys=True)   
+        except:
+            print("horizons_api.query_sb_from_jpl failed")
+            print("The user-provided designation was not the most up to date designation")            
+            print("third attempted JPL small body database browser query failed, returning:")
+            print(obj) 
+            return 0, 0., 0., 0., 0., 0., 0., 0.
+
     deg2rad = np.pi/180.
 
     try:
@@ -169,15 +206,28 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
             # data structure is for the same epoch as the covariance
             # matrix
             objcov = obj['orbit']['covariance']
-            cepoch = np.float64(str(objcov['epoch']).split()[0])
+            try:
+                cepoch = np.float64(str(objcov['epoch']).split()[0])
+            except:
+                #there isn't a covariance matrix
+                cepoch = 0.
             oepoch = np.float64(str(obj['orbit']['epoch']).split()[0])
-            if(cepoch != oepoch and clones > 0):
+            if(cepoch != oepoch and clones > 0 and cepoch != 0.):
                 print("horizons_api.query_sb_from_jpl failed")
                 warningstring = ("JPL small body database browser query did not"
                                + "return a best fit orbit at the same epoch as "
                                + "the covariance matrix. Query Failed.")
                 print(textwrap.fill(warningstring, 80))
+            if(cepoch != oepoch and clones > 0 and cepoch == 0.):
                 return 0, 0., 0., 0., 0., 0., 0., 0.
+                print("horizons_api.query_sb_from_jpl failed")
+                warningstring = ("JPL small body database browser query did not "
+                              + "return the expected data for the orbit and "
+                              + "covariance matrix")
+                print(textwrap.fill(warningstring, 80))
+                print(obj)
+                return 0, 0., 0., 0., 0., 0., 0., 0.
+
             arc = np.float64(str(obj['orbit']['data_arc'].split()[0]))
             if(arc < 30. and clones == 0):
                 warningstring = ("WARNING!!! The object's observational arc is "
@@ -200,6 +250,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                               + "used with caution.")
                 print(textwrap.fill(warningstring, 80))
                 return 0, 0., 0., 0., 0., 0., 0., 0.
+            #no clones, so we can just use the other best-fit orbit instead
             epoch = oepoch
             objorbit = obj['orbit']['elements']
             bfecc = np.float64(str(objorbit['e']).split()[0])
@@ -211,9 +262,10 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         except:
             print("horizons_api.query_sb_from_jpl failed")
             warningstring = ("JPL small body database browser query did not "
-                          + "return the expected data for the orbit and "
+                          + "return the expected data for the orbit and/or "
                           + "covariance matrix")
             print(textwrap.fill(warningstring, 80))
+            print(obj)
             return 0, 0., 0., 0., 0., 0., 0., 0.
     
     if(bfecc >= 1. or bfecc < 0.):
@@ -319,6 +371,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         node = node*deg2rad
         argperi = argperi*deg2rad
         inc = inc*deg2rad
+
         
         # set up output arrays
         x = np.zeros(clones+1)
