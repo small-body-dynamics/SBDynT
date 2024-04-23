@@ -445,6 +445,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
 
     
     #read the simulation archive and calculate resonant angles
+    print(archivefile)
     sa = rebound.SimulationArchive(archivefile)
     nout = len(sa)
     if(nout <1):
