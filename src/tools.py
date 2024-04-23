@@ -451,9 +451,13 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
 
     
     #read the simulation archive and calculate resonant angles
+<<<<<<< HEAD
 
     sa = rebound.Simulationarchive(archivefile)
 
+=======
+    sa = rebound.SimulationArchive(archivefile)
+>>>>>>> parent of 601dec722... Testng proper elements
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody failed")

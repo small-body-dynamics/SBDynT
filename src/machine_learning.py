@@ -975,10 +975,10 @@ def run_TNO_integration_for_ML(tno='',clones=2):
 
     sim_2 = sim.copy()
 
-    shortarchive = '../data/ML_archives/'+datestring + "-" + tno + "-short-archive.bin"
+    shortarchive = datestring + "-" + tno + "-short-archive.bin"
     flag, sim = run_reb.run_simulation(sim,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
     
-    longarchive = '../data/ML_archives/'+datestring + "-" + tno + "-long-archive.bin"
+    longarchive = datestring + "-" + tno + "-long-archive.bin"
     flag, sim_2 = run_reb.run_simulation(sim_2,tmax=10e6,tout=1000.,filename=longarchive,deletefile=True)
 
 
@@ -1041,7 +1041,7 @@ def run_TNO_integration_for_ML(tno='',clones=2):
    
     return features, shortarchive, longarchive
 
-def read_TNO_integration_for_ML(tno='',clones=0,shortarchive='',longarchive=''):
+def read_TNO_integration_for_ML(sim=None,sim_init=None,clones=0,tno=''):
     '''
     '''
     
@@ -1053,6 +1053,11 @@ def read_TNO_integration_for_ML(tno='',clones=0,shortarchive='',longarchive=''):
     today = date.today()
     datestring = today.strftime("%b-%d-%Y")
 
+    shortarchive = '../data/ML_archives/'+datestring + "-" + tno + "-short-archive.bin"
+    flag, sim = run_reb.run_simulation(sim_init,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
+    
+    longarchive = '../data/ML_archives/'+datestring + "-" + tno + "-long-archive.bin"
+    sim_2.save(longarchive)
     
     flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=tno,archivefile=shortarchive,nclones=clones)
     pomega = peri+ node 
