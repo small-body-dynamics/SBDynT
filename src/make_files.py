@@ -30,12 +30,12 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
     obj_directory = '../data/'+filename+'/'+str(des)
     #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
-    print(list(planet_id.values()), str(des), clones)
+    #print(list(planet_id.values()), str(des), clones)
     flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
     # Save the initial state to an archive file
     archive_file = os.path.join(obj_directory, "archive_init.bin")
-    sim.save(archive_file)
+    sim.save_to_file(archive_file)
     sim = None
 
 
@@ -61,7 +61,7 @@ def make_multi(filename='Single',rockp=False,clones=0):
     #print(name_list)
       
     for i, objname in enumerate(name_list['Name']):
-        #for i in range(len(name_list)):
+    #for i,objname in enumerate(name_list['Name'].iloc[633:667]):
         #print(objname)
     
         # Create directory for each object
@@ -86,6 +86,7 @@ if __name__ == "__main__":
     if filetype != 'Single':
         if len(sys.argv) > 2:
             rockp = sys.argv[2]
+            rockp = False
         else: 
             rockp = False
 
@@ -101,6 +102,7 @@ if __name__ == "__main__":
         
         if len(sys.argv) > 3:
             rockp = sys.argv[3]
+            rockp = False
         else: 
             rockp = False
 
@@ -108,8 +110,8 @@ if __name__ == "__main__":
             clones = int(sys.argv[4])
         else:
             clones = 0
-        obj_directory = os.path('../data/Single/'+str(objname))
-        os.makedirs(obj_directory, exist_ok=True)
+        #obj_directory = os.path('../data/Single/'+str(objname))
+        os.makedirs('../data/Single/'+str(objname), exist_ok=True)
     
         des = objname
         ntp = 1 + clones

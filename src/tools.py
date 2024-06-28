@@ -329,7 +329,7 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
     
     #read the simulation archive and return the orbit of the
     #desired particle or planet with the provided hash
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_by_hash failed")
@@ -375,8 +375,8 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=0.,tmax=0.):
             imin=i
         if(i>imax):
             imax=i
-        com = sim.calculate_com()
-        o = p.calculate_orbit(com)
+        com = sim.com()
+        o = p.orbit(com)
 
         t[i] = sim.t
 
@@ -437,7 +437,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
 
     
     #read the simulation archive and calculate resonant angles
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
@@ -467,7 +467,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
             continue
 
         #calculate the object's orbit relative to the barycenter
-        com = sim.calculate_com()
+        com = sim.com()
     
         if(i<imin):
             imin=i
@@ -491,7 +491,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
                 return 0, a, e, inc, node, aperi, ma, t
 
 
-            o = p.calculate_orbit(com)
+            o = p.orbit(com)
             a[j,i] = o.a
             e[j,i] = o.e
             inc[j,i] = o.inc
@@ -551,7 +551,7 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=0.,tma
 
     
         #read the simulation archive and calculate resonant angles
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody_cartesian failed")
@@ -774,7 +774,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     #read in the last simulation snapshot to get the value of GMsum for 
     #the sun plus that planet
     tsim = rebound.Simulation(archivefile)
-    com = tsim.calculate_com()
+    com = tsim.com()
     GMcom = com.m*tsim.G
     tsim = None
 

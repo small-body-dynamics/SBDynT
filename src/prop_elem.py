@@ -15,14 +15,14 @@ import scipy.signal as signal
 import run_reb
 import tools
 
-def prop_calc(objname, filename='Single'):
+def prop_calc(objname, filename='Single',objdes=None):
     
     """
     Calculate prop elements of small celestial bodies from simulation archive files, using a given file list of names.
 
     Parameters:
-        objname (str or int): Name/designation of the celestial body.
-        filename (str): Name of the file containing the list of names, and the directory containing the archive.bin files. 
+        objname (int): Name/designation of the celestial body in the dataset.
+        filename (str): Name of the file containing the list of names, and the directory containing the arxhive.bin files. 
 
     Returns:
         outputs: A list containing calculated proper elements, or  
@@ -42,20 +42,15 @@ def prop_calc(objname, filename='Single'):
 #    print(objname)
     try:       
         fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
-        archive = rebound.SimulationArchive(fullfile)
-        
-        small_planets_flag = False
+        print(fullfile)
+        archive = rebound.Simulationarchive(fullfile)
         
         try:
             earth = archive[0].particles['earth']
             small_planets_flag = True
         except:
             small_planets_flag = False
-            #print('No small planets')
-        #for i in range(len(archive[0].particles)):
-        #    if archive[0].particles[i].hash == 'mercury':
-        #        small_planets_flag = True
-        small_planets_flag = False
+        
         nump = len(archive[0].particles)
         flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
 
@@ -75,49 +70,63 @@ def prop_calc(objname, filename='Single'):
     q_init = np.sin(inc_init)*np.cos(lan_init)
     h_init = (e_init)*np.sin(lan_init+aop_init)
     k_init = (e_init)*np.cos(lan_init+aop_init)
-
-    dt = t_init[1]
-    n = len(h_init)
-    freq = np.fft.rfftfreq(n,d=dt)
-    rev = 1296000
-
-    #particle eccentricity vectors
-    Yh= np.fft.rfft(h_init)
-    Yk = np.fft.rfft(k_init)
-    Yp= np.fft.rfft(p_init)
-    Yq = np.fft.rfft(q_init)
-    Ya_f = np.fft.rfft(a_init)
+    #print(t_init)
     
-    Yp[0]=0
-    Yq[0]=0
-    Yh[0]=0
-    Yk[0]=0
-  
-    imax = len(Yp)
-    #disregard antyhing with a period shorter than 5000 years
-    freqlim = 1./2000.
-    #disregard frequencies for which any planet has power at higher than 10% the max
-    pth = 0.25
+    try:
+        dt = t_init[1]
     
-    spread = 2
-       
-    #print(hk_ind,pq_ind)
-    pYh = np.abs(Yh)**2
-    pYk = np.abs(Yk)**2
-    pYp = np.abs(Yp)**2
-    pYq = np.abs(Yq)**2
+        n = len(h_init)
+        if n < 10001:
+            print(n)
+        freq = np.fft.rfftfreq(n,d=dt)
+        rev = 1296000
     
-    #make copies of the FFT outputs
-    Yp_f = Yp.copy()
-    Yq_f = Yq.copy()
-    Yh_f = Yh.copy()
-    Yk_f = Yk.copy()
-  
-    gind = np.argmax(np.abs(Yh[1:]))+1    
-    sind = np.argmax(np.abs(Yp[1:]))+1
-    g = freq[gind]  
-    s = freq[sind]
+        #particle eccentricity vectors
+        Yh= np.fft.rfft(h_init)
+        Yk = np.fft.rfft(k_init)
+        Yp= np.fft.rfft(p_init)
+        Yq = np.fft.rfft(q_init)
+        Ya_f = np.fft.rfft(a_init)
+        
+        Yp[0]=0
+        Yq[0]=0
+        #Yh[0]=0
+        #Yk[0]=0
+      
+        imax = len(Yp)
+        #disregard antyhing with a period shorter than 5000 years
+        freqlim = 1./2000.
+        #disregard frequencies for which any planet has power at higher than 10% the max
+        pth = 0.25
+           
+        #print(hk_ind,pq_ind)
+        pYh = np.abs(Yh)**2
+        pYk = np.abs(Yk)**2
+        pYp = np.abs(Yp)**2
+        pYq = np.abs(Yq)**2
+        
+        #make copies of the FFT outputs
+        Yp_f = Yp.copy()
+        Yq_f = Yq.copy()
+        Yh_f = Yh.copy()
+        Yk_f = Yk.copy()
+      
+        gind = np.argmax(np.abs(Yh[1:]))+1    
+        sind = np.argmax(np.abs(Yp[1:]))+1
+        g = freq[gind]  
+        s = freq[sind]
+        
+        spread = 1
+        while int(1/(freq[gind+spread]-freq[gind-spread])/dt) > 2500:
+            spread = spread+1
+        
+        freq_dist_lim = 1
+        while int(1/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])/dt) > 1250:
+            freq_dist_lim = freq_dist_lim+1
 
+    except:
+        return [objname,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    
     # g1s1 -> g4s4 taken from Murray and Dermott SSD Table 7.1
     g1 = 5.46326/rev
     s1 = -5.20154/rev
@@ -147,15 +156,14 @@ def prop_calc(objname, filename='Single'):
     z7 = abs(g-3*g6+2*g5)
     z8 = abs(2*(g-g6)+s-s6)
     z9 = abs(3*(g-g6)+s-s6)
-    
-    #I check hashes at beginning of run to see if small planets are included. 
+
     if small_planets_flag:
         freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
         freq2 = [s1,s2,s3,s4,s6,s7,s8,z1,z2,z3,z6,z8,z9]
     else:
         freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
         freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
-
+    
     secresind1 = []
     secresind2 = []
     for i in freq1:
@@ -175,7 +183,7 @@ def prop_calc(objname, filename='Single'):
     for i in range(len(secresind1)):
         if secresind1[i] == gind:
             continue
-        if abs(secresind1[i] - gind) < 4:
+        if abs(secresind1[i] - gind) < freq_dist_lim:
             continue
 
         if spread > 0:
@@ -188,7 +196,7 @@ def prop_calc(objname, filename='Single'):
     for i in range(len(secresind2)):
         if secresind2[i] == sind:
             continue
-        if abs(secresind2[i] - sind) < 4:
+        if abs(secresind2[i] - sind) < freq_dist_lim:
             continue
 
         if spread > 0:
@@ -213,24 +221,26 @@ def prop_calc(objname, filename='Single'):
     sini_f = np.sqrt(p_f*p_f + q_f*q_f)
     ecc_f = np.sqrt(h_f*h_f + k_f*k_f) 
 
+    h_mom = np.sqrt(a_f*(1-ecc_f**2))*np.cos(np.arcsin(sini_f))+1/2/a_f
     
-    outputs =  [objname,np.mean(e_init),np.mean(np.sin(inc_init)),np.mean(ecc_f),np.mean(sini_f),np.mean(a_f)]
+    outputs =  np.array([np.nanmean(a_init),np.nanmean(e_init),np.nanmean(np.sin(inc_init)),np.nanmean(np.sqrt(a_init*(1-e_init**2))),np.nanmean(a_f),np.mean(ecc_f),np.nanmean(sini_f),np.nanmean(h_mom)])
     
+    error_list = np.zeros((9,4))
     ds = int(len(t_init)/10)
-    for i in range(9):
-        t = t_init.copy()[int(i*ds):int((i+2)*ds)]
+    for j in range(9):
+        t = t_init.copy()[int(j*ds):int((j+2)*ds)]
         t = t - t[0]
         
-        a = a_init.copy()[int(i*ds):int((i+2)*ds)]
+        a = a_init.copy()[int(j*ds):int((j+2)*ds)]
         #an = series['an'].values
     #    print(series)
-        e = e_init.copy()[int(i*ds):int((i+2)*ds)]
-        inc = inc_init.copy()[int(i*ds):int((i+2)*ds)]
+        e = e_init.copy()[int(j*ds):int((j+2)*ds)]
+        inc = inc_init.copy()[int(j*ds):int((i+2)*ds)]
         
-        h = h_init.copy()[int(i*ds):int((i+2)*ds)]
-        k = k_init.copy()[int(i*ds):int((i+2)*ds)]
-        p = p_init.copy()[int(i*ds):int((i+2)*ds)]
-        q = q_init.copy()[int(i*ds):int((i+2)*ds)]
+        h = h_init.copy()[int(j*ds):int((j+2)*ds)]
+        k = k_init.copy()[int(j*ds):int((j+2)*ds)]
+        p = p_init.copy()[int(j*ds):int((j+2)*ds)]
+        q = q_init.copy()[int(j*ds):int((j+2)*ds)]
         #print(t)
         
         dt = t[1]
@@ -277,7 +287,7 @@ def prop_calc(objname, filename='Single'):
         sind = np.argmax(np.abs(Yp[1:]))+1
         g = freq[gind]  
         s = freq[sind]
-    
+        
         #print(g,s,g6,s6)
         z1 = abs(g+s-g6-s6)
         z2 = abs(g+s-g5-s7)
@@ -316,7 +326,7 @@ def prop_calc(objname, filename='Single'):
         for i in range(len(secresind1)):
             if secresind1[i] == gind:
                 continue
-            if abs(secresind1[i] - gind) < 4:
+            if abs(secresind1[i] - gind) < freq_dist_lim:
                 continue
     
             if spread > 0:
@@ -329,7 +339,7 @@ def prop_calc(objname, filename='Single'):
         for i in range(len(secresind2)):
             if secresind2[i] == sind:
                 continue
-            if abs(secresind2[i] - sind) < 4:
+            if abs(secresind2[i] - sind) < freq_dist_lim:
                 continue
     
             if spread > 0:
@@ -354,11 +364,38 @@ def prop_calc(objname, filename='Single'):
         sini_f = np.sqrt(p_f*p_f + q_f*q_f)
         ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
         
-        
-   
-        outputs.append([np.mean(ecc_f),np.mean(sini_f),np.mean(a_f)])
-
-    return outputs
+        h_mom = np.sqrt(a_f*(1-ecc_f**2))*np.cos(np.arcsin(sini_f))+1/2/a_f
+       
+        error_list[j][0] = np.nanmean(a_f)
+        error_list[j][1] = np.nanmean(ecc_f)
+        error_list[j][2] = np.nanmean(sini_f)
+        error_list[j][3] = np.nanmean(h_mom)
+    #print(outputs)
+    #errors = outputs[7:]
+    #print(error_list,outputs[-3:])
+    #print(np.array(error_list)-np.array(outputs[-3:]))
+    #print(
+          
+    rms = np.sqrt(np.nanmean((np.array(error_list)-np.array(outputs[-4:]))**2,axis=0))
+    
+    maxvals = np.max(np.array(error_list)-np.array(outputs[-4:]),axis=0)
+    #outputs.append(outputs,np.array([rms,maxvals]))
+    #print(outputs,error_list,rms,maxvals)
+    return_data = [objname]
+    for i in range(len(outputs)):
+        return_data.append(outputs[i])
+    for i in range(len(error_list)):
+        for j in range(len(error_list[0])):
+            return_data.append(error_list[i][j])
+    return_data.append(rms[0])
+    return_data.append(rms[1])
+    return_data.append(rms[2])
+    return_data.append(rms[3])
+    return_data.append(maxvals[0])
+    return_data.append(maxvals[1])
+    return_data.append(maxvals[2])
+    return_data.append(maxvals[3])
+    return return_data
 
 def prop_multi(filename):
     names_df = pd.read_csv('../data/data_files/'+filename+'.csv')
@@ -368,20 +405,48 @@ def prop_multi(filename):
         data_line = prop_calc(objname,filename)
         #print(data_line)
         data.append(data_line)
-    column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
+    column_names = ['Objname','ObsSMA','ObsEcc','ObsSin(Inc)','Obs_h','PropSMA','PropEcc','PropSin(Inc)','Prop_h']
+    for i in range(9):
+        numrange = str(i)+'_'+str(i+2)+'PE'
+        column_names.append(numrange+'_a')
+        column_names.append(numrange+'_e')
+        column_names.append(numrange+'_sinI')
+        column_names.append(numrange+'_h')
+            #print(numrange)
+    column_names.append('RMS_err_a')
+    column_names.append('RMS_err_e')
+    column_names.append('RMS_err_sinI')
+    column_names.append('RMS_err_h')
+    column_names.append('Delta_a')
+    column_names.append('Delta_e')
+    column_names.append('Delta_sinI')
+    column_names.append('Delta_h')
     data_df = pd.DataFrame(data,columns=column_names)
-    data_df.to_csv('../data/results/'+filename+'_norock_prop_elem.csv')
+    data_df.to_csv('../data/results/'+filename+'_prop_elem.csv')
     return data
 
 if __name__ == "__main__":
     filename = str(sys.argv[1])
     
     if filename != 'Single':
-        data = prop_multi(filename)
-        
-        
+        data = prop_multi(filename)  
     else:
-        column_names = ['Objname','ObsEcc','ObsSin(Inc)','PropEcc','PropSin(Inc)','PropSMA','0_2PE','1_3PE','2_4PE','3_5PE','4_6PE','5_7PE','6_8PE','7_9PE','8_10PE']
+        column_names = ['Objname','ObsSMA','ObsEcc','ObsSin(Inc)','Obs_h','PropSMA','PropEcc','PropSin(Inc)','Prop_h']
+        for i in range(9):
+            numrange = str(i)+'_'+str(i+2)+'PE'
+            column_names.append(numrange+'_a')
+            column_names.append(numrange+'_e')
+            column_names.append(numrange+'_sinI')
+            column_names.append(numrange+'_h')
+            #print(numrange)
+        column_names.append('RMS_err_a')
+        column_names.append('RMS_err_e')
+        column_names.append('RMS_err_sinI')
+        column_names.append('RMS_err_h')
+        column_names.append('Delta_a')
+        column_names.append('Delta_e')
+        column_names.append('Delta_sinI')
+        column_names.append('Delta_h')
         objname = str(sys.argv[2])
         fullfile = '../data/'+filename+'/'+objname+'/archive.bin'
         #archive = rebound.SimulationArchive(fullfile)
