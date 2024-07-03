@@ -1,0 +1,5 @@
+{
+    "objname": "205",
+    "err_message": "Simulation failed during initialization. Might not be findable in JPL Horizons",
+    "run_success": false
+}
