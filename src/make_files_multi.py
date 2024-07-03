@@ -30,12 +30,12 @@ def make(i,names,rocky_planets=False,clones=0,filename='Single'):
         planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
         
     des = str(names['Name'].iloc[i])
-    print(des)
+    #print(des)
     obj_directory = '../data/'+filename+'/'+str(des)
     #print(obj_directory,filename)
     os.makedirs(obj_directory, exist_ok=True)
     
-    print(list(planet_id.values()),str(des),clones)
+    #print(list(planet_id.values()),str(des),clones)
     #Start Simulation using JPL Horizons
     flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
     
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 
         multi = functools.partial(make, names=name_list, rocky_planets=rocky_planets, clones=clones, filename=filetype)
         j = range(len(name_list))
-        print(name_list)
+        #print(name_list)
         #j = range(22,23)
         #begin = datetime.now()
         pool.map(multi, j)

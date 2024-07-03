@@ -47,14 +47,16 @@ def integrate_multi(filename,tmax = True,tout=1e3):
     file = str(names_df['Name'].iloc[i])
     sim2 = rebound.Simulation(file + "/archive_init.bin")
     
-    if tmax:
+    if tmax == True:
         rockp = False
         #Check if rocky planets are included. If they are, default tmax = 1e7, otherwise tmax = 1e8.
         try:
             earth = sim2.particles['earth']
             rockp = True
+        except:
+            rockp = False
         
-        if rockp:
+        if rockp == True:
             tmax = 1e7
         else:
             tmax = 1e8
@@ -71,11 +73,12 @@ if __name__ == "__main__":
         sys.exit(1)
 
     objtype = str(sys.argv[1])
-
+    print(objtype)
     if objtype == "Single":
         objname = str(sys.argv[2])
+        print(objname)
         sbody = objname
-        integrate(objtype, objname)
+        integrate(objname, objtype=objtype, tmax=1e8)
         # Add specific handling for Generic type if needed
     else:
         # Load data file for the given objtype
