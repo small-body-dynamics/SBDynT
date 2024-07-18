@@ -211,6 +211,9 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
     if(tmax >=1e4 and deltat>1e3):
         tscale = 1e3
         timelabel = "kyr "
+    if(tmax >=1e4 and deltat<=1e2):
+        tscale = 1
+        timelabel = "yr "
     if(tmax >=1e6 and deltat>1e5):
         tscale = 1e6
         timelabel = "Myr "
@@ -227,7 +230,12 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         tscale = 1e3
         timelabel = "kyr "
 
+    elif(tmax >1e9 and deltat > 1e4):
+        tscale = 1e3
+        timelabel = "kyr "
 
+    #tscale = 1e6
+    #timelabel='Myr'
     time1 = tmin/tscale
     time2 = tmax/tscale
     timestring = " from %1.4f to %1.4f " % (time1,time2)
@@ -281,13 +289,13 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         ax5.scatter(vxr[0,:],vzr[0,:],s=bfps,c='k')
         ax6.scatter(vyr[0,:],vzr[0,:],s=bfps,c='k')
     else:
-        ax1.scatter(xr,yr,s=bfps,c='k')
-        ax2.scatter(xr,zr,s=bfps,c='k')
-        ax3.scatter(yr,zr,s=bfps,c='k')
+        ax1.scatter(xr,yr,s=bfps,c='k',alpha=0.2)
+        ax2.scatter(xr,zr,s=bfps,c='k',alpha=0.2)
+        ax3.scatter(yr,zr,s=bfps,c='k',alpha=0.2)
 
-        ax4.scatter(vxr,vyr,s=bfps,c='k')
-        ax5.scatter(vxr,vzr,s=bfps,c='k')
-        ax6.scatter(vyr,vzr,s=bfps,c='k')
+        ax4.scatter(vxr,vyr,s=bfps,c='k',alpha=0.2)
+        ax5.scatter(vxr,vzr,s=bfps,c='k',alpha=0.2)
+        ax6.scatter(vyr,vzr,s=bfps,c='k',alpha=0.2)
 
 
     ax1.scatter(pxr,pyr,s=bfps,c='darkgrey')

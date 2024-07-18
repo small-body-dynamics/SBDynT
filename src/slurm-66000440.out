@@ -1,0 +1,36 @@
+printf: usage: printf [-v var] format [arguments]
+
+Activating Modules:
+  1) defaultenv/10     2) lmod/7.5.13
+
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+
+Activating Modules:
+  1) defaultenv/10     2) lmod/7.5.13
+
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 14 in communicator MPI_COMM_WORLD
+with errorcode 0.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+tools.read_sa_for_sbody failed
+Problem finding a particle with that hash in the archive
+==========================worker with rank 14 crashed===========================
+Traceback (most recent call last):
+  File "/home/djspenc/.local/lib/python3.7/site-packages/schwimmbad/mpi.py", line 72, in __init__
+    self.wait()
+  File "/home/djspenc/.local/lib/python3.7/site-packages/schwimmbad/mpi.py", line 126, in wait
+    result = func(arg)
+  File "prop_elem_multi.py", line 78, in prop_calc
+    dt = t_init[1]
+IndexError: index 1 is out of bounds for axis 0 with size 1

@@ -1,0 +1,6 @@
+printf: usage: printf [-v var] format [arguments]
+
+Inactive Modules:
+  1) defaultenv     2) lmod
+
+/var/spool/slurmd/job65971740/slurm_script: line 13: mpiexec: command not found
