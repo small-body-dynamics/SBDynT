@@ -32,8 +32,13 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
 
     sim.units = ('yr', 'AU', 'Msun')
 
-    # make all planet names lowercase
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
     planets = [pl.lower() for pl in planets]
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+
     # create an array of planets not included in the simulation
     # will be used to correct the simulation's barycenter for their absence
     notplanets = []
@@ -124,15 +129,24 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
 
 def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
                                    'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0, find_3_sigma=False):
+                          des='', clones=0, find_3_sigma=False,
+                          datadir='./',saveic=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
         des: string, small body designation
         clones (optional): integer, number of clones - defaults to 0
-        find_3_sigma (optional): boolean,  if True and clones==2, the
-                           returned clones will be approximately 3-
-                           sigma min and max semimajor axis clones
+        find_3_sigma (optional): boolean,  if True and clones==2, the returned 
+                           clones will be approximately 3-sigma min and max
+                           semimajor axis clones
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later to fileneame 
+                           des-ic.bin (with spaces in des replaced with '-'); 
+                           if string: the string is used as the file name;
+                           (default) if False nothing is saved
 
     outputs:
         flag: integer, 0 if failed, 1 if successful
@@ -141,9 +155,14 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
              with adjustments for missing major perturbers
     """
     
-    # make all planet names lowercase
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
     planets = [pl.lower() for pl in planets]
-    
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+
+
     # initialize simulation variable
     sim = rebound.Simulation()
     sim.units = ('yr', 'AU', 'Msun')
@@ -194,17 +213,37 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
 
     sim.move_to_com()
 
+    if(saveic):
+        if(saveic == True):
+            ic_file = datadir + des.replace(' ', '-') + '-ic.bin'
+            sim.save_to_file(ic_file)
+        else:
+            ic_file = datadir + saveic
+            sim.save_to_file(ic_file)
+
+
+
     return 1, epoch, sim
 
 def initialize_simulation_at_epoch(
         planets=['mercury', 'venus', 'earth', 'mars',
                  'jupiter', 'saturn', 'uranus', 'neptune'],
-        des=[''], epoch=2459580.5):
+        des=[''], epoch=2459580.5,
+        datadir='./',saveic=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
         des: string or list of strings, small body designation or list of designations
         epoch (optional): float, epoch in JD, defaults to Jan 1, 2022
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later to fileneame 
+                           des[0]-ic.bin (with spaces in des replaced with '-'); 
+                           if string: the string is used as the file name;
+                           (default) if False nothing is saved
+        
     outputs:
         flag (integer): 0 if failed, 1 if successful
         epoch: float, epoch of the simulation start (JD)
@@ -212,9 +251,14 @@ def initialize_simulation_at_epoch(
              with adjustments for missing major perturbers
     """
 
-    # make all planet names lowercase
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
     planets = [pl.lower() for pl in planets]
-    
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+
+
     # initialize simulation variable
     sim = rebound.Simulation()
     sim.units = ('yr', 'AU', 'Msun')
@@ -260,97 +304,20 @@ def initialize_simulation_at_epoch(
 
     sim.move_to_com()
 
-    return 1, epoch, sim
-
-def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
-                                   'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0, sb=[0,0,0,0,0,0,0]):
-    """
-    inputs:
-        planets (optional): string list, list of planet names - defaults to all
-        des: string, small body designation
-        clones (optional): integer, number of clones - defaults to 0
-        sb: list of floats, [epoch,x,y,z,vx,vy,vz] of the small body object. This is 
-        effectively a way to start a simulation using data outside of Horizons.
-    outputs:
-        flag: integer, 0 if failed, 1 if successful
-        epoch: float, date of the simulation start (JD)
-        sim: rebound simulation instance with planets and test particles added
-             with adjustments for missing major perturbers
-    """
-    
-    # make all planet names lowercase
-    planets = [pl.lower() for pl in planets]
-    
-    # initialize simulation variable
-    sim = rebound.Simulation()
-    sim.units = ('yr', 'AU', 'Msun')
-
-    # set up small body variables
-    ntp = 1 + clones
-    sbx = np.zeros(ntp)
-    sby = np.zeros(ntp)
-    sbz = np.zeros(ntp)
-    sbvx = np.zeros(ntp)
-    sbvy = np.zeros(ntp)
-    sbvz = np.zeros(ntp)
-
-    # get the small body's position and velocity
-    flag, epoch, sbx[:], sby[:], sbz[:], sbvx[:], sbvy[:], sbvz[:] = 1,sb[0],sb[1],sb[2],sb[3],sb[4],sb[5],sb[6]
-    
-    if(flag < 1):
-        print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
-        return 0, 0., sim
-    
-    # add the planets and return the position/velocity corrections for
-    # missing planets
-    #print(planets)
-    apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
-                epoch=epoch)
-    if(apflag < 1):
-        print("run_reb.initialize_simulation failed at run_reb.add_planets")
-        return 0, 0., sim
-    
-    maxpos = np.sqrt(sb[1]**2+sb[2]**2+sb[3]**2)
-    maxvel = np.sqrt(sb[4]**2+sb[5]**2+sb[6]**2)
-    
-    if(clones > 0):    
-        for i in range(1,ntp):
-            sbx[i] += np.random.normal(0,maxpos*0.0001);
-            sby[i] += np.random.normal(0,maxpos*0.0001);
-            sbz[i] += np.random.normal(0,maxpos*0.0001);
-            sbvx[i] += np.random.normal(0,maxvel*0.001);
-            sbvy[i] += np.random.normal(0,maxvel*0.001);
-            sbvz[i] += np.random.normal(0,maxvel*0.001);
-            
-            
-        for i in range(0, ntp):
-            if(i == 0):
-                #first clone is always just the best-fit orbit
-                #and the hash is not numbered
-                sbhash = str(des)
-            else:
-                sbhash = str(des) + '_' + str(i)
-            # correct for the missing planets
-            #print(sbx,sby,sbz,sbvx,sbvy,sbz)
-            sbx[i] += sx; sby[i] += sy; sbz[i] += sz
-            sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
-            sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
-    else:
-        sbx += sx; sby += sy; sbz += sz
-        sbvx += svx; sbvy += svy; sbvz += svz
-        sbhash = str(des) 
-        sim.add(m=0., x=sbx, y=sby, z=sbz,
-                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
-
-    sim.move_to_com()
+    if(saveic):
+        if(saveic == True):
+            ic_file = datadir + des[0].replace(' ', '-') + '-ic.bin'
+            sim.save_to_file(ic_file)
+        else:
+            ic_file = datadir + saveic
+            sim.save_to_file(ic_file)
 
     return 1, epoch, sim
 
 
-def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
-                   deletefile=False,integrator='mercurius'):
+def run_simulation(sim, tmax=0, tout=0, archivefile="archive.bin",
+                   deletefile=False,integrator='mercurius',
+                   datadir='./'):
     """
     run a simulation saving to a simulation archive every tout
     inputs:
@@ -359,7 +326,7 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
         tmax (float; years): simulation stopping time
         tout (float; years): interval for saving simulation outputs to
             the simulation archive file
-        filename (str; optional): name/path for the simulation
+        archivefile (str; optional): name/path for the simulation
             archive file that rebound will generate
         deletefile (bool; optional): if set to True and a file with
             the name/path of filename exists, it will be deleted before
@@ -371,6 +338,9 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
             switchover at 3 hill radii, and the collision resolve set to
             merge. Currently, sbdynt is configured to allow the following
             integrator options: whfast, mercurius, ias15
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+
     outputs:
         flag (int): 0 if something went wrong, 1 if the integration succeded
         sim (rebound simulation instance): contains the full simulation
@@ -392,27 +362,31 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
                     options are whfast, mercurius, ias15")
         return 0, sim
 
-    #set up the simulation archive 
-    sim.save_to_file(filename, interval=tout,
-                                  delete_file=deletefile)
+    #set up the simulation archive
+    save_file = datadir + archivefile
+    sim.save_to_file(save_file, interval=tout,
+                     delete_file=deletefile)
 
     #run until tmax
 
     try:
         sim.integrate(tmax)
     except:
-        print('Particle ejected')
-        return 1, sim
+        print('Integration stopped')
+        return 0, sim
     return 1, sim
 
 
-def initialize_simulation_from_simarchive(sim, filename=" "):
+def initialize_simulation_from_simarchive(sim, archivefile="archive.bin",datadir='./'):
     """
     read in a simulation archive to initialize a simulation instance
     inputs:
         sim (rebound simulation instance): must be empty
         filename (str; optional): name/path for the simulation
             archive file that rebound will generate
+        datadir (optional): string, path for stored files; 
+            defaults to the current directory
+
     outputs:
         flag (int): 0 if something went wrong, 1 if sucessful
         sim (rebound simulation instance): contains the simulation
@@ -424,11 +398,14 @@ def initialize_simulation_from_simarchive(sim, filename=" "):
         print("can only accept an empty rebound simulation instance")
         return 0, sim
 
+    save_file = datadir + archivefile
+
     try:
-        sim = rebound.Simulation(filename)
+        sim = rebound.Simulation(save_file)
     except RuntimeError:
         print("run_reb.initialize_simulation_from_simarchive failed")
-        print("couldn't read the simulation archive file")
+        print("couldn't read the simulation archive file:")
+        print(save_file)
         return 0, sim
 
     return 1, sim

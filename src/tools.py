@@ -314,7 +314,9 @@ def mpc_designation_translation(obj):
 # reads the simulation archive files into barycentric orbital 
 # element arrays by hash
 #################################################################
-def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='bary'):
+def read_sa_by_hash(obj_hash = '', archivefile='archive.bin',
+                    tmin=None,tmax=None,center='bary',
+                    datadir='./'):
     """
     Reads the simulation archive file produced by the run_reb
     routines
@@ -325,6 +327,8 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
             if not set, the entire time range is returned
         center (optional, string): 'bary' for barycentric orbits 
             (default) and 'helio' for heliocentric orbits
+        datadir (optional): string, path for stored files; 
+            defaults to the current directory                  
     output:
         flag (int): 1 if successful and 0 if there was a problem
         a (1-d float array): semimajor axis (au)
@@ -339,7 +343,8 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
     
     #read the simulation archive and return the orbit of the
     #desired particle or planet with the provided hash
-    sa = rebound.Simulationarchive(archivefile)
+    save_file = datadir+archivefile
+    sa = rebound.Simulationarchive(save_file)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_by_hash failed")
@@ -421,7 +426,9 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
 # reads the simulation archive files into barycentric orbital 
 # element arrays
 #################################################################
-def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,center='bary'):
+def read_sa_for_sbody(sbody = '', archivefile='archive.bin',
+                      nclones=0,tmin=None,tmax=None,center='bary',
+                      datadir='./',):
     """
     Reads the simulation archive file produced by the run_reb
     routines for the small body's orbital evolution
@@ -432,7 +439,10 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
         tmax (optional, float): maximum time to return (years)
             if not set, the entire time range is returned    
         center (optional, string): 'bary' for barycentric orbits 
-            (default) and 'helio' for heliocentric orbits            
+            (default) and 'helio' for heliocentric orbits    
+        datadir (optional): string, path for stored files; 
+            defaults to the current directory
+
     output:
         ## if nclones=0, all arrays are 1-d
         flag (int): 1 if successful and 0 if there was a problem
@@ -451,11 +461,13 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
 
     
     #read the simulation archive and calculate resonant angles
-    sa = rebound.Simulationarchive(archivefile)
+    save_file = datadir + archivefile
+    sa = rebound.Simulationarchive(save_file)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
-        print("Problem reading the simulation archive file")
+        print("Problem reading the simulation archive file:")
+        print(save_file)
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == None and tmax == None):
@@ -536,7 +548,9 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
 # reads the simulation archive files into barycentric cartesian 
 # position arrays for a small body
 #################################################################
-def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None):
+def read_sa_for_sbody_cartesian(sbody = '', archivefile='archive.bin',
+                                nclones=0,tmin=None,tmax=None,
+                                datadir='./'):
     """
     Reads the simulation archive file produced by the run_reb
     routines for the small body's orbital evolution
@@ -545,7 +559,9 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
         nclones (optional): number of clones, defaults to zero
         tmin (optional, float): minimum time to return (years)
         tmax (optional, float): maximum time to return (years)
-            if not set, the entire time range is returned        
+            if not set, the entire time range is returned  
+        datadir (optional): string, path for stored files; 
+            defaults to the current directory            
     output:
         ## if nclones=0, all arrays are 1-d
         flag (int): 1 if successful and 0 if there was a problem
@@ -563,12 +579,14 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
     """
 
     
-        #read the simulation archive and calculate resonant angles
-    sa = rebound.Simulationarchive(archivefile)
+    #read the simulation archive and calculate resonant angles
+    save_file = datadir+ archivefile
+    sa = rebound.Simulationarchive(save_file)
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody_cartesian failed")
-        print("Problem reading the simulation archive file")
+        print("Problem reading the simulation archive file:")
+        print(save_file)
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == None and tmax == None):
@@ -738,7 +756,8 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
 # on the x-axis (useful for plotting resonant populations)
 #################################################################
 def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
-                        tmin=None, tmax=None):
+                        tmin=None, tmax=None,
+                        datadir='./'):
     """
     Calculate the position of a small body in the rotating frame 
     input:
@@ -748,7 +767,9 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
         nclones (optional,int): number of clones of the best-fit orbit
         tmin (optional, float): minimum time (years)
         tmax (optional, float): maximum time (years)
-            if not set, the entire time range is plotted           
+            if not set, the entire time range is plotted  
+        datadir (optional): string, path for stored files; 
+            defaults to the current directory                  
     output:
         flag (int): 1 if successful and 0 if there was a problem
         xr (1-d or 2-d float array): barycentric x (au) in rotating frame
@@ -774,7 +795,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     #read the planet orbit for the necessary rotation information
     plflag, apl,epl,ipl,nodepl,aperipl,mapl,t = \
         read_sa_by_hash(obj_hash=planet, archivefile=archivefile, \
-                              tmin=tmin,tmax=tmax)
+                              tmin=tmin,tmax=tmax,datadir=datadir)
 
     if(not plflag):
         print("tools.calc_rotating_frame failed")
@@ -791,7 +812,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
 
     tpflag, x, y, z, vx, vy, vz, t = \
         read_sa_for_sbody_cartesian(sbody = sbody, archivefile=archivefile,
-                                    nclones=nclones,tmin=tmin,tmax=tmax)
+                                    nclones=nclones,tmin=tmin,tmax=tmax,datadir=datadir)
     if(not tpflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in small body's cartesian positions")

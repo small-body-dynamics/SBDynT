@@ -47,3 +47,28 @@ SS_r[8] = 24764.*kmtoau  # Neptune system
 find_orb_sunGM = 1.3271243994E+11
 stoyear = 1./(365.25*24.*60.*60.)
 
+
+#constants used for the proper elements calculations
+#
+# frequencies associated with the secular modes of the 
+# solar system, converted from "/yr to cycles/yr
+conv = 1296000.
+# g1s1 -> g4s4 taken from Murray and Dermott SSD Table 7.1
+g1 = 5.46326/conv
+s1 = -5.20154/conv
+g2 = 7.34474/conv
+s2 = -6.57080/conv
+g3 = 17.32832/conv
+s3 = -18.74359/conv
+g4 = 18.00233/conv
+s4 = -17.63331/conv
+# g5s6 -> g8s8 taken directly from OrbFit software.
+g5 = 4.25749319/conv
+g6 = 28.24552984/conv
+g7 = 3.08675577/conv
+g8 = 0.67255084/conv
+s6 = -26.34496354/conv
+s7 = -2.99266093/conv
+s8 = -0.69251386/conv
+
+

@@ -10,7 +10,6 @@ import horizons_api
 import tools
 import warnings
 warnings.filterwarnings("ignore")
-import scipy.signal as signal
 
 import run_reb
 import tools
@@ -34,7 +33,9 @@ def prop_calc(objname, filename='Single',objdes=None):
         - Calculated Proper Semimajor Axis 
         - Running Block Proper Elements [Calc Proper Ecc, Calc Proper Sin(Inc), Calc Proper SMA]
         
-        The Running Block calculations are used to calculate a mean error for the proper elements. The default run will be a 100 Myr integration, with running blocks from 0-20,10-30,...80-100 Myr, producing 9 running blocks total. So your default run will produce an outputs list consisting of 33 values total.  
+        The Running Block calculations are used to calculate a mean error for the proper elements. 
+        The default run will be a 100 Myr integration, with running blocks from 0-20,10-30,...80-100 Myr, 
+        producing 9 running blocks total. So your default run will produce an outputs list consisting of 33 values total.  
         
         If an error occurs in the code, then outputs is instead returned as [objname,0,0,0,0,0,0,0].
         
@@ -53,7 +54,8 @@ def prop_calc(objname, filename='Single',objdes=None):
 
         nump = len(archive[0].particles)
         #print(objname)
-        flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
+        flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(sbody = str(objname), 
+                                                                                                     archivefile=fullfile,nclones=0,tmin=0.,tmax=archive[-1].t)
 
         
     except Exception as error:
@@ -224,7 +226,9 @@ def prop_calc(objname, filename='Single',objdes=None):
 
     h_mom = np.sqrt(a_f*(1-ecc_f**2))*np.cos(np.arcsin(sini_f))+1/2/a_f
     
-    outputs =  np.array([np.nanmean(a_init),np.nanmean(e_init),np.nanmean(np.sin(inc_init)),np.nanmean(np.sqrt(a_init*(1-e_init**2))),np.nanmean(a_f),np.mean(ecc_f),np.nanmean(sini_f),np.nanmean(h_mom)])
+    outputs =  np.array([np.nanmean(a_init),np.nanmean(e_init),np.nanmean(np.sin(inc_init)),
+                         np.nanmean(np.sqrt(a_init*(1-e_init**2))),np.nanmean(a_f),np.mean(ecc_f),
+                         np.nanmean(sini_f),np.nanmean(h_mom)])
     
     error_list = np.zeros((9,4))
     ds = int(len(t_init)/10)

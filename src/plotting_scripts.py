@@ -234,8 +234,6 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         tscale = 1e3
         timelabel = "kyr "
 
-    #tscale = 1e6
-    #timelabel='Myr'
     time1 = tmin/tscale
     time2 = tmax/tscale
     timestring = " from %1.4f to %1.4f " % (time1,time2)
