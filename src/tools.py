@@ -72,6 +72,125 @@ def aei_to_xv(GM=1., a=1, e=0., inc=0., node=0., argperi=0., ma=0.):
 
 
 
+#################################################################
+#################################################################
+# Convert cartesian coordinates to orbital elements (ellipse only)
+#################################################################
+def xv_to_aei(GM=1., x=0., y=0., z=0., vx=0., vy=0., vz=0.):
+    """
+    inputs:
+        GM the value of GM for the orbit (sets the units)
+        x,y,z: cartesian positions (units set by GM)
+        vx, vy, vz: cartesian velocities
+    outputs:
+        flag (integer: 0 if failed, 1 if succeeded)
+        a = semimajor axis (units set by GM)
+        e = eccentricity
+        inc = inclination in radians
+        node = long. of ascending node in radians
+        argperi = argument of perihelion in radians
+        ma = mean anomaly in radians
+    """
+    
+    a = np.double(0.)
+    e = np.double(0.)
+    inc = np.double(0.)
+    node = np.double(0.)
+    argperi = np.double(0.)
+    ma = np.double(0.)
+    
+    # based on M. Duncan's routines in swift
+    #Compute the angular momentum H, and thereby the inclination INC.
+
+    hx = y*vz - z*vy
+    hy = z*vx - x*vz
+    hz = x*vy - y*vx
+    h2 = hx*hx + hy*hy +hz*hz
+    h  = np.sqrt(h2)
+    inc = np.acos(hz/h)
+    
+
+    #Compute longitude of ascending node CAPOM and the argument of
+    #latitude u.
+    fac = np.sqrt(hx**2.0 + hy**2.0)/h
+
+    #if the inclination is really small, set node to zero
+    if(fac < 1e-13 ):
+        node = 0.0
+        u = atan2(y,x)
+        if(abs(inc - np.pi) < 1e-12):
+            u = -u
+    else:
+        node = np.atan2(hx,-hy)	  
+        u = np.atan2( z/np.sin(inc) , x*np.cos(node) + y*np.sin(node))
+
+    if(node < 0.0):
+        node+=2.*np.pi
+    if(u < 0.0):
+        u+= 2.0*np.pi
+
+    #Compute the radius R and velocity squared V2, and the dot
+    #product RDOTV, the energy per unit mass ENERGY .
+
+    r = np.sqrt(x*x + y*y + z*z)
+    v2 = vx*vx + vy*vy + vz*vz
+    v = np.sqrt(v2)
+    vdotr = x*vx + y*vy + z*vz
+    energy = 0.5*v2 - GM/r
+
+    #Determine type of conic section and label it via IALPHA
+    if(abs(energy*r/GM) < np.sqrt(1e-13)):
+        ialpha = 0
+    else:
+        if(energy < 0.0):
+            ialpha = -1 
+        if(energy > 0.0):
+            ialpha = +1
+    #Depending on the conic type, determine the remaining elements
+
+### ELLIPSE :
+    if(ialpha == -1):
+        a = -0.5*GM/energy  
+        fac = 1.0 - h2/(GM*a)
+        if (fac > 1e-13):
+            e = np.sqrt( fac )
+            face = (a-r)/(a*e)
+
+#c... Apr. 16/93 : watch for case where face is slightly outside unity
+            if ( face > 1.0):
+                cape = 0.0
+            else:
+                if ( face > -1.0):
+                    cape = np.acos( face )
+                else:
+                    cape = np.pi
+
+            if ( vdotr < 0.0 ):
+                cape = 2.0*np.pi - cape
+            cw = (np.cos( cape) -e)/(1.0 - e*np.cos(cape))
+            sw = np.sqrt(1.0 - e*e)*np.sin(cape)/(1.0 - e*np.cos(cape))
+            w = np.atan2(sw,cw)
+            if(w < 0.0):
+                w = w + 2.*np.pi
+        else:
+            e = 0.0
+            w = u
+            cape = u
+
+        capm = cape - e*np.sin(cape)
+        omega = u - w
+        if(omega < 0.0):
+            omega = omega + 2.0*np.pi
+        omega = omega - int(omega/(2.*np.pi))*2.*np.pi
+    else:
+####not an ellipse, and that's not coded in right now
+        print("in tools.vx_to_ae, the orbit is not an ellipse")
+        print("this is a limited-use function that only works for ellipses")
+        return 0, 0.,0.,0.,0.,0.,0.
+
+    
+    return 1, a, ec, inc, node, omega, capm
+
 
 #################################################################
 #################################################################
@@ -144,13 +263,14 @@ def arraymod2pi(x):
         array of angles in radians re-centered from 0-2pi
     """
     imax = len(x)
+    x2 = x.copy()
     for i in range (0,imax):
-        while (x[i] > 2. * np.pi):
-            x[i] += -2. * np.pi
-        while (x[i] < 0.):
-            x[i] += 2. * np.pi
+        while (x2[i] > 2. * np.pi):
+            x2[i] += -2. * np.pi
+        while (x2[i] < 0.):
+            x2[i] += 2. * np.pi
 
-    return x
+    return x2
 
 #################################################################
 #################################################################
@@ -164,13 +284,14 @@ def arraymod2pi0(x):
         array of angles in radians re-centered from -pi to pi
     """
     imax = len(x)
+    x2 = x.copy()
     for i in range (0,imax):
-        while (x[i] > np.pi):
-            x[i] += -2. * np.pi
-        while (x[i] < -np.pi):
-            x[i] += 2. * np.pi
+        while (x2[i] > np.pi):
+            x2[i] += -2. * np.pi
+        while (x2[i] < -np.pi):
+            x2[i] += 2. * np.pi
 
-    return x
+    return x2
 
 
 def arraymod360(x):
