@@ -1,7 +1,0 @@
-{
-    "tmax": 100000.0,
-    "tout": 1000.0,
-    "objname": "12",
-    "runtype": "8planet",
-    "run_success": true
-}
