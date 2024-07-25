@@ -198,7 +198,6 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         bfnode = np.float64(str(objcov['elements']['om']).split()[0])
         bfargperi = np.float64(str(objcov['elements']['w']).split()[0])
         bftp = np.float64(str(objcov['elements']['tp']).split()[0])
-        print(objcov,bfecc)
     except:
         # the covariance matrix wasn't there or it didn't have a best
         # fit orbit attached in the expected data structure

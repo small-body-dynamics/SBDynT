@@ -1,5 +1,6 @@
 import rebound
 import numpy as np
+from scipy import signal
 # local
 import tools
 import run_reb
@@ -18,9 +19,9 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
     prop_s = 0.
 
 
-    flag, a, e, inc, node, aperi, ma, t = tools.read_sa_for_sbody(sbody = des, 
+    flag, a, e, inc, node, aperi, ma, t = tools.read_sa_for_sbody(sbody = sbody, 
                         archivefile=archivefile,datadir=datadir,
-                        nclones=nclones,tmin=tmin,tmax=tmax)
+                        nclones=nclones,tmin=tmin,tmax=tmax,center='helio')
     if(flag == 0):
         print("proper_elements.calc_proper_elements failed when reading in the data")
         return 0, prop_a, prop_e, prop_sini,g, s, prop_g, prop_s
@@ -29,7 +30,7 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
 
     #see if the inner planets are in the simulation
     small_planets_flag = 0
-    flag, at, et, inct, nodet, aperit, mat, tt =read_sa_by_hash(obj_hash = 'mercury',
+    flag, at, et, inct, nodet, aperit, mat, tt = tools.read_sa_by_hash(obj_hash = 'mercury',
                                                           archivefile=archivefile,datadir=datadir,
                                                           tmin=t[0],tmax=t[1])
     if(flag > 0):
@@ -43,7 +44,7 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
 
     #calculate the eccentricity and inclination vectors
     p = np.sin(inc)*np.sin(node)
-    q = np.sin(inc_init)*np.cos(node)
+    q = np.sin(inc)*np.cos(node)
     h = (e)*np.sin(node+aperi)
     k = (e)*np.cos(node+aperi)
 
@@ -72,15 +73,20 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
 
     #determine how wide we should consider that peak to be
     spread = 1
-    #while ( int( 1. / ( freq[gind+spread] - freq[gind-spread]) / dt ) > 2500 ):
-    while ( int( dt / ( freq[gind+spread] - freq[gind-spread])) > 2500 ):
+    while ( int( 1. / ( freq[gind+spread] - freq[gind-spread]) / dt ) > 2500 ):
+    #while ( int( dt / ( freq[gind+spread] - freq[gind-spread])) > 2500 ):
         spread += 1
     
     freq_dist_lim = 1
-    #while int(1/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])/dt) > 1250:
-    while ( int(dt/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])) > 1250 ):
+    while int(1/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])/dt) > 1250:
+    #while ( int(dt/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])) > 1250 ):
         freq_dist_lim += 1
 
+    print(spread)
+    print(freq_dist_lim)
+
+    print(gind)
+    print(sind)
 
     #calculate the power spectra
     #pYh = np.abs(Yh)**2.
@@ -105,22 +111,25 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
 
     if small_planets_flag:
         freq1 = [const.g1,const.g2,const.g3,const.g4,const.g5,const.g6,const.g7,const.g8,z1,z2,z3,z4,z5,z7,z8,z9]
-        freq2 = [const.s1,const.s2,const.s3,const.s4,const.s6,const.s7,const.s8,z1,z2,z3,z6,z8,z9]
+        freq2 = [np.abs(const.s1),np.abs(const.s2),np.abs(const.s3),np.abs(const.s4),np.abs(const.s6),np.abs(const.s7),np.abs(const.s8),z1,z2,z3,z6,z8,z9]
     else:
         freq1 = [const.g5,const.g6,const.g7,const.g8,z1,z2,z3,z4,z5,z7,z8,z9]
-        freq2 = [const.s6,const.s7,const.s8,z1,z2,z3,z6,z8,z9]
+        freq2 = [np.abs(const.s6),np.abs(const.s7),np.abs(const.s8),z1,z2,z3,z6,z8,z9]
+        
+   # print(freq2*360*60*60)
 
     #make copies of the FFT outputs to do the filtering
     Yp_f = Yp.copy()
     Yq_f = Yq.copy()
     Yh_f = Yh.copy()
     Yk_f = Yk.copy()
+    Ya_f = Ya.copy()
 
     #inclination and eccentricity analysis
     imax = len(Yp)
     
-    #disregard anything with a period shorter than 2000 years
-    freqlim = 1./2000.
+    #disregard anything with a period shorter than 5000 years
+    freqlim = 1./5000.
 
     #find the indicies in the frequency array corresponding to the
     #secular frequencies
@@ -139,12 +148,19 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
         except:
             continue
 
+    print(secresind1)
+    print(secresind2)
+
     #filter out the power in the FFTs for those frequencies in e/i
     for i in range(len(secresind1)):
         if secresind1[i] == gind:
             continue
         if abs(secresind1[i] - gind) < freq_dist_lim:
             continue
+
+        spread = 1
+        while ( int( 1. / ( freq[i+spread] - freq[i-spread]) / dt ) > 2500 ):
+            spread += 1
 
         if spread > 0:
             Yh_f[secresind1[i]-spread:secresind1[i]+spread] = 0.
@@ -158,6 +174,9 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
             continue
         if abs(secresind2[i] - sind) < freq_dist_lim:
             continue
+        spread = 1
+        while ( int( 1. / ( freq[i+spread] - freq[i-spread]) / dt ) > 2500 ):
+            spread += 1
 
         if spread > 0:
             Yp_f[secresind2[i]-spread:secresind2[i]+spread] = 0.
@@ -177,11 +196,11 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
 
 
     #reconstruct the filtered time series
-    p_f = np.fft.irfft(Yp_f,len(p_init))
-    q_f = np.fft.irfft(Yq_f,len(q_init))
-    h_f = np.fft.irfft(Yh_f,len(h_init))
-    k_f = np.fft.irfft(Yk_f,len(k_init))
-    a_f = np.fft.irfft(Ya_f,len(a_init))
+    p_f = np.fft.irfft(Yp_f,len(p))
+    q_f = np.fft.irfft(Yq_f,len(q))
+    h_f = np.fft.irfft(Yh_f,len(h))
+    k_f = np.fft.irfft(Yk_f,len(k))
+    a_f = np.fft.irfft(Ya_f,len(a))
 
     sini_f = np.sqrt(p_f*p_f + q_f*q_f)
     ecc_f = np.sqrt(h_f*h_f + k_f*k_f) 
@@ -191,8 +210,8 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
     #h = (e)*np.sin(node+aperi)
     #k = (e)*np.cos(node+aperi)
     
-    node_f = np.atan2(p_f/sini_f,q_f/sini_f)
-    lperi_f = np.atan2(h_f/ecc_f, k_f/ecc_f)
+    node_f = np.arctan2(p_f/sini_f,q_f/sini_f)
+    lperi_f = np.arctan2(h_f/ecc_f, k_f/ecc_f)
 
     Y_temp = np.fft.rfft(node_f)
     si_t = np.argmax(np.abs(Y_temp[1:]))+1
@@ -205,7 +224,8 @@ def calc_proper_elements(sbody='', archivefile='archive.bin',
     prop_sini = np.nanmean(sini_f)
     prop_a = np.nanmean(a_f)
 
-    return 1, prop_a, prop_e, prop_sini, g, s, prop_g, prop_s
+    return 1, prop_a, prop_e, prop_sini, g, s, prop_g, prop_s, sini_f, ecc_f, node_f, lperi_f, p_f, q_f, Yp_f, freq2
+
 
 
 
