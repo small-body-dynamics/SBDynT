@@ -78,52 +78,39 @@ def prop_calc(objname, filename='Single',objdes=None):
         n = len(h_init)
         if n < 10001:
             print(n)
-        freq = np.fft.rfftfreq(n,d=dt)
+        freq = np.fft.fftfreq(n,d=dt)
+        freqn = np.fft.rfftfreq(len(a_init),d=dt)
         rev = 1296000
     
         #particle eccentricity vectors
-        Yh= np.fft.rfft(h_init)
-        Yk = np.fft.rfft(k_init)
-        Yp= np.fft.rfft(p_init)
-        Yq = np.fft.rfft(q_init)
+        Yhk= np.fft.fft(k_init+1j*h_init)
+        Ypq = np.fft.fft(q_init+1j*p_init)
         Ya_f = np.fft.rfft(a_init)
         
-        Yp[0]=0
-        Yq[0]=0
+        Ypq[0]=0
+        #Yq[0]=0
         #Yh[0]=0
         #Yk[0]=0
       
-        imax = len(Yp)
+        imax = len(Ypq)
         #disregard antyhing with a period shorter than 5000 years
         freqlim = 1./2000.
         #disregard frequencies for which any planet has power at higher than 10% the max
         pth = 0.25
            
         #print(hk_ind,pq_ind)
-        pYh = np.abs(Yh)**2
-        pYk = np.abs(Yk)**2
-        pYp = np.abs(Yp)**2
-        pYq = np.abs(Yq)**2
+        pYhk = np.abs(Yhk)**2
+        pYpq = np.abs(Ypq)**2
         
         #make copies of the FFT outputs
-        Yp_f = Yp.copy()
-        Yq_f = Yq.copy()
-        Yh_f = Yh.copy()
-        Yk_f = Yk.copy()
+        Ypq_f = Ypq.copy()
+        Yhk_f = Yhk.copy()
       
-        gind = np.argmax(np.abs(Yh[1:]))+1    
-        sind = np.argmax(np.abs(Yp[1:]))+1
+        gind = np.argmax(np.abs(Yhk[1:])**2)+1    
+        sind = np.argmax(np.abs(Ypq[1:])**2)+1
         g = freq[gind]  
         s = freq[sind]
         
-        spread = 1
-        while int(1/(freq[gind+spread]-freq[gind-spread])/dt) > 2500:
-            spread = spread+1
-        
-        freq_dist_lim = 1
-        while int(1/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])/dt) > 1250:
-            freq_dist_lim = freq_dist_lim+1
-
     except:
         return [objname,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     
@@ -147,39 +134,126 @@ def prop_calc(objname, filename='Single',objdes=None):
     s8 = -0.69251386/rev
 
     #print(g,s,g6,s6)
-    z1 = abs(g+s-g6-s6)
-    z2 = abs(g+s-g5-s7)
-    z3 = abs(g+s-g5-s6)
-    z4 = abs(g-2*g6+g5)
-    z5 = abs(g-2*g6+g7)
-    z6 = abs(s-s6-g5+g6)
-    z7 = abs(g-3*g6+2*g5)
-    z8 = abs(2*(g-g6)+s-s6)
-    z9 = abs(3*(g-g6)+s-s6)
+    z1 = (g+s-g6-s6)
+    z2 = (g+s-g5-s7)
+    z3 = (g+s-g5-s6)
+    z4 = (2*g6-g5)
+    z5 = (2*g6-g7)
+    z6 = (s-s6-g5+g6)
+    z7 = (g-3*g6+2*g5)
+    
+    z8 = (2*(g-g6)+s-s6)
+    z9 = (3*(g-g6)+s-s6)
+    z10 = ((g-g6)+s-s6)
 
+    z11 = g-2*g7+g6
+    z12 = 2*g-2*g5
+    z13 = -4*g+4*g7
+    z14 = -2*s-s6
+
+    #if small_planets_flag:
+    #   freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+    #    freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+    #else:
+    #    freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+    #    freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+        
     if small_planets_flag:
-        freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-        freq2 = [s1,s2,s3,s4,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+        freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8)]
+        freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8)]
     else:
-        freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-        freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
+        freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+        freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+               
+    #if small_planets_flag:
+    #    freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8),g-z8,g-z9,g-z10,z11,z12,z13]
+    #    freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8),s-z8,s-z9,s-z10,z14]
+    #else:
+    #    freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,g-z8,g-z9,g-z10,z11,z12,z13]
+    #    freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9,s-z8,s-z9,s-z10,z14]
     
     secresind1 = []
     secresind2 = []
     for i in freq1:
         try:
-            secresind1.append(np.where(freq>=i)[0][0])
+            secresind1.append((np.abs(freq - i)).argmin())
         except:
             continue
     for i in freq2:
         try:
-            secresind2.append(np.where(freq>=i)[0][0])
+            secresind2.append((np.abs(freq - i)).argmin())
         except:
             continue
 
+    ############################################################################
+    #Testg find_peaks
+        
+    #from scipy.signal import find_peaks
+    #secresind1, _ = find_peaks((np.abs(Yh[:200])**2), distance=8,threshold=40)
+    #secresind2, _ = find_peaks((np.abs(Yp[:200])**2), distance=8,threshold=40)
+    ############################################################################
+    
+    #spread = 1
+    #while int(1/(freq[gind+spread]-freq[gind-spread])/dt) > 2500:
+    #    spread = spread+1
+      
+    #freq_dist_lim = 1
+    #while int(1/(freq[gind+freq_dist_lim]-freq[gind-freq_dist_lim])/dt) > 1250:
+    #    freq_dist_lim = freq_dist_lim+1
+    
+    spread_dist = 1.10
+    freq_dist = 1.15
+    spreads = np.zeros(len(secresind1)+len(secresind2))
+    spreads = spreads.astype(int)
+    freq_dist_lims = np.zeros(len(secresind1)+len(secresind2))
+    freq_dist_lims = freq_dist_lims.astype(int)
+    
+    for i in range(len(secresind1)): 
+        if freq[secresind1[i]] > 0:
+            while ((freq[secresind1[i]+spreads[i]]/freq[secresind1[i]-spreads[i]])) < spread_dist:
+                spreads[i] = spreads[i]+1   
+                if secresind1[i]+spreads[i] >= len(freq):
+                    break
+            while ((freq[secresind1[i]+freq_dist_lims[i]]/freq[secresind1[i]-freq_dist_lims[i]])) < freq_dist:
+                freq_dist_lims[i] = freq_dist_lims[i]+1
+                if secresind1[i]+freq_dist_lims[i] >= len(freq):
+                    break
+        else:
+            while ((freq[secresind1[i]-spreads[i]]/freq[secresind1[i]+spreads[i]])) < spread_dist:
+                spreads[i] = spreads[i]+1   
+                if secresind1[i]+spreads[i] >= len(freq):
+                    break               
+            while ((freq[secresind1[i]-freq_dist_lims[i]]/freq[secresind1[i]+freq_dist_lims[i]])) < freq_dist:
+                freq_dist_lims[i] = freq_dist_lims[i]+1
+                if secresind1[i]+freq_dist_lims[i] >= len(freq):
+                     break
+                
+    for i in range(len(secresind2)):
+        if freq[secresind2[i]] > 0:
+            while ((freq[secresind2[i]+spreads[i+len(secresind1)]]/freq[secresind2[i]-spreads[i+len(secresind1)]])) < spread_dist:
+            #print(i,((freqn[secresind2[i]-spreads[i+len(secresind1)]])/(freqn[secresind2[i]+spreads[i+len(secresind1)]])))
+                spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
+                if secresind2[i]+spreads[i+len(secresind1)] >= len(freq):
+                    break
+            while ((freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]])) < freq_dist:
+                freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
+                if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
+                    break
+        else:
+            while ((freq[secresind2[i]-spreads[i+len(secresind1)]]/freq[secresind2[i]+spreads[i+len(secresind1)]])) < spread_dist:
+            #print(i,((freqn[secresind2[i]-spreads[i+len(secresind1)]])/(freqn[secresind2[i]+spreads[i+len(secresind1)]])))
+                spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
+                if secresind2[i]+spreads[i+len(secresind1)] >= len(freq):
+                    break
+            while ((freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]])) < freq_dist:
+                freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
+                if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
+                    break
 
     limit_ind = np.where(freq >= freqlim)[0]
+    limit_indr = np.where(freqn >= freqlim)[0]
 
+    '''
     for i in range(len(secresind1)):
         if secresind1[i] == gind:
             continue
@@ -205,21 +279,41 @@ def prop_calc(objname, filename='Single',objdes=None):
         else:
             Yp_f[secresind2[i]] = 0
             Yq_f[secresind2[i]] = 0
-
-    Yp_f[limit_ind] = 0
-    Yq_f[limit_ind] = 0
-    Yk_f[limit_ind] = 0
-    Yh_f[limit_ind] = 0
-    Ya_f[limit_ind] = 0
+    '''        
+    ##########################################################################################
+    #Using different spreads for different values
+    for i in range(len(secresind1)):
+        if secresind1[i] == gind:
+            continue
+        if abs(secresind1[i] - gind) < freq_dist_lims[i]:
+            continue
     
-    p_f = np.fft.irfft(Yp_f,len(p_init))
-    q_f = np.fft.irfft(Yq_f,len(q_init))
-    h_f = np.fft.irfft(Yh_f,len(h_init))
-    k_f = np.fft.irfft(Yk_f,len(k_init))
+        if spreads[i] > 0:
+            Yhk_f[secresind1[i]-spreads[i]:secresind1[i]+spreads[i]] = 0
+        else:
+            Yhk_f[secresind1[i]] = 0
+                
+    for i in range(len(secresind2)):
+        if secresind2[i] == sind:
+            continue
+        if abs(secresind2[i] - sind) < freq_dist_lims[i+len(secresind1)]:
+            continue
+    
+        if spreads[i+len(secresind1)] > 0:
+            Ypq_f[secresind2[i]-spreads[len(secresind1)+i]:secresind2[i]+spreads[len(secresind1)+i]] = 0
+        else:
+            Ypq_f[secresind2[i]] = 0
+    ##########################################################################################
+    Ypq_f[limit_ind] = 0
+    Yhk_f[limit_ind] = 0
+    Ya_f[limit_indr] = 0
+    
+    pq_f = np.fft.ifft(Ypq_f,len(p_init))
+    hk_f = np.fft.ifft(Yhk_f,len(h_init))
     a_f = np.fft.irfft(Ya_f,len(a_init))
 
-    sini_f = np.sqrt(p_f*p_f + q_f*q_f)
-    ecc_f = np.sqrt(h_f*h_f + k_f*k_f) 
+    sini_f = np.abs(pq_f)
+    ecc_f = np.abs(hk_f) 
 
     h_mom = np.sqrt(a_f*(1-ecc_f**2))*np.cos(np.arcsin(sini_f))+1/2/a_f
     
@@ -247,64 +341,78 @@ def prop_calc(objname, filename='Single',objdes=None):
         n = len(h)
         #print('dt = ', dt)
         #print('n = ', n)
-        freq = np.fft.rfftfreq(n,d=dt)
+        freq = np.fft.fftfreq(n,d=dt)
+        freqn = np.fft.fftfreq(n,d=dt)
         #print(len(freq), 'L: length of frequency array')
         rev = 1296000
     
         #particle eccentricity vectors
-        Yh= np.fft.rfft(h)
-        Yk = np.fft.rfft(k)
-        Yp= np.fft.rfft(p)
-        Yq = np.fft.rfft(q)
+        Yhk= np.fft.fft(k+1j*h)
+        Ypq = np.fft.fft(q+1j*p)
         Ya_f = np.fft.rfft(a)
         
-        Yp[0]=0
-        Yq[0]=0
-        Yh[0]=0
-        Yk[0]=0
+        #Ypq[0]=0
+        #Yhk[0]=0
+        
       
-        imax = len(Yp)
+        imax = len(Ypq)
         #disregard antyhing with a period shorter than 5000 years
-        freqlim = 1./2000.
+        #freqlim = 1./2000.
         #disregard frequencies for which any planet has power at higher than 10% the max
         pth = 0.25
         
         spread = 2
            
         #print(hk_ind,pq_ind)
-        pYh = np.abs(Yh)**2
-        pYk = np.abs(Yk)**2
-        pYp = np.abs(Yp)**2
-        pYq = np.abs(Yq)**2
+        pYhk = np.abs(Yhk)**2
+        pYpq = np.abs(Ypq)**2
         
         #make copies of the FFT outputs
-        Yp_f = Yp.copy()
-        Yq_f = Yq.copy()
-        Yh_f = Yh.copy()
-        Yk_f = Yk.copy()
+        Ypq_f = Ypq.copy()
+        Yhk_f = Yhk.copy()
       
-        gind = np.argmax(np.abs(Yh[1:]))+1    
-        sind = np.argmax(np.abs(Yp[1:]))+1
+        gind = np.argmax(np.abs(Yhk[1:]))+1    
+        sind = np.argmax(np.abs(Ypq[1:]))+1
         g = freq[gind]  
         s = freq[sind]
         
         #print(g,s,g6,s6)
-        z1 = abs(g+s-g6-s6)
-        z2 = abs(g+s-g5-s7)
-        z3 = abs(g+s-g5-s6)
-        z4 = abs(g-2*g6+g5)
-        z5 = abs(g-2*g6+g7)
-        z6 = abs(s-s6-g5+g6)
-        z7 = abs(g-3*g6+2*g5)
-        z8 = abs(2*(g-g6)+s-s6)
-        z9 = abs(3*(g-g6)+s-s6)
+        z1 = (g+s-g6-s6)
+        z2 = (g+s-g5-s7)
+        z3 = (g+s-g5-s6)
+        z4 = (2*g6-g5)
+        z5 = (2*g6-g7)
+        z6 = (s-s6-g5+g6)
+        z7 = (g-3*g6+2*g5)
+        z8 = (2*(g-g6)+s-s6)
+        z9 = (3*(g-g6)+s-s6)
+        z10 = ((g-g6)+s-s6)
     
+        z11 = g-2*g7+g6
+        z12 = 2*g-2*g5
+        z13 = -4*g+4*g7
+        z14 = -2*s-s6
+    
+        #if small_planets_flag:
+        #    freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+        #    freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+        #else:
+        #    freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+        #    freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+            
         if small_planets_flag:
-            freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-            freq2 = [s1,s2,s3,s4,s6,s7,s8,z1,z2,z3,z6,z8,z9]
+            freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8)]
+            freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8)]
         else:
-            freq1 = [g5,g6,g7,g8,z1,z2,z3,z4,z5,z7,z8,z9]
-            freq2 = [s6,s7,s8,z1,z2,z3,z6,z8,z9]
+            freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9]
+            freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9]
+                   
+        #if small_planets_flag:
+        #    freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8),g-z8,g-z9,g-z10,z11,z12,z13]
+        #    freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8),s-z8,s-z9,s-z10,z14]
+        #else:
+        #    freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,g-z8,g-z9,g-z10,z11,z12,z13]
+        #    freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9,s-z8,s-z9,s-z10,z14]
     
         secresind1 = []
         secresind2 = []
@@ -320,9 +428,69 @@ def prop_calc(objname, filename='Single',objdes=None):
             except:
                 continue
     
+        spreads = np.ones(len(secresind1)+len(secresind2))
+        spreads = spreads.astype(int)
+        freq_dist_lims = np.ones(len(secresind1)+len(secresind2))
+        freq_dist_lims = freq_dist_lims.astype(int)
     
+        spreads = np.zeros(len(secresind1)+len(secresind2))
+        spreads = spreads.astype(int)
+        freq_dist_lims = np.zeros(len(secresind1)+len(secresind2))
+        freq_dist_lims = freq_dist_lims.astype(int)
+    
+        for i in range(len(secresind1)): 
+            if freq[secresind1[i]] > 0:
+                while ((freq[secresind1[i]+spreads[i]]/freq[secresind1[i]-spreads[i]])) < spread_dist:
+                    spreads[i] = spreads[i]+1   
+                    if secresind1[i]+spreads[i] >= len(freq):
+                        break
+                while ((freq[secresind1[i]+freq_dist_lims[i]]/freq[secresind1[i]-freq_dist_lims[i]])) < freq_dist:
+                    freq_dist_lims[i] = freq_dist_lims[i]+1
+                    if secresind1[i]+freq_dist_lims[i] >= len(freq):
+                        break
+            else:
+                while ((freq[secresind1[i]-spreads[i]]/freq[secresind1[i]+spreads[i]])) < spread_dist:
+                    spreads[i] = spreads[i]+1   
+                    if secresind1[i]+spreads[i] >= len(freq):
+                        break               
+                while ((freq[secresind1[i]-freq_dist_lims[i]]/freq[secresind1[i]+freq_dist_lims[i]])) < freq_dist:
+                    freq_dist_lims[i] = freq_dist_lims[i]+1
+                    if secresind1[i]+freq_dist_lims[i] >= len(freq):
+                         break
+                    
+        for i in range(len(secresind2)):
+            if freq[secresind2[i]] > 0:
+                while ((freq[secresind2[i]+spreads[i+len(secresind1)]]/freq[secresind2[i]-spreads[i+len(secresind1)]])) < spread_dist:
+                #print(i,((freqn[secresind2[i]-spreads[i+len(secresind1)]])/(freqn[secresind2[i]+spreads[i+len(secresind1)]])))
+                    spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
+                    if secresind2[i]+spreads[i+len(secresind1)] >= len(freq):
+                        break
+                while ((freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]])) < 1.250:
+                    freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
+                    if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
+                        break
+            else:
+                while ((freq[secresind2[i]-spreads[i+len(secresind1)]]/freq[secresind2[i]+spreads[i+len(secresind1)]])) < spread_dist:
+                #print(i,((freqn[secresind2[i]-spreads[i+len(secresind1)]])/(freqn[secresind2[i]+spreads[i+len(secresind1)]])))
+                    spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
+                    if secresind2[i]+spreads[i+len(secresind1)] >= len(freq):
+                        break
+                while ((freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]])) < 1.250:
+                    freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
+                    if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
+                        break
+                        
         limit_ind = np.where(freq >= freqlim)[0]
-    
+        limit_indr = np.where(freqn >= freqlim)[0]
+     
+        ############################################################################
+        #Testg find_peaks
+        
+        #from scipy.signal import find_peaks
+        #secresind1, _ = find_peaks((np.abs(Yh[:200])**2), distance=8,threshold=40)
+        #secresind2, _ = find_peaks((np.abs(Yp[:200])**2), distance=8,threshold=40)
+        ##########################################################################3
+        '''
         for i in range(len(secresind1)):
             if secresind1[i] == gind:
                 continue
@@ -330,11 +498,9 @@ def prop_calc(objname, filename='Single',objdes=None):
                 continue
     
             if spread > 0:
-                Yh_f[secresind1[i]-spread:secresind1[i]+spread] = 0
-                Yk_f[secresind1[i]-spread:secresind1[i]+spread] = 0
+                Yhk_f[secresind1[i]-spread:secresind1[i]+spread] = 0
             else:
-                Yh_f[secresind1[i]] = 0
-                Yk_f[secresind1[i]] = 0
+                Yhk_f[secresind1[i]] = 0
                 
         for i in range(len(secresind2)):
             if secresind2[i] == sind:
@@ -343,26 +509,44 @@ def prop_calc(objname, filename='Single',objdes=None):
                 continue
     
             if spread > 0:
-                Yp_f[secresind2[i]-spread:secresind2[i]+spread] = 0
-                Yq_f[secresind2[i]-spread:secresind2[i]+spread] = 0
+                Ypq_f[secresind2[i]-spread:secresind2[i]+spread] = 0
             else:
-                Yp_f[secresind2[i]] = 0
-                Yq_f[secresind2[i]] = 0
-
-        Yp_f[limit_ind] = 0
-        Yq_f[limit_ind] = 0
-        Yk_f[limit_ind] = 0
-        Yh_f[limit_ind] = 0
-        Ya_f[limit_ind] = 0
+                Ypq_f[secresind2[i]] = 0
+        '''
+        ##########################################################################################
+        #Using different spreads for different values
+        for i in range(len(secresind1)):
+            if secresind1[i] == gind:
+                continue
+            if abs(secresind1[i] - gind) < freq_dist_lims[i]:
+                continue
         
-        p_f = np.fft.irfft(Yp_f,len(p))
-        q_f = np.fft.irfft(Yq_f,len(q))
-        h_f = np.fft.irfft(Yh_f,len(h))
-        k_f = np.fft.irfft(Yk_f,len(k))
+            if spreads[i] > 0:
+                Yhk_f[secresind1[i]-spreads[i]:secresind1[i]+spreads[i]] = 0
+            else:
+                Yhk_f[secresind1[i]] = 0
+                    
+        for i in range(len(secresind2)):
+            if secresind2[i] == sind:
+                continue
+            if abs(secresind2[i] - sind) < freq_dist_lims[i+len(secresind1)]:
+                continue
+        
+            if spreads[i+len(secresind1)] > 0:
+                Ypq_f[secresind2[i]-spreads[len(secresind1)+i]:secresind2[i]+spreads[len(secresind1)+i]] = 0
+            else:
+                Ypq_f[secresind2[i]] = 0
+        ##########################################################################################
+        Ypq_f[limit_ind] = 0
+        Yhk_f[limit_ind] = 0
+        Ya_f[limit_indr] = 0
+        
+        pq_f = np.fft.ifft(Ypq_f,len(p))
+        hk_f = np.fft.ifft(Yhk_f,len(h))
         a_f = np.fft.irfft(Ya_f,len(a))
 
-        sini_f = np.sqrt(p_f*p_f + q_f*q_f)
-        ecc_f = np.sqrt(h_f*h_f + k_f*k_f)
+        sini_f = np.abs(pq_f)
+        ecc_f = np.abs(hk_f)
         
         h_mom = np.sqrt(a_f*(1-ecc_f**2))*np.cos(np.arcsin(sini_f))+1/2/a_f
        

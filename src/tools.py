@@ -462,9 +462,10 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     imax = 0
         
     for i,sim in enumerate(sa):
-        if(sim.t < tmin or sim.t > tmax):
+        if tmax > 0:
+            if(sim.t < tmin or sim.t > tmax):
             #skip this 
-            continue
+                continue
 
         #calculate the object's orbit relative to the barycenter
         com = sim.com()

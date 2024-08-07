@@ -35,7 +35,7 @@ if __name__ == "__main__":
         data = []
         
         objname = np.array(names_df['Name'])
-        objname = np.array(names_df['Name'].iloc[:20])
+        #objname = np.array(names_df['Name'].iloc[:20])
         run = functools.partial(prop_calc, filename=filename)
 
         #j = range(len(names_df))
@@ -60,6 +60,6 @@ if __name__ == "__main__":
         column_names.append('Delta_h')
         print(len(column_names))
         data_df = pd.DataFrame(data,columns=column_names)
-        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi.csv')
+        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi_1e8.csv')
         
     

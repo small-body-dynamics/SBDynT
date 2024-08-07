@@ -38,7 +38,7 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
 
     # Rest of the integration code
 
-    sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+    sim = run_reb.run_simulation(sim2, tmax=-tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
 
     
 def integrate_multi(filename,tmax = True,tout=1e3):
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         objname = str(sys.argv[2])
         print(objname)
         sbody = objname
-        integrate(objname, objtype=objtype, tmax=1e8)
+        integrate(objname, objtype=objtype, tmax=1e7,tout=1e2)
         # Add specific handling for Generic type if needed
     else:
         # Load data file for the given objtype

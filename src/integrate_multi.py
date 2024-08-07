@@ -61,14 +61,14 @@ if __name__ == "__main__":
             sys.exit(0)
     # Check if the required command-line arguments are provided
         if len(sys.argv) < 2:
-            print("Usage: python integrate.py <Filename>")
+            print("Usage: python integrate_mmult.py <Filename>")
             sys.exit(1)
 
         objtype = str(sys.argv[1])
         # Load data file for the given objtype
         names_df = pd.read_csv('../data/data_files/' + objtype + '.csv')
         
-        run = functools.partial(integrate, tmax=1e8, tout=1e4, objtype=objtype)
+        run = functools.partial(integrate, tmax=1e7, tout=1e2, objtype=objtype)
 
         des = np.array(names_df['Name'])
         #des = np.array(names_df['Name'].iloc[25:35])
