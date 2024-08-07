@@ -396,9 +396,12 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
                                   delete_file=deletefile)
 
     #run until tmax
-    #print('running')
-    #print(sim.integrator)
-    sim.integrate(tmax)
+
+    try:
+        sim.integrate(tmax)
+    except:
+        print('Particle ejected')
+        return 1, sim
     return 1, sim
 
 

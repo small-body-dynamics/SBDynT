@@ -38,7 +38,10 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
 
     # Rest of the integration code
 
-    sim = run_reb.run_simulation(sim2, tmax=-tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+    try:
+    	sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+    except:
+        print('A particle was likely ejected. Continuing to next objects')
 
     
 def integrate_multi(filename,tmax = True,tout=1e3):

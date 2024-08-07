@@ -61,8 +61,11 @@ def make_multi(filename='Single',rockp=False,clones=0):
     os.makedirs(main_data_directory, exist_ok=True)
     #print(name_list)
       
+
     for i, objname in enumerate(name_list['Name']):
-    #for i,objname in enumerate(name_list['Name'].iloc[1100:]):
+    #for i,objname in enumerate(name_list['Name'].iloc[1101:]):
+        #for i in range(len(name_list)):
+
         #print(objname)
     
         # Create directory for each object
