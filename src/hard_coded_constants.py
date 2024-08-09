@@ -62,7 +62,7 @@ g3 = 17.32832/conv
 s3 = -18.74359/conv
 g4 = 18.00233/conv
 s4 = -17.63331/conv
-# g5s6 -> g8s8 taken directly from OrbFit software.
+# g5s6 -> g8s8 taken from Knezevic et al 1991
 g5 = 4.25749319/conv
 g6 = 28.24552984/conv
 g7 = 3.08675577/conv
