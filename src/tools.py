@@ -362,6 +362,12 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
     elif(tmax == None):
         tmax = sa[-1].t
 
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
     a = np.zeros(nout)
     e = np.zeros(nout)
     inc = np.zeros(nout)
@@ -466,6 +472,12 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
         tmin = sa[0].t
     elif(tmax == None):
         tmax = sa[-1].t
+
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
 
     ntp = nclones+1
     a = np.zeros([ntp,nout])
@@ -580,6 +592,12 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
     elif(tmax == None):
         tmax = sa[-1].t
 
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
     ntp = nclones+1
     x = np.zeros([ntp,nout])
     y = np.zeros([ntp,nout])
@@ -634,6 +652,102 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
         return 1, x[0,:], y[0,:], z[0,:], vx[0,:], vy[0,:], vz[0,:], t
     else:
         return 1, x, y, z, vx, vy, vz, t
+#################################################################
+
+
+#################################################################
+#################################################################
+# reads the simulation archive files into barycentric cartesian 
+# position arrays for a small body
+#################################################################
+def read_sa_by_hash_cartesian(obj_hash = '', archivefile='',tmin=None,tmax=None):
+    """
+    Reads the simulation archive file produced by the run_reb
+    routines
+        obj_hash (str): hash of the simulation particle
+        archivefile (str): path to rebound simulation archive
+        tmin (optional, float): minimum time to return (years)
+        tmax (optional, float): maximum time to return (years)
+            if not set, the entire time range is returned
+    output:
+        flag (int): 1 if successful and 0 if there was a problem
+        x (float array): barycentric x (au)
+        y (float array): barycentric y (au)
+        z (float array): barycentric z (au)
+        vx (float array): barycentric vx (au/yr)
+        vy (float array): barycentric vy (au/yr)
+        vz (float array): barycentric vz (au/yr)
+        time (1-d float array): simulations time (years)
+    """
+
+    
+        #read the simulation archive and calculate resonant angles
+    sa = rebound.Simulationarchive(archivefile)
+    nout = len(sa)
+    if(nout <1):
+        print("tools.read_sa_for_sbody_cartesian failed")
+        print("Problem reading the simulation archive file")
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+
+    if(tmin == None and tmax == None):
+        #user didn't set these, so we will read the whole thing
+        tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
+        tmax = sa[-1].t
+
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
+    x = np.zeros(nout)
+    y = np.zeros(nout)
+    z = np.zeros(nout)
+    vx = np.zeros(nout)
+    vy = np.zeros(nout)
+    vz = np.zeros(nout)
+    t = np.zeros(nout)
+        
+    it=0
+        
+    for i,sim in enumerate(sa):
+        if(sim.t < tmin or sim.t > tmax):
+            #skip this 
+            continue
+        t[it] = sim.t
+        try:
+            p = sim.particles[obj_hash]
+        except:
+            print("tools.read_sa_by_hash_cartesian failed")
+            print("Problem finding a particle with that hash in the archive")
+            return 0, x, y, z, vx, vy, vz, t
+
+        x[it] = p.x
+        y[it] = p.y
+        z[it] = p.z
+        vx[it] = p.vx
+        vy[it] = p.vy
+        vz[it] = p.vz
+        it+=1
+
+    if(it==0):
+        print("tools.rread_sa_for_sbody_cartesian failed")
+        print("There were no simulation archives in the desired time range")
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+    else:
+        t = t[0:it]
+        x = x[0:it]
+        y = y[0:it]
+        z = z[0:it]
+        vx = vx[0:it]
+        vy = vy[0:it]
+        vz = vz[0:it]
+    
+    return 1, x, y, z, vx, vy, vz, t
 #################################################################
 
 
