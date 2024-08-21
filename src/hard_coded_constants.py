@@ -62,6 +62,8 @@ g3 = 17.32832/conv
 s3 = -18.74359/conv
 g4 = 18.00233/conv
 s4 = -17.63331/conv
+
+
 # g5s6 -> g8s8 taken from Knezevic et al 1991
 g5 = 4.25749319/conv
 g6 = 28.24552984/conv
@@ -70,5 +72,10 @@ g8 = 0.67255084/conv
 s6 = -26.34496354/conv
 s7 = -2.99266093/conv
 s8 = -0.69251386/conv
+#the two extra terms from M&D for higher-order secular theory
+g9 = 2.*g5 - g6
+g10 = 2.*g6 - g5
+
+
 
 
