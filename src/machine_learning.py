@@ -973,6 +973,15 @@ def run_TNO_integration_for_ML(tno='',clones=2):
     flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
                           des=tno, clones=clones, find_3_sigma=find_3_sigma)
 
+
+    features, shortarchive, longarchive = run_sim_for_TNO_ML(sim,des=tno,clones=clones)
+
+    return features, shortarchive, longarchive
+
+
+def run_sim_for_TNO_ML(sim, des='',clones=0):
+    '''
+    '''
     sim_2 = sim.copy()
 
     shortarchive = datestring + "-" + tno + "-short-archive.bin"
