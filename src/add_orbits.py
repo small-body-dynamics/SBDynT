@@ -121,7 +121,7 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
             #and the hash is not numbered
             sbhash = str(des)
         else:
-            sbhash = str(des) + '_' + str(i)
+            sbhash = str(des) + '_' + str(n)
         sim.add(m=0., x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=sbhash)
     
     sim.move_to_com()
