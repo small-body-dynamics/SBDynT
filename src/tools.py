@@ -775,7 +775,7 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
                   in the rotating frame
     """
 
-    if(ntp == 1 and len(x.shape)<2):
+    if(ntp == 1 and np.isscalar(x)):
         #reshape the arrays since everything assumes 2-d
         x = np.array([x])
         y = np.array([y])
