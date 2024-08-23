@@ -1150,3 +1150,27 @@ def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
             print("%e, " % class_probs[n][j] ,end ="")
         print("\n",end ="")
 
+def print_TNO_ML_results_to_file(des,pred_class,classes_dictionary,class_probs,clones=2):
+    outfile = des + "-classes.txt"
+    out = open(outfile,"w")
+    nclas = len(classes_dictionary)
+    line = "Designation, clone number, most probable class, probability of most probable class, "
+    for n in range(nclas):
+        line+= ("probability of %s, " % classes_dictionary[n])
+    line+="\n"
+    out.write(line)
+    format_string = "%d, %s, "
+    for n in range(nclas-1):
+        format_string+="%e, "
+    format_string+="%e,\n"
+    for n in range(0,clones+1):
+        line = des + ', '
+        line+=("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]))
+        for j in range(nclas):
+            line+=("%e, " % class_probs[n][j])
+        line+="\n"
+        out.write(line)
+
+    out.close()
+
+
