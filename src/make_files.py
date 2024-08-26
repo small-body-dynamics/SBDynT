@@ -62,8 +62,8 @@ def make_multi(filename='Single',rockp=False,clones=0):
     #print(name_list)
       
 
-    for i, objname in enumerate(name_list['Name']):
-    #for i,objname in enumerate(name_list['Name'].iloc[1101:]):
+    #for i, objname in enumerate(name_list['Name']):
+    for i,objname in enumerate(name_list['Name'].iloc[4500:]):
         #for i in range(len(name_list)):
 
         #print(objname)

@@ -36,14 +36,16 @@ if __name__ == "__main__":
         
         objname = np.array(names_df['Name'])
         #objname = np.array(names_df['Name'].iloc[:20])
-        run = functools.partial(prop_calc, filename=filename)
+        windows=5
+        run = functools.partial(prop_calc, filename=filename,windows=windows)
 
         #j = range(len(names_df))
         #begin = datetime.now()
         data = pool.map(run, objname)
         print(data,len(data),len(data[0]))
         column_names = ['Objname','ObsSMA','ObsEcc','ObsSin(Inc)','Obs_h','PropSMA','PropEcc','PropSin(Inc)','Prop_h']
-        for i in range(9):
+
+        for i in range(windows):
             numrange = str(i)+'_'+str(i+2)+'PE'
             column_names.append(numrange+'_a')
             column_names.append(numrange+'_e')
@@ -60,6 +62,6 @@ if __name__ == "__main__":
         column_names.append('Delta_h')
         print(len(column_names))
         data_df = pd.DataFrame(data,columns=column_names)
-        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi_1e8.csv')
+        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi_1e8_nomax.csv')
         
     
