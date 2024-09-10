@@ -5,7 +5,7 @@ import tools
 import horizons_api
 import run_reb
 
-def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',
+def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
                                                 a=1.,e=0.,inc=0.,
                                                 node=0.,aperi=0.,ma=0.,
                                                 planets=['mercury', 'venus', 
@@ -16,6 +16,7 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',
     inputs:
         sim: empty rebound simulation instance
         des (string): designation/name for object 
+        nclones (integer): number of clones, if 0 only best-fit orbit is input
         a (float): heliocentric semimajor axis (au)
         e (float): heliocentric eccentricity
         inc (float): heliocentric ecliptic inclination (rad)
@@ -42,6 +43,22 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',
         print("you must provide a designation (used to label the particle)")
         return 0, sim
 
+    if(nclones == 0 and np.isscalar(a)):
+        #reshape the arrays since everything assumes 2-d
+        a = np.array([a])
+        e = np.array([e])
+        inc = np.array([inc])
+        node = np.array([node])
+        aperi = np.array([aperi])
+        ma = np.array([ma])
+    elif (nclones == 0):
+        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
+        print("the number of clones specified is 0, but more than one set of orbital")
+        print("elements were provided. Please specify the number of clones")
+        return 0, sim
+
+
+
     # make all planet names lowercase
     planets = [pl.lower() for pl in planets]
     # create an array of planets not included in the simulation
@@ -66,37 +83,46 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',
     # dt[0:9]
     import hard_coded_constants as const
 
-    # First, we need to convert the Find_Orb orbit to heliocentric
-    # cartesian variables using Find_Orb's assumed solar GM
-    # which is in km^2/s^2, so have to convert a to km first
-    a = a/const.kmtoau
-    i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.find_orb_sunGM, 
-                    a=a, e=e, inc=inc, node=node, argperi=aperi, ma=ma)
-    # those positions and velocities are in km and km/s, so need to convert
-    # to au/year (defining a year as 365.25 days
-    x=x*const.kmtoau
-    y=y*const.kmtoau
-    z=z*const.kmtoau
-    vx=vx*const.kmtoau/const.stoyear
-    vy=vy*const.kmtoau/const.stoyear
-    vz=vz*const.kmtoau/const.stoyear
-
-    # now we can set up the rebound simulation, adding the planets first
+    # set up the rebound simulation, adding the planets first
     # add the planets and return the position/velocity corrections for
     # missing planets
+
     apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):
         print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets")
         return 0, sim
 
-    #now we can apply the corrections from add_planets to the particle
-    x+=sx; y+=sy; z+=sz;
-    vx+=svx; vy+=svy; vz+=svz;
+
+
+    # First, we need to convert the Find_Orb orbit to heliocentric
+    # cartesian variables using Find_Orb's assumed solar GM
+    # which is in km^2/s^2, so have to convert a to km first
+    a = a/const.kmtoau
+    for n in range(0,nclones+1):
+        i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.find_orb_sunGM, 
+                        a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n])
+        # those positions and velocities are in km and km/s, so need to convert
+        # to au/year (defining a year as 365.25 days
+        x=x*const.kmtoau
+        y=y*const.kmtoau
+        z=z*const.kmtoau
+        vx=vx*const.kmtoau/const.stoyear
+        vy=vy*const.kmtoau/const.stoyear
+        vz=vz*const.kmtoau/const.stoyear
+
+        #now we can apply the corrections from add_planets to the particle
+        x+=sx; y+=sy; z+=sz;
+        vx+=svx; vy+=svy; vz+=svz;
     
-    #add a test particle to sim with that corrected orbit:
-    sbhash = des
-    sim.add(m=0., x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=des)
+        #add a test particle to sim with that corrected orbit:
+        if(n == 0):
+            #first clone is always just the best-fit orbit
+            #and the hash is not numbered
+            sbhash = str(des)
+        else:
+            sbhash = str(des) + '_' + str(n)
+        sim.add(m=0., x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=sbhash)
     
     sim.move_to_com()
 

@@ -22,11 +22,19 @@ def aei_to_xv(GM=1., a=1, e=0., inc=0., node=0., argperi=0., ma=0.):
         x, y, z = cartesian positions (units set by GM)
         vx, vy, vz = cartesian velocities (units set by GM)
     """
-
+    
+    x = np.double(0.)
+    y = np.double(0.)
+    z = np.double(0.)
+    vx = np.double(0.)
+    vy = np.double(0.)
+    vz = np.double(0.)
+    
     # based on M. Duncan's routines in swift
     if(e >= 1. or e < 0. or a < 0.):
-        print("orbital eccentricity not between 0 and 1, cannot proceed")
-        return 0, 0., 0., 0., 0., 0., 0.
+        print("in tools.aei_to_xv, the provided orbital eccentricity is")
+        print("not between 0 and 1, so cannot proceed with conversion")
+        return 0,  x, y, z, vx, vy, vz
 
     sp = np.sin(argperi)
     cp = np.cos(argperi)
@@ -354,6 +362,12 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
     elif(tmax == None):
         tmax = sa[-1].t
 
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
     a = np.zeros(nout)
     e = np.zeros(nout)
     inc = np.zeros(nout)
@@ -448,7 +462,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
         print("Problem reading the simulation archive file")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
@@ -458,6 +472,12 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
         tmin = sa[0].t
     elif(tmax == None):
         tmax = sa[-1].t
+
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
 
     ntp = nclones+1
     a = np.zeros([ntp,nout])
@@ -507,7 +527,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,c
     if(it==0):
         print("tools.read_sa_for_sbody failed")
         print("There were no simulation archives in the desired time range")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
         t = t[0:it]
         a = a[:,0:it]
@@ -561,7 +581,7 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
     if(nout <1):
         print("tools.read_sa_for_sbody_cartesian failed")
         print("Problem reading the simulation archive file")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
@@ -571,6 +591,12 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
         tmin = sa[0].t
     elif(tmax == None):
         tmax = sa[-1].t
+
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
 
     ntp = nclones+1
     x = np.zeros([ntp,nout])
@@ -612,7 +638,7 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
     if(it==0):
         print("tools.rread_sa_for_sbody_cartesian failed")
         print("There were no simulation archives in the desired time range")
-        return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     else:
         t = t[0:it]
         x = x[:,0:it]
@@ -626,6 +652,102 @@ def read_sa_for_sbody_cartesian(sbody = '', archivefile='',nclones=0,tmin=None,t
         return 1, x[0,:], y[0,:], z[0,:], vx[0,:], vy[0,:], vz[0,:], t
     else:
         return 1, x, y, z, vx, vy, vz, t
+#################################################################
+
+
+#################################################################
+#################################################################
+# reads the simulation archive files into barycentric cartesian 
+# position arrays for a small body
+#################################################################
+def read_sa_by_hash_cartesian(obj_hash = '', archivefile='',tmin=None,tmax=None):
+    """
+    Reads the simulation archive file produced by the run_reb
+    routines
+        obj_hash (str): hash of the simulation particle
+        archivefile (str): path to rebound simulation archive
+        tmin (optional, float): minimum time to return (years)
+        tmax (optional, float): maximum time to return (years)
+            if not set, the entire time range is returned
+    output:
+        flag (int): 1 if successful and 0 if there was a problem
+        x (float array): barycentric x (au)
+        y (float array): barycentric y (au)
+        z (float array): barycentric z (au)
+        vx (float array): barycentric vx (au/yr)
+        vy (float array): barycentric vy (au/yr)
+        vz (float array): barycentric vz (au/yr)
+        time (1-d float array): simulations time (years)
+    """
+
+    
+        #read the simulation archive and calculate resonant angles
+    sa = rebound.Simulationarchive(archivefile)
+    nout = len(sa)
+    if(nout <1):
+        print("tools.read_sa_for_sbody_cartesian failed")
+        print("Problem reading the simulation archive file")
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+
+    if(tmin == None and tmax == None):
+        #user didn't set these, so we will read the whole thing
+        tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
+        tmax = sa[-1].t
+
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
+    x = np.zeros(nout)
+    y = np.zeros(nout)
+    z = np.zeros(nout)
+    vx = np.zeros(nout)
+    vy = np.zeros(nout)
+    vz = np.zeros(nout)
+    t = np.zeros(nout)
+        
+    it=0
+        
+    for i,sim in enumerate(sa):
+        if(sim.t < tmin or sim.t > tmax):
+            #skip this 
+            continue
+        t[it] = sim.t
+        try:
+            p = sim.particles[obj_hash]
+        except:
+            print("tools.read_sa_by_hash_cartesian failed")
+            print("Problem finding a particle with that hash in the archive")
+            return 0, x, y, z, vx, vy, vz, t
+
+        x[it] = p.x
+        y[it] = p.y
+        z[it] = p.z
+        vx[it] = p.vx
+        vy[it] = p.vy
+        vz[it] = p.vz
+        it+=1
+
+    if(it==0):
+        print("tools.rread_sa_for_sbody_cartesian failed")
+        print("There were no simulation archives in the desired time range")
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+    else:
+        t = t[0:it]
+        x = x[0:it]
+        y = y[0:it]
+        z = z[0:it]
+        vx = vx[0:it]
+        vy = vy[0:it]
+        vz = vz[0:it]
+    
+    return 1, x, y, z, vx, vy, vz, t
 #################################################################
 
 
@@ -653,7 +775,7 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
                   in the rotating frame
     """
 
-    if(ntp == 1 and len(x.shape)<2):
+    if(ntp == 1 and np.isscalar(x)):
         #reshape the arrays since everything assumes 2-d
         x = np.array([x])
         y = np.array([y])
@@ -725,7 +847,7 @@ def rotating_frame_cartesian(ntp=1,x=0., y=0., z=0., vx=0., vy=0., vz=0.,
 #################################################################
 #################################################################
 # Read in a simulation archive and return the small body's
-# rotatee cartesian position coordinates in a frame with an x-y
+# rotated cartesian position coordinates in a frame with an x-y
 # plane matching a planet's plane and the planet located
 # on the x-axis (useful for plotting resonant populations)
 #################################################################
@@ -761,7 +883,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     elif not(planet in planets):
         print("tools.calc_rotating_frame failed")
         print("specified planet is not in the list of planets (typo?)")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     #read the planet orbit for the necessary rotation information
     plflag, apl,epl,ipl,nodepl,aperipl,mapl,t = \
@@ -771,7 +893,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     if(not plflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in planet's orbital history")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
     #read in the last simulation snapshot to get the value of GMsum for 
@@ -787,7 +909,7 @@ def calc_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
     if(not tpflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in small body's cartesian positions")
-        return 0,[0.,],[0.,],[0.,],[0.,],[0.,],[0.,],[0.,]
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
     nout=len(t)
