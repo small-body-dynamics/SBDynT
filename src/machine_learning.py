@@ -9,6 +9,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
 from datetime import date
+import os
 
 
 
@@ -24,193 +25,193 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     #
     ########################################################
     ########################################################
-    
+    try:
     #calculate mean motions
-    mm = 2*np.pi/np.power(a,1.5)
-
-
-    mm_min=np.amin(mm)
-    a_min=np.amin(a)
-    e_min=np.amin(ec)
-    i_min=np.amin(inc)
-    q_min=np.amin(q)
-    tn_min=np.amin(tn)
-
-    mm_max=np.amax(mm)
-    a_max=np.amax(a)
-    e_max=np.amax(ec)
-    i_max=np.amax(inc)
-    q_max=np.amax(q)
-    tn_max=np.amax(tn)
-
-
-    mm_del = mm_max - mm_min
-    a_del = a_max - a_min
-    e_del = e_max - e_min
-    i_del = i_max - i_min
-    q_del = q_max - q_min
-    tn_del = tn_max - tn_min
-
-
-    mm_mean = np.mean(mm)
-    a_mean = np.mean(a)
-    e_mean = np.mean(ec)
-    i_mean = np.mean(inc)
-    q_mean = np.mean(q)
-    tn_mean = np.mean(tn)
-
-    mm_std = np.std(mm)
-    a_std = np.std(a)
-    e_std = np.std(ec)
-    i_std = np.std(inc)
-    q_std = np.std(q)
-    tn_std = np.std(tn)
-
-    mm_std_norm = mm_std/mm_mean
-    a_std_norm = a_std/a_mean
-    e_std_norm = e_std/e_mean
-    i_std_norm = i_std/i_mean
-    q_std_norm = q_std/q_mean
-
-    mm_del_norm = mm_del/mm_mean
-    a_del_norm = a_del/a_mean
-    e_del_norm = e_del/e_mean
-    i_del_norm = i_del/i_mean
-    q_del_norm = q_del/q_mean
-
-
-
-    #arg peri 0-2pi
-
-    argperi = tools.arraymod2pi(argperi)
-    node = tools.arraymod2pi(node)
-    pomega = tools.arraymod2pi(pomega)
-
-    argperi_min = np.amin(argperi)
-    argperi_max = np.amax(argperi)
-    argperi_del = argperi_max - argperi_min
-    argperi_mean = np.mean(argperi)
-    argperi_std = np.std(argperi)
-
-    #recenter arg peri around 0 and repeat
-    argperi_zero = tools.arraymod2pi0(argperi)
-    argperi_min2 = np.amin(argperi_zero)
-    argperi_max2 = np.amax(argperi_zero)
-    argperi2_del = argperi_max - argperi_min
-    argperi_mean2 = np.mean(argperi_zero)
-    argperi_std2 = np.std(argperi_zero)
-
-    #take the better values for delta, mean, and standard deviation:
-    if(argperi2_del < argperi_del):
-        argperi_del = argperi2_del
-        argperi_mean = tools.mod2pi(argperi_mean2)
-        argperi_std = argperi_std2
-
-    #calculate time derivatives
-    dt = time[1:] - time[:-1] 
-
-    dmm_dt = mm[1:] - mm[:-1]
-    dmm_dt = dmm_dt/dt
-    da_dt = a[1:] - a[:-1]
-    da_dt = da_dt/dt
-    de_dt = ec[1:] - ec[:-1]
-    de_dt = de_dt/dt
-    di_dt = inc[1:] - inc[:-1]
-    de_dt = de_dt/dt
-    dq_dt = q[1:] - q[:-1]
-    dq_dt = dq_dt/dt
-    dtn_dt = tn[1:] - tn[:-1]
-    dtn_dt = dtn_dt/dt
-
-    #unwrap the angles first to be sure we get proper differences
-    temp = np.unwrap(argperi)
-    dargperi_dt = temp[1:] - temp[:-1]
-    dargperi_dt = dargperi_dt/dt
-
-    temp = np.unwrap(node)
-    dnode_dt = temp[1:] - temp[:-1]
-    dnode_dt = dnode_dt/dt
-
-    temp = np.unwrap(pomega)
-    dpomega_dt = temp[1:] - temp[:-1]
-    dpomega_dt = dpomega_dt/dt
-
+        mm = 2*np.pi/np.power(a,1.5)
     
-    mmdot_min = np.amin(dmm_dt)
-    mmdot_max = np.amax(dmm_dt)
-    mmdot_mean = np.mean(dmm_dt)
-    mmdot_std = np.std(dmm_dt)
-    mmdot_std_norm = mmdot_std/mmdot_mean
-    mmdot_del = mmdot_max - mmdot_min
-    mmdot_del_norm = mmdot_del/mmdot_mean
     
-    adot_min = np.amin(da_dt)
-    adot_max = np.amax(da_dt)
-    adot_mean = np.mean(da_dt)
-    adot_std = np.std(da_dt)
-    adot_std_norm = adot_std/adot_mean
-    adot_del = adot_max - adot_min
-    adot_del_norm = adot_del/adot_mean
+        mm_min=np.amin(mm)
+        a_min=np.amin(a)
+        e_min=np.amin(ec)
+        i_min=np.amin(inc)
+        q_min=np.amin(q)
+        tn_min=np.amin(tn)
+    
+        mm_max=np.amax(mm)
+        a_max=np.amax(a)
+        e_max=np.amax(ec)
+        i_max=np.amax(inc)
+        q_max=np.amax(q)
+        tn_max=np.amax(tn)
+    
+    
+        mm_del = mm_max - mm_min
+        a_del = a_max - a_min
+        e_del = e_max - e_min
+        i_del = i_max - i_min
+        q_del = q_max - q_min
+        tn_del = tn_max - tn_min
+    
+    
+        mm_mean = np.mean(mm)
+        a_mean = np.mean(a)
+        e_mean = np.mean(ec)
+        i_mean = np.mean(inc)
+        q_mean = np.mean(q)
+        tn_mean = np.mean(tn)
+    
+        mm_std = np.std(mm)
+        a_std = np.std(a)
+        e_std = np.std(ec)
+        i_std = np.std(inc)
+        q_std = np.std(q)
+        tn_std = np.std(tn)
+    
+        mm_std_norm = mm_std/mm_mean
+        a_std_norm = a_std/a_mean
+        e_std_norm = e_std/e_mean
+        i_std_norm = i_std/i_mean
+        q_std_norm = q_std/q_mean
+    
+        mm_del_norm = mm_del/mm_mean
+        a_del_norm = a_del/a_mean
+        e_del_norm = e_del/e_mean
+        i_del_norm = i_del/i_mean
+        q_del_norm = q_del/q_mean
+    
+    
+    
+        #arg peri 0-2pi
+    
+        argperi = tools.arraymod2pi(argperi)
+        node = tools.arraymod2pi(node)
+        pomega = tools.arraymod2pi(pomega)
+    
+        argperi_min = np.amin(argperi)
+        argperi_max = np.amax(argperi)
+        argperi_del = argperi_max - argperi_min
+        argperi_mean = np.mean(argperi)
+        argperi_std = np.std(argperi)
+    
+        #recenter arg peri around 0 and repeat
+        argperi_zero = tools.arraymod2pi0(argperi)
+        argperi_min2 = np.amin(argperi_zero)
+        argperi_max2 = np.amax(argperi_zero)
+        argperi2_del = argperi_max - argperi_min
+        argperi_mean2 = np.mean(argperi_zero)
+        argperi_std2 = np.std(argperi_zero)
+    
+        #take the better values for delta, mean, and standard deviation:
+        if(argperi2_del < argperi_del):
+            argperi_del = argperi2_del
+            argperi_mean = tools.mod2pi(argperi_mean2)
+            argperi_std = argperi_std2
+    
+        #calculate time derivatives
+        dt = time[1:] - time[:-1] 
+    
+        dmm_dt = mm[1:] - mm[:-1]
+        dmm_dt = dmm_dt/dt
+        da_dt = a[1:] - a[:-1]
+        da_dt = da_dt/dt
+        de_dt = ec[1:] - ec[:-1]
+        de_dt = de_dt/dt
+        di_dt = inc[1:] - inc[:-1]
+        de_dt = de_dt/dt
+        dq_dt = q[1:] - q[:-1]
+        dq_dt = dq_dt/dt
+        dtn_dt = tn[1:] - tn[:-1]
+        dtn_dt = dtn_dt/dt
+    
+        #unwrap the angles first to be sure we get proper differences
+        temp = np.unwrap(argperi)
+        dargperi_dt = temp[1:] - temp[:-1]
+        dargperi_dt = dargperi_dt/dt
+    
+        temp = np.unwrap(node)
+        dnode_dt = temp[1:] - temp[:-1]
+        dnode_dt = dnode_dt/dt
+    
+        temp = np.unwrap(pomega)
+        dpomega_dt = temp[1:] - temp[:-1]
+        dpomega_dt = dpomega_dt/dt
+    
+        
+        mmdot_min = np.amin(dmm_dt)
+        mmdot_max = np.amax(dmm_dt)
+        mmdot_mean = np.mean(dmm_dt)
+        mmdot_std = np.std(dmm_dt)
+        mmdot_std_norm = mmdot_std/mmdot_mean
+        mmdot_del = mmdot_max - mmdot_min
+        mmdot_del_norm = mmdot_del/mmdot_mean
+        
+        adot_min = np.amin(da_dt)
+        adot_max = np.amax(da_dt)
+        adot_mean = np.mean(da_dt)
+        adot_std = np.std(da_dt)
+        adot_std_norm = adot_std/adot_mean
+        adot_del = adot_max - adot_min
+        adot_del_norm = adot_del/adot_mean
+    
+        edot_min = np.amin(de_dt)
+        edot_max = np.amax(de_dt)
+        edot_mean = np.mean(de_dt)
+        edot_std = np.std(de_dt)
+        edot_std_norm = edot_std/edot_mean
+        edot_del = edot_max - edot_min
+        edot_del_norm = edot_del/edot_mean
 
-    edot_min = np.amin(de_dt)
-    edot_max = np.amax(de_dt)
-    edot_mean = np.mean(de_dt)
-    edot_std = np.std(de_dt)
-    edot_std_norm = edot_std/edot_mean
-    edot_del = edot_max - edot_min
-    edot_del_norm = edot_del/edot_mean
 
+        idot_min = np.amin(di_dt)
+        idot_max = np.amax(di_dt)
+        idot_mean = np.mean(di_dt)
+        idot_std = np.std(di_dt)
+        idot_std_norm = idot_std/idot_mean
+        idot_del = idot_max - idot_min
+        idot_del_norm = idot_del/idot_mean
+    
+    
+        nodedot_min = np.amin(dnode_dt)
+        nodedot_max = np.amax(dnode_dt)
+        nodedot_mean = np.mean(dnode_dt)
+        nodedot_std = np.std(dnode_dt)
+        nodedot_std_norm = nodedot_std/nodedot_mean
+        nodedot_del = nodedot_max - nodedot_min
+        nodedot_del_norm = nodedot_del/nodedot_mean
+    
+        
+        argperidot_min = np.amin(dargperi_dt)
+        argperidot_max = np.amax(dargperi_dt)
+        argperidot_mean = np.mean(dargperi_dt)
+        argperidot_std = np.std(dargperi_dt)
+        argperidot_std_norm = argperidot_std/argperidot_mean
+        argperidot_del = argperidot_max - argperidot_min
+        argperidot_del_norm = argperidot_del/argperidot_mean
+    
+    
+        pomegadot_min = np.amin(dpomega_dt)
+        pomegadot_max = np.amax(dpomega_dt)
+        pomegadot_mean = np.mean(dpomega_dt)
+        pomegadot_std = np.std(dpomega_dt)
+        pomegadot_std_norm = pomegadot_std/pomegadot_mean
+        pomegadot_del = pomegadot_max - pomegadot_min
+        pomegadot_del_norm = pomegadot_del/pomegadot_mean
 
-    idot_min = np.amin(di_dt)
-    idot_max = np.amax(di_dt)
-    idot_mean = np.mean(di_dt)
-    idot_std = np.std(di_dt)
-    idot_std_norm = idot_std/idot_mean
-    idot_del = idot_max - idot_min
-    idot_del_norm = idot_del/idot_mean
-
-
-    nodedot_min = np.amin(dnode_dt)
-    nodedot_max = np.amax(dnode_dt)
-    nodedot_mean = np.mean(dnode_dt)
-    nodedot_std = np.std(dnode_dt)
-    nodedot_std_norm = nodedot_std/nodedot_mean
-    nodedot_del = nodedot_max - nodedot_min
-    nodedot_del_norm = nodedot_del/nodedot_mean
-
-
-    argperidot_min = np.amin(dargperi_dt)
-    argperidot_max = np.amax(dargperi_dt)
-    argperidot_mean = np.mean(dargperi_dt)
-    argperidot_std = np.std(dargperi_dt)
-    argperidot_std_norm = argperidot_std/argperidot_mean
-    argperidot_del = argperidot_max - argperidot_min
-    argperidot_del_norm = argperidot_del/argperidot_mean
-
-
-    pomegadot_min = np.amin(dpomega_dt)
-    pomegadot_max = np.amax(dpomega_dt)
-    pomegadot_mean = np.mean(dpomega_dt)
-    pomegadot_std = np.std(dpomega_dt)
-    pomegadot_std_norm = pomegadot_std/pomegadot_mean
-    pomegadot_del = pomegadot_max - pomegadot_min
-    pomegadot_del_norm = pomegadot_del/pomegadot_mean
-
-    qdot_min = np.amin(dq_dt)
-    qdot_max = np.amax(dq_dt)
-    qdot_mean = np.mean(dq_dt)
-    qdot_std = np.std(dq_dt)
-    qdot_std_norm = qdot_std/qdot_mean
-    qdot_del = qdot_max - qdot_min
-    qdot_del_norm = qdot_del/qdot_mean
-
-    tndot_min = np.amin(dtn_dt)
-    tndot_max = np.amax(dtn_dt)
-    tndot_mean = np.mean(dtn_dt)
-    tndot_std = np.std(dtn_dt)
-    tndot_std_norm = tndot_std/tndot_mean
-    tndot_del = tndot_max - tndot_min
-    tndot_del_norm = tndot_del/tndot_mean
+        qdot_min = np.amin(dq_dt)
+        qdot_max = np.amax(dq_dt)
+        qdot_mean = np.mean(dq_dt)
+        qdot_std = np.std(dq_dt)
+        qdot_std_norm = qdot_std/qdot_mean
+        qdot_del = qdot_max - qdot_min
+        qdot_del_norm = qdot_del/qdot_mean
+    
+        tndot_min = np.amin(dtn_dt)
+        tndot_max = np.amax(dtn_dt)
+        tndot_mean = np.mean(dtn_dt)
+        tndot_std = np.std(dtn_dt)
+        tndot_std_norm = tndot_std/tndot_mean
+        tndot_del = tndot_max - tndot_min
+        tndot_del_norm = tndot_del/tndot_mean
 
 
     ########################################################
@@ -221,181 +222,181 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     ########################################################
     ########################################################
 
-    phirf = tools.arraymod2pi(phirf)
+        phirf = tools.arraymod2pi(phirf)
     
     #divide heliocentric distance into 10 bins and theta_n
     #into 20 bins
-    qmin = np.amin(rh) - 0.01
-    Qmax = np.amax(rh) + 0.01
-    nrbin = 10.
-    nphbin = 20.
-    dr = (Qmax - qmin) / nrbin
-    dph = (2. * np.pi) / nphbin
-    # center on the planet in phi (so when we bin, we will
-    # add the max and min bins together since they're really
-    # half-bins
-    phmin = -dph / 2.
-
-    # radial plus aziumthal binning
-    # indexing is radial bin, phi bin: rph_count[rbin,phibin]
-    rph_count = np.zeros((int(nrbin), int(nphbin)))
-    # radial only binning
-    r_count = np.zeros(int(nrbin))
-
-    # for calculating the average sin(ph) and cos(ph)
-    # indexing is   sinphbar[rbin,resorder]
-    resorder_max = 10
-    sinphbar = np.zeros((int(nrbin), resorder_max+1))
-    cosphbar = np.zeros((int(nrbin), resorder_max+1))
-
-    # divide into radial and azimuthal bins
-    nmax = len(rh)
-    for n in range(0, nmax):
-        rbin = int(np.floor((rh[n] - qmin) / dr))
-        for resorder in range(1,resorder_max+1):
-            tcos = np.cos(float(resorder)*phirf[n])
-            tsin = np.sin(float(resorder)*phirf[n])
-            sinphbar[rbin,resorder]+=tsin
-            cosphbar[rbin,resorder]+=tcos
-        r_count[rbin]+=1.
-        phbin = int(np.floor((phirf[n] - phmin) / dph))
-        if (phbin == int(nphbin)):
-            phbin = 0
-        rph_count[rbin, phbin] += 1
-
-    # perihelion distance bin stats
-    nempty = np.zeros(int(nrbin))
-    nadjempty = np.zeros(int(nrbin))
-    rbinmin = np.zeros(int(nrbin))
-    rbinmax = np.zeros(int(nrbin))
-    rbinavg = np.zeros(int(nrbin))
-    rbinstd = np.zeros(int(nrbin))
-
-    for nr in range(0, int(nrbin)):
-        rbinmin[nr] = 1e9
-        for resorder in range(1,resorder_max+1):
-            sinphbar[nr,resorder] = sinphbar[nr,resorder]/r_count[nr]
-            cosphbar[nr,resorder] = cosphbar[nr,resorder]/r_count[nr]
-        for n in range(0, int(nphbin)):
-            if (rph_count[nr, n] == 0):
-                nempty[nr] += 1
-            if (rph_count[nr, n] < rbinmin[nr]):
-                rbinmin[nr] = rph_count[nr, n]
-            if (rph_count[nr, n] > rbinmax[nr]):
-                rbinmax[nr] = rph_count[nr, n]
-            rbinavg[nr] += rph_count[nr, n]
-        rbinavg[nr] = rbinavg[nr] / nphbin
-
-        for n in range(0, int(nphbin)):
-            rbinstd[nr] += (rph_count[nr, n] - rbinavg[nr]) * (
-                        rph_count[nr, n] - rbinavg[nr])
-        if (not (rbinavg[nr] == 0)):
-            rbinstd[nr] = np.sqrt(rbinstd[nr] / nphbin) #/ rbinavg[nr]
-        else:
-            rbinstd[nr] = 0.
-
-        if (rph_count[nr, 0] == 0):
-            nadjempty[nr] = 1
-            for n in range(1, int(np.floor(nphbin / 2.)) + 1):
-                if (rph_count[nr, n] == 0):
-                    nadjempty[nr] += 1
-                if (rph_count[nr, n] != 0):
-                    break
-            for n in range(int(nphbin) - 1, int(np.floor(nphbin / 2.)), -1):
-                if (rph_count[nr, n] == 0):
-                    nadjempty[nr] += 1
-                if (rph_count[nr, n] != 0):
-                    break
-
-
-    n_peri_empty = nempty[0]
-    n_apo_empty = nempty[-1]
-    nadj_peri_empty = nadjempty[-1]
-    nadj_apo_empty = nadjempty[-1]
-
-    navg_peri = rbinavg[0]
-    nstd_peri = rbinstd[0]
-    ndel_peri = rbinmax[0] - rbinmin[0]
-    if(navg_peri>0):
-        ndel_peri_norm = ndel_peri/navg_peri
-        nstd_peri_norm = nstd_peri/navg_peri
-    else:
-        ndel_peri_norm = 0.
-        nstd_peri_norm = 0.
-
-    navg_apo = rbinavg[-1]
-    nstd_apo = rbinstd[-1]
-    ndel_apo = rbinmax[-1] - rbinmin[-1]
-    if(navg_apo>0):
-        ndel_apo_norm = ndel_apo/navg_apo
-        nstd_apo_norm = nstd_apo/navg_apo
-    else:
-        ndel_apo_norm = 0.
-        nstd_apo_norm = 0.
-    #    n = -2
- 
-    #add the rayleigh z-test statistics at perihelion and aphelion
-    rz_peri = np.zeros(resorder_max+1)
-    rz_apo = np.zeros(resorder_max+1)
-    for resorder in range(1, resorder_max+1):
-        rz_peri[resorder] = np.sqrt(sinphbar[0,resorder]*sinphbar[0,resorder] +
-                       cosphbar[0,resorder]*cosphbar[0,resorder])
-        rz_apo[resorder] = np.sqrt(sinphbar[-1,resorder]*sinphbar[-1,resorder] +
-                       cosphbar[-1,resorder]*cosphbar[-1,resorder])
-
-
-    rzperi_max = np.amax(rz_peri[1:resorder_max])
-    rzapo_max = np.amax(rz_apo[1:resorder_max])
-
-
-    spatial_counts = rph_count.flatten()
-    grid_nz_minval = np.min(spatial_counts[np.nonzero(spatial_counts)])
-    grid_nz_avg = np.mean(spatial_counts[np.nonzero(spatial_counts)])
-    grid_nz_std = np.std(spatial_counts[np.nonzero(spatial_counts)])
-    grid_avg =  np.mean(spatial_counts)
-    grid_std =  np.std(spatial_counts)
-    grid_deltaavg = grid_nz_avg - grid_avg
-    grid_deltastd = grid_std - grid_nz_std
+        qmin = np.amin(rh) - 0.01
+        Qmax = np.amax(rh) + 0.01
+        nrbin = 10.
+        nphbin = 20.
+        dr = (Qmax - qmin) / nrbin
+        dph = (2. * np.pi) / nphbin
+        # center on the planet in phi (so when we bin, we will
+        # add the max and min bins together since they're really
+        # half-bins
+        phmin = -dph / 2.
     
-    n_empty=0
-    n_almost_empty=0
-    for n in range(0,len(spatial_counts)):
-        if(spatial_counts[n]==0):
-            n_empty += 1
-        if(spatial_counts[n]<7):
-            n_almost_empty += 1
-
-    ########################################################
-    ########################################################
-    #
-    # FFT data features
+        # radial plus aziumthal binning
+        # indexing is radial bin, phi bin: rph_count[rbin,phibin]
+        rph_count = np.zeros((int(nrbin), int(nphbin)))
+        # radial only binning
+        r_count = np.zeros(int(nrbin))
+    
+        # for calculating the average sin(ph) and cos(ph)
+        # indexing is   sinphbar[rbin,resorder]
+        resorder_max = 10
+        sinphbar = np.zeros((int(nrbin), resorder_max+1))
+        cosphbar = np.zeros((int(nrbin), resorder_max+1))
+    
+        # divide into radial and azimuthal bins
+        nmax = len(rh)
+        for n in range(0, nmax):
+            rbin = int(np.floor((rh[n] - qmin) / dr))
+            for resorder in range(1,resorder_max+1):
+                tcos = np.cos(float(resorder)*phirf[n])
+                tsin = np.sin(float(resorder)*phirf[n])
+                sinphbar[rbin,resorder]+=tsin
+                cosphbar[rbin,resorder]+=tcos
+            r_count[rbin]+=1.
+            phbin = int(np.floor((phirf[n] - phmin) / dph))
+            if (phbin == int(nphbin)):
+                phbin = 0
+            rph_count[rbin, phbin] += 1
+    
+        # perihelion distance bin stats
+        nempty = np.zeros(int(nrbin))
+        nadjempty = np.zeros(int(nrbin))
+        rbinmin = np.zeros(int(nrbin))
+        rbinmax = np.zeros(int(nrbin))
+        rbinavg = np.zeros(int(nrbin))
+        rbinstd = np.zeros(int(nrbin))
+    
+        for nr in range(0, int(nrbin)):
+            rbinmin[nr] = 1e9
+            for resorder in range(1,resorder_max+1):
+                sinphbar[nr,resorder] = sinphbar[nr,resorder]/r_count[nr]
+                cosphbar[nr,resorder] = cosphbar[nr,resorder]/r_count[nr]
+            for n in range(0, int(nphbin)):
+                if (rph_count[nr, n] == 0):
+                    nempty[nr] += 1
+                if (rph_count[nr, n] < rbinmin[nr]):
+                    rbinmin[nr] = rph_count[nr, n]
+                if (rph_count[nr, n] > rbinmax[nr]):
+                    rbinmax[nr] = rph_count[nr, n]
+                rbinavg[nr] += rph_count[nr, n]
+            rbinavg[nr] = rbinavg[nr] / nphbin
+    
+            for n in range(0, int(nphbin)):
+                rbinstd[nr] += (rph_count[nr, n] - rbinavg[nr]) * (
+                            rph_count[nr, n] - rbinavg[nr])
+            if (not (rbinavg[nr] == 0)):
+                rbinstd[nr] = np.sqrt(rbinstd[nr] / nphbin) #/ rbinavg[nr]
+            else:
+                rbinstd[nr] = 0.
+    
+            if (rph_count[nr, 0] == 0):
+                nadjempty[nr] = 1
+                for n in range(1, int(np.floor(nphbin / 2.)) + 1):
+                    if (rph_count[nr, n] == 0):
+                        nadjempty[nr] += 1
+                    if (rph_count[nr, n] != 0):
+                        break
+                for n in range(int(nphbin) - 1, int(np.floor(nphbin / 2.)), -1):
+                    if (rph_count[nr, n] == 0):
+                        nadjempty[nr] += 1
+                    if (rph_count[nr, n] != 0):
+                        break
+    
+    
+        n_peri_empty = nempty[0]
+        n_apo_empty = nempty[-1]
+        nadj_peri_empty = nadjempty[-1]
+        nadj_apo_empty = nadjempty[-1]
+    
+        navg_peri = rbinavg[0]
+        nstd_peri = rbinstd[0]
+        ndel_peri = rbinmax[0] - rbinmin[0]
+        if(navg_peri>0):
+            ndel_peri_norm = ndel_peri/navg_peri
+            nstd_peri_norm = nstd_peri/navg_peri
+        else:
+            ndel_peri_norm = 0.
+            nstd_peri_norm = 0.
+    
+        navg_apo = rbinavg[-1]
+        nstd_apo = rbinstd[-1]
+        ndel_apo = rbinmax[-1] - rbinmin[-1]
+        if(navg_apo>0):
+            ndel_apo_norm = ndel_apo/navg_apo
+            nstd_apo_norm = nstd_apo/navg_apo
+        else:
+            ndel_apo_norm = 0.
+            nstd_apo_norm = 0.
+        #    n = -2
+     
+        #add the rayleigh z-test statistics at perihelion and aphelion
+        rz_peri = np.zeros(resorder_max+1)
+        rz_apo = np.zeros(resorder_max+1)
+        for resorder in range(1, resorder_max+1):
+            rz_peri[resorder] = np.sqrt(sinphbar[0,resorder]*sinphbar[0,resorder] +
+                           cosphbar[0,resorder]*cosphbar[0,resorder])
+            rz_apo[resorder] = np.sqrt(sinphbar[-1,resorder]*sinphbar[-1,resorder] +
+                           cosphbar[-1,resorder]*cosphbar[-1,resorder])
+    
+    
+        rzperi_max = np.amax(rz_peri[1:resorder_max])
+        rzapo_max = np.amax(rz_apo[1:resorder_max])
+    
+    
+        spatial_counts = rph_count.flatten()
+        grid_nz_minval = np.min(spatial_counts[np.nonzero(spatial_counts)])
+        grid_nz_avg = np.mean(spatial_counts[np.nonzero(spatial_counts)])
+        grid_nz_std = np.std(spatial_counts[np.nonzero(spatial_counts)])
+        grid_avg =  np.mean(spatial_counts)
+        grid_std =  np.std(spatial_counts)
+        grid_deltaavg = grid_nz_avg - grid_avg
+        grid_deltastd = grid_std - grid_nz_std
+        
+        n_empty=0
+        n_almost_empty=0
+        for n in range(0,len(spatial_counts)):
+            if(spatial_counts[n]==0):
+                n_empty += 1
+            if(spatial_counts[n]<7):
+                n_almost_empty += 1
+    
+        ########################################################
+        ########################################################
+        #
+        # FFT data features
     #
     ########################################################
     ########################################################
 
     #calculate the correlations between a and e, a and i, and e and i
-    aecorr =  max_corelation(a,ec)
-    aicorr =  max_corelation(a,inc)
-    eicorr =  max_corelation(ec,inc)
-
-    #calculate spectral fractions
-    deltat = time[2] - time[1]
-    #a
-    asf, amaxpower, amaxpower3, af1, af2, af3 = spectral_characteristics(a,deltat)
-    # eccentricity, via e*sin(varpi)
-    hec = ec*np.sin(pomega)
-    esf, emaxpower, emaxpower3, ef1, ef2, ef3 = spectral_characteristics(hec,deltat)
-    # inclination, via sin(i)sin(Omega)
-    pinc = np.sin(inc)*np.sin(node)
-    isf, imaxpower, imaxpower3, if1, if2, if3 = spectral_characteristics(pinc,deltat)
-    #amd
-    amd = 1. - np.sqrt(1.- ec*ec)*np.cos(inc)
-    amd = amd*np.sqrt(a)
-    amdsf, amdmaxpower, amdmaxpower3, amdf1, amdf2, amdf3 = spectral_characteristics(amd,deltat)
-
-
-    ########################################################
-    ########################################################
+        aecorr =  max_corelation(a,ec)
+        aicorr =  max_corelation(a,inc)
+        eicorr =  max_corelation(ec,inc)
+    
+        #calculate spectral fractions
+        deltat = time[2] - time[1]
+        #a
+        asf, amaxpower, amaxpower3, af1, af2, af3 = spectral_characteristics(a,deltat)
+        # eccentricity, via e*sin(varpi)
+        hec = ec*np.sin(pomega)
+        esf, emaxpower, emaxpower3, ef1, ef2, ef3 = spectral_characteristics(hec,deltat)
+        # inclination, via sin(i)sin(Omega)
+        pinc = np.sin(inc)*np.sin(node)
+        isf, imaxpower, imaxpower3, if1, if2, if3 = spectral_characteristics(pinc,deltat)
+        #amd
+        amd = 1. - np.sqrt(1.- ec*ec)*np.cos(inc)
+        amd = amd*np.sqrt(a)
+        amdsf, amdmaxpower, amdmaxpower3, amdf1, amdf2, amdf3 = spectral_characteristics(amd,deltat)
+    
+    
+        ########################################################
+        ########################################################
     #
     # additional time-series based features
     #
@@ -406,20 +407,20 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
     #compare visit distributions
 
 
-    em_a, lh_a, min_em_a, max_em_a, delta_em_a, delta_em_a_norm, min_lh_a, max_lh_a, delta_lh_a, delta_lh_a_norm =  histogram_features(a,a_min,a_max,a_mean,a_std)
-    em_e, lh_e, min_em_e, max_em_e, delta_em_e, delta_em_e_norm, min_lh_e, max_lh_e, delta_lh_e, delta_lh_e_norm =  histogram_features(ec,e_min,e_max,e_mean,e_std)
-    em_i, lh_i, min_em_i, max_em_i, delta_em_i, delta_em_i_norm, min_lh_i, max_lh_i, delta_lh_i, delta_lh_i_norm =  histogram_features(inc,i_min,i_max,i_mean,i_std)
+        em_a, lh_a, min_em_a, max_em_a, delta_em_a, delta_em_a_norm, min_lh_a, max_lh_a, delta_lh_a, delta_lh_a_norm =  histogram_features(a,a_min,a_max,a_mean,a_std)
+        em_e, lh_e, min_em_e, max_em_e, delta_em_e, delta_em_e_norm, min_lh_e, max_lh_e, delta_lh_e, delta_lh_e_norm =  histogram_features(ec,e_min,e_max,e_mean,e_std)
+        em_i, lh_i, min_em_i, max_em_i, delta_em_i, delta_em_i_norm, min_lh_i, max_lh_i, delta_lh_i, delta_lh_i_norm =  histogram_features(inc,i_min,i_max,i_mean,i_std)
     
-    em_a2, lh_a2, min_em_a2, max_em_a2, delta_em_a2, delta_em_a_norm2, min_lh_a2, max_lh_a2, delta_lh_a2, delta_lh_a_norm2 =  alt_histogram_features(a,a_min,a_max,a_mean,a_std)
-    em_e2, lh_e2, min_em_e2, max_em_e2, delta_em_e2, delta_em_e_norm2, min_lh_e2, max_lh_e2, delta_lh_e2, delta_lh_e_norm2 =  alt_histogram_features(ec,e_min,e_max,e_mean,e_std)
-    em_i2, lh_i2, min_em_i2, max_em_i2, delta_em_i2, delta_em_i_norm2, min_lh_i2, max_lh_i2, delta_lh_i2, delta_lh_i_norm2 =  alt_histogram_features(inc,i_min,i_max,i_mean,i_std)
+        em_a2, lh_a2, min_em_a2, max_em_a2, delta_em_a2, delta_em_a_norm2, min_lh_a2, max_lh_a2, delta_lh_a2, delta_lh_a_norm2 =  alt_histogram_features(a,a_min,a_max,a_mean,a_std)
+        em_e2, lh_e2, min_em_e2, max_em_e2, delta_em_e2, delta_em_e_norm2, min_lh_e2, max_lh_e2, delta_lh_e2, delta_lh_e_norm2 =  alt_histogram_features(ec,e_min,e_max,e_mean,e_std)
+        em_i2, lh_i2, min_em_i2, max_em_i2, delta_em_i2, delta_em_i_norm2, min_lh_i2, max_lh_i2, delta_lh_i2, delta_lh_i_norm2 =  alt_histogram_features(inc,i_min,i_max,i_mean,i_std)
 
-    da1 = (a_mean-a_min)/(a_max-a_mean)
-    da2 = (a_max-a_mean)/(a_mean-a_min)
-    da_symmetry = np.amax([da1,da2])
+        da1 = (a_mean-a_min)/(a_max-a_mean)
+        da2 = (a_max-a_mean)/(a_mean-a_min)
+        da_symmetry = np.amax([da1,da2])
    
 
-    features = [
+        features = [
         mm_min,mm_mean,mm_max,mm_std,mm_std_norm,mm_del,mm_del_norm,
         mmdot_min,mmdot_mean,mmdot_max,mmdot_std,mmdot_std_norm,mmdot_del,mmdot_del_norm,
         a_min,a_mean,a_max,a_std,a_std_norm,a_del,a_del_norm,
@@ -450,7 +451,10 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn):
         em_a2,lh_a2,min_em_a2,max_em_a2,delta_em_a2,delta_em_a_norm2,min_lh_a2,max_lh_a2,delta_lh_a2,delta_lh_a_norm2,
         em_e2,lh_e2,em_i2,lh_i2,
         ]
-   
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
     return np.array(features)  # make sure features is a numpy array
 
 
@@ -1041,81 +1045,96 @@ def run_TNO_integration_for_ML(tno='',clones=2):
    
     return features, shortarchive, longarchive
 
-def read_TNO_integration_for_ML(sim=None,sim_init=None,clones=0,tno=''):
+def read_TNO_integration_for_ML(sim_init=None,tno='',clones=0):
     '''
     '''
+    try:
+        if(clones==2):
+            find_3_sigma=True
+        else:
+            find_3_sigma=False
     
-    if(clones==2):
-        find_3_sigma=True
-    else:
-        find_3_sigma=False
-
-    today = date.today()
-    datestring = today.strftime("%b-%d-%Y")
-
-    shortarchive = '../data/ML_archives/'+datestring + "-" + tno + "-short-archive.bin"
-    flag, sim = run_reb.run_simulation(sim_init,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
+        today = date.today()
+        datestring = today.strftime("%b-%d-%Y")
+        #datestring = today.strftime("Jun-17-2024")
     
-    longarchive = '../data/ML_archives/'+datestring + "-" + tno + "-long-archive.bin"
-    sim_2.save(longarchive)
+        shortarchive = '../data/ML_archives/'+datestring + "-" + tno + "-short-archive.bin"
+
+        if os.path.isfile(shortarchive) == False:
+            flag, sim = run_reb.run_simulation(sim_init,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
+
+        longarchive = '../data/ML_archives/'+datestring + "-" + tno + "-long-archive.bin"
+        if os.path.isfile(longarchive) == False:
+            flag, sim_2 = run_reb.run_simulation(sim_init,tmax=10e6,tout=1000.,filename=longarchive,deletefile=True)    
+
+        flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=tno,archivefile=shortarchive,nclones=clones)
+        pomega = peri+ node 
+        flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=shortarchive)
+        q = a*(1.-ec)
+
+        flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+                                                                        archivefile=shortarchive, nclones=clones)
+        rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
+        phirf = np.arctan2(yr, xr)
+        tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
+
+        flag, l_a, l_ec, l_inc, l_node, l_peri, l_ma, l_t = tools.read_sa_for_sbody(sbody=tno,archivefile=longarchive,nclones=clones)
+        l_pomega = l_peri+ l_node 
+        flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=longarchive)
+        l_q = l_a*(1.-l_ec)
+        flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+                                                                        archivefile=longarchive, nclones=clones)
+        l_rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
+        l_phirf = np.arctan2(yr, xr)
+        l_tiss = apl/l_a + 2.*np.cos(l_inc)*np.sqrt(l_a/apl*(1.-l_ec*l_ec))
     
-    flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=tno,archivefile=shortarchive,nclones=clones)
-    pomega = peri+ node 
-    flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=shortarchive)
-    q = a*(1.-ec)
-    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
-                                                                    archivefile=shortarchive, nclones=clones)
-    rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
-    phirf = np.arctan2(yr, xr)
-    tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
-
-    flag, l_a, l_ec, l_inc, l_node, l_peri, l_ma, l_t = tools.read_sa_for_sbody(sbody=tno,archivefile=longarchive,nclones=clones)
-    l_pomega = l_peri+ l_node 
-    flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=longarchive)
-    l_q = l_a*(1.-l_ec)
-    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
-                                                                    archivefile=longarchive, nclones=clones)
-    l_rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
-    l_phirf = np.arctan2(yr, xr)
-    l_tiss = apl/l_a + 2.*np.cos(l_inc)*np.sqrt(l_a/apl*(1.-l_ec*l_ec))
-
-    #first list is the always removed set
-    index_remove = [25, 27, 32, 34, 39, 41, 46, 48, 53, 55, 93, 95, 116, 117, 118, 119, 120, 121, 122, 
-                    123, 124, 125, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 147, 234, 236, 241, 
-                    243, 248, 250, 255, 257, 262, 264, 302, 304, 325, 326, 327, 328, 329, 330, 331, 332, 
-                    333, 334, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 356]
-
-    #set to remove for current best classifier (subject to change)
-    index_remove = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 25, 27, 32, 34, 39, 41, 46, 48, 
-                    53, 55, 93, 95, 101, 102, 103, 104, 105, 106, 107, 110, 112, 114, 116, 117, 118, 119, 
-                    120, 121, 122, 123, 124, 125, 127, 128, 130, 132, 134, 135, 136, 137, 138, 139, 140, 
-                    141, 142, 143, 147, 149, 152, 183, 184, 186, 187, 188, 190, 234, 236, 241, 243, 248, 
-                    250, 255, 257, 262, 264, 268, 270, 272, 273, 274, 275, 276, 280, 282, 287, 289, 302, 
-                    304, 310, 311, 312, 313, 314, 315, 316, 319, 321, 323, 325, 326, 327, 328, 329, 330, 
-                    331, 332, 333, 334, 336, 337, 339, 341, 343, 344, 345, 346, 347, 348, 349, 350, 351, 
-                    352, 356, 358, 361, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 392, 
-                    393, 396, 397]
-
-
-    n=0
-    short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
-                                        pomega[n],q[n],rrf[n],phirf[n],tiss[n])
-    long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
-                                        l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
-
-    all_features = np.concatenate((long_features, short_features),axis=0)
-    temp_features = np.delete(all_features,index_remove)
-    features = np.array([temp_features])
-
-    for n in range(1,clones+1):
-        short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
-                                        pomega[n],q[n],rrf[n],phirf[n],tiss[n])
-        long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
-                                        l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
+        #first list is the always removed set
+        index_remove = [25, 27, 32, 34, 39, 41, 46, 48, 53, 55, 93, 95, 116, 117, 118, 119, 120, 121, 122, 
+                        123, 124, 125, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 147, 234, 236, 241, 
+                        243, 248, 250, 255, 257, 262, 264, 302, 304, 325, 326, 327, 328, 329, 330, 331, 332, 
+                        333, 334, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 356]
+    
+        #set to remove for current best classifier (subject to change)
+        index_remove = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 25, 27, 32, 34, 39, 41, 46, 48, 
+                        53, 55, 93, 95, 101, 102, 103, 104, 105, 106, 107, 110, 112, 114, 116, 117, 118, 119, 
+                        120, 121, 122, 123, 124, 125, 127, 128, 130, 132, 134, 135, 136, 137, 138, 139, 140, 
+                        141, 142, 143, 147, 149, 152, 183, 184, 186, 187, 188, 190, 234, 236, 241, 243, 248, 
+                        250, 255, 257, 262, 264, 268, 270, 272, 273, 274, 275, 276, 280, 282, 287, 289, 302, 
+                        304, 310, 311, 312, 313, 314, 315, 316, 319, 321, 323, 325, 326, 327, 328, 329, 330, 
+                        331, 332, 333, 334, 336, 337, 339, 341, 343, 344, 345, 346, 347, 348, 349, 350, 351, 
+                        352, 356, 358, 361, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 392, 
+                        393, 396, 397]
+    
+    
+        n=0
+        #print(t,a[n],str(type(a[n])),str(type(a[n])) == "<class 'numpy.float64'>")
+        if str(type(a[n])) == "<class 'numpy.float64'>":
+            short_features = calc_ML_features(t,a,ec,inc,node,peri,
+                                            pomega,q,rrf,phirf,tiss)
+            long_features = calc_ML_features(l_t,l_a,l_ec,l_inc,l_node,l_peri,
+                                            l_pomega,l_q,l_rrf,l_phirf,l_tiss)
+        else:
+            short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
+                                            pomega[n],q[n],rrf[n],phirf[n],tiss[n])
+            long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
+                                            l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
+    
         all_features = np.concatenate((long_features, short_features),axis=0)
         temp_features = np.delete(all_features,index_remove)
-        features = np.append(features,[temp_features],axis=0)
-   
+        features = np.array([temp_features])
+    
+        for n in range(1,clones+1):
+            short_features = calc_ML_features(t,a[n],ec[n],inc[n],node[n],peri[n],
+                                            pomega[n],q[n],rrf[n],phirf[n],tiss[n])
+            long_features = calc_ML_features(l_t,l_a[n],l_ec[n],l_inc[n],l_node[n],l_peri[n],
+                                            l_pomega[n],l_q[n],l_rrf[n],l_phirf[n],l_tiss[n])
+            all_features = np.concatenate((long_features, short_features),axis=0)
+            temp_features = np.delete(all_features,index_remove)
+            features = np.append(features,[temp_features],axis=0)
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
     return features, shortarchive, longarchive
 
 
