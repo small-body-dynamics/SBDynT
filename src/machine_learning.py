@@ -971,36 +971,50 @@ def run_TNO_integration_for_ML(tno='',clones=2):
     else:
         find_3_sigma=False
 
-    today = date.today()
-    datestring = today.strftime("%b-%d-%Y")
-
     flag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
                           des=tno, clones=clones, find_3_sigma=find_3_sigma)
 
+
+    features, shortarchive, longarchive = run_sim_for_TNO_ML(sim,des=tno,clones=clones,date=True)
+
+    return features, shortarchive, longarchive
+
+
+def run_sim_for_TNO_ML(sim, des='',clones=0,date=False):
+    '''
+    '''
     sim_2 = sim.copy()
 
-    shortarchive = datestring + "-" + tno + "-short-archive.bin"
+    if(date):
+        today = date.today()
+        datestring = today.strftime("%b-%d-%Y")
+        shortarchive = datestring + "-" + des + "-short-archive.bin"
+        longarchive = datestring + "-" + des + "-long-archive.bin"
+    else:
+        shortarchive = des + "-short-archive.bin"
+        longarchive = des + "-long-archive.bin"
+
+        
     flag, sim = run_reb.run_simulation(sim,tmax=0.5e6,tout=50.,filename=shortarchive,deletefile=True)
     
-    longarchive = datestring + "-" + tno + "-long-archive.bin"
     flag, sim_2 = run_reb.run_simulation(sim_2,tmax=10e6,tout=1000.,filename=longarchive,deletefile=True)
 
 
-    flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=tno,archivefile=shortarchive,nclones=clones)
+    flag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=des,archivefile=shortarchive,nclones=clones)
     pomega = peri+ node 
     flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=shortarchive)
     q = a*(1.-ec)
-    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=des, planet='neptune', 
                                                                     archivefile=shortarchive, nclones=clones)
     rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
     phirf = np.arctan2(yr, xr)
     tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
 
-    flag, l_a, l_ec, l_inc, l_node, l_peri, l_ma, l_t = tools.read_sa_for_sbody(sbody=tno,archivefile=longarchive,nclones=clones)
+    flag, l_a, l_ec, l_inc, l_node, l_peri, l_ma, l_t = tools.read_sa_for_sbody(sbody=des,archivefile=longarchive,nclones=clones)
     l_pomega = l_peri+ l_node 
     flag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=longarchive)
     l_q = l_a*(1.-l_ec)
-    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=tno, planet='neptune', 
+    flag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=des, planet='neptune', 
                                                                     archivefile=longarchive, nclones=clones)
     l_rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
     l_phirf = np.arctan2(yr, xr)
@@ -1154,4 +1168,28 @@ def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
         for j in range(nclas):
             print("%e, " % class_probs[n][j] ,end ="")
         print("\n",end ="")
+
+def print_TNO_ML_results_to_file(des,pred_class,classes_dictionary,class_probs,clones=2):
+    outfile = des + "-classes.txt"
+    out = open(outfile,"w")
+    nclas = len(classes_dictionary)
+    line = "Designation, clone number, most probable class, probability of most probable class, "
+    for n in range(nclas):
+        line+= ("probability of %s, " % classes_dictionary[n])
+    line+="\n"
+    out.write(line)
+    format_string = "%d, %s, "
+    for n in range(nclas-1):
+        format_string+="%e, "
+    format_string+="%e,\n"
+    for n in range(0,clones+1):
+        line = des + ', '
+        line+=("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]))
+        for j in range(nclas):
+            line+=("%e, " % class_probs[n][j])
+        line+="\n"
+        out.write(line)
+
+    out.close()
+
 
