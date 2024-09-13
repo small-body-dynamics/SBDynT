@@ -120,7 +120,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
             pt = float(p)*lamda - float(q)*lamda_pl - float(m)*(o.Omega+o.omega)
             if(n!=0 or r!=0 or s!=0):
                 pt = pt - float(n)*o.Omega - float(r)*(o_pl.Omega+o_pl.omega) - float(s)*o_pl.Omega
-            pt = tools.mod2pi(pt)
+            pt = np.mod(pt,2.*np.pi)
             phi[j,i] = pt
     
     flag = 1
@@ -544,3 +544,129 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
              
     
     return flag, a_stats, e_stats, i_stats, phi_stats, fwindows
+
+
+
+
+##########################################################################################################
+##########################################################################################################
+
+def nearest_resonance(period_ratio, prtol=0.01):
+    '''
+    finds the nearest, lowest-order p:q resonance for a given
+    period ratio with a planet
+    inputs:
+        period_ratio: float, small body period/planet period
+        prtol: float, percentage range around the provided
+               period ratio to search for integer ratios
+               defaults to 1%
+    outputs:
+        p, integer
+        q, integer
+            p/q is approximately equal to period_ratio
+            and the resonant angle is:
+            phi = p*lambda_pl - q*lambda_small-body ....
+    '''
+    pr = 0
+    qr = 0
+    if(period_ratio > 1):
+        prmax=1./((1.0-prtol)*period_ratio)
+        prmin=1./((1.0+prtol)*period_ratio)
+    else:
+        prmax=(1.0-prtol)*period_ratio
+        prmin=(1.0+prtol)*period_ratio
+
+    num = np.array([0, 1])
+    denom = np.array([1, 1])
+    #find the nearest, lowest order resonance for an example resonant angle
+    flag=1
+    while flag>0:
+        flag, num, denom, new_q, new_p, n_new = farey_tree(num,denom,prmin, prmax)
+        if(n_new > 0):
+            if(period_ratio > 1):
+                pr = int(new_p[0])
+                qr = int(new_q[0])
+            else:
+                pr = int(new_q[0])
+                qr = int(new_p[0])
+            flag=0
+
+    return pr, qr
+
+def farey_tree(num, denom, prmin, prmax):
+    order_max = 20
+    # Initialize fractions
+    flag = 0
+    oldnum = num.copy()  
+    olddenom = denom.copy()
+    nfractions = len(oldnum)
+    if nfractions == 1:
+        # Only one fraction left, can't keep building the tree
+        return flag, num, denom,np.array([0.]),np.array([0.]), 0
+        
+    # the next layer in the farey tree will have nfraction-1 new fractions
+    newnum = np.zeros(nfractions-1)  
+    newdenom = np.zeros(nfractions-1)
+
+    # the full set of numbers will have 2*nfractions -1 entries
+    num = np.zeros(2*nfractions-1)  
+    denom = np.zeros(2*nfractions-1)
+    
+    nn = 0
+    new_n = 0
+    for n in range(0,nfractions-1):
+        num[nn] = oldnum[n]
+        denom[nn] = olddenom[n] 
+        nn+=1
+        num[nn] = oldnum[n] + oldnum[n + 1]
+        denom[nn] = olddenom[n] + olddenom[n + 1]
+        if(num[nn]<=order_max):
+            nn+=1
+            newnum[new_n] = oldnum[n] + oldnum[n + 1]
+            newdenom[new_n] = olddenom[n] + olddenom[n + 1]
+            new_n+=1
+
+
+    num[nn] = oldnum[nfractions-1]
+    denom[nn] = olddenom[nfractions-1]
+
+    if(new_n <1):
+        flag = 0
+    else:
+        flag = 1
+    
+    newnum = newnum[0:new_n]
+    newdenom = newdenom[0:new_n]
+    num = num[0:nn+1]
+    denom = denom[0:nn+1]
+    
+    
+    left = 0
+    right = nn+1
+    for n in range(0,nn):
+        if(prmin > float(num[n]/denom[n])):# and left ==0):
+            left = n
+
+    for n in range(nn,0,-1):
+        if(prmax < float(num[n]/denom[n])):# and right==nn):
+            right = n+1
+    num = num[left:right]
+    denom = denom[left:right]
+
+    new_check_q = np.empty(0)
+    new_check_p = np.empty(0)
+
+    for n in range(0,new_n):
+        pr = float(newnum[n]/newdenom[n])
+        if(pr>=prmin and pr<=prmax):
+            new_check_q = np.append(new_check_q,int(newnum[n]))
+            new_check_p = np.append(new_check_p,int(newdenom[n]))
+            
+
+    n_check = len(new_check_p)
+    return flag, num, denom,new_check_q, new_check_p, n_check 
+
+
+
+
+

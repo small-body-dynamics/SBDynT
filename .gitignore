@@ -138,3 +138,6 @@ dmypy.json
 #Misc
 .idea/
 *.swp
+
+#trained classifiers (package dependent, must be locally made)
+src/MLdata/*.pkl

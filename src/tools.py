@@ -1,7 +1,122 @@
 import numpy as np
 import re
 import rebound
+from datetime import date
 
+#define the default file-naming schemes
+def archive_file_name(des=None):
+    '''
+    if the user doesn't provide a simulation archive filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        archivefile, string: filename for the simulation archive
+    '''
+
+    if(des == None):
+        archivefile = 'simarchive.bin'
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+    #make the filename while removing any whitespaces from des
+    archivefile = "".join(pdes.split()) + '-simarchive.bin'
+
+    return archivefile
+
+def ic_file_name(des=None):
+    '''
+    if the user doesn't provide an initial conditions filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        icfile, string: filename for the simulation archive
+                        that stores the initial conditions
+    '''
+
+    if(des == None):
+        icfile = 'ic.bin'
+   
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+    #make the filename while removing any whitespaces from des
+    icfile = "".join(pdes.split()) + '-ic.bin'
+
+    return icfile
+
+def log_file_name(des=None):
+    '''
+    if the user doesn't provide a log filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        icfile, string: filename for the log file
+    '''
+
+    if(des == None):
+        logfile = 'log.txt'
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+
+    #make the filename while removing any whitespaces from des
+    logfile = "".join(pdes.split()) + '-log.txt'
+
+    return logfile
+
+def writelog(logfile,logmessage):
+    '''
+    append to the log file
+    inputs:
+        logfile, bool or string
+        logmessage, string
+    '''
+    with open(logfile,"a") as f:
+        f.write(logmessage)
+
+def orbit_solution_file(des):
+    '''
+    if the user doesn't provide a filename to save the orbit solution
+    queried from JPL's SBDB, this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        orbit_file, string: filename for the log file
+    '''
+    
+    # this file will be date stamped to be sure it doesn't overwrite
+    # a pre-existing saved orbit solution
+    today = date.today()
+    datestring = today.strftime("%b-%d-%Y")
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+
+    orbit_file = "".join(pdes.split()) + datestring + '.pkl'
+
+    return orbit_file
 
 #################################################################
 #################################################################
@@ -87,7 +202,7 @@ def M_to_E_reb(M=0., e=0.):
     """
 
     # borrowed from rebound tools.c
-    M = mod2pi(M)
+    M = np.mod(M,2.*np.pi)
     if(e < 1.):
         if(e < 0.8):
             E = M
@@ -99,7 +214,7 @@ def M_to_E_reb(M=0., e=0.):
             F = E - e*np.sin(E) - M
             if(np.abs(F) < 1.e-16):
                 break
-        E = mod2pi(E)
+        E =  np.mod(E,2.*np.pi)
         return E
     else:
         E = M/np.abs(M)*np.log(2.*np.abs(M)/e + 1.8)
@@ -109,85 +224,64 @@ def M_to_E_reb(M=0., e=0.):
             F = E - e*np.sinh(E) + M
             if(np.abs(F) < 1.e-16):
                 break
+        E =  np.mod(E,2.*np.pi)
         return E
 #################################################################
 
 
-#################################################################
-#################################################################
-# returns an angle between 0 and 2pi
-#################################################################
-def mod2pi(x):
-    """
-    input:
-        x = any angle in radians
-    output:
-        an angle in radians re-centered from 0-2pi
-    """
-    
-    while(x > 2.*np.pi):
-        x += -2.*np.pi
-    while(x < 0.):
-        x += 2.*np.pi
-    return x
-
 
 #################################################################
 #################################################################
-# returns an angle between 0 and 2pi
+# apply mod2pi to a 1 or 2-d array, returning a new array in case
+# you don't want to modify the original array for some reason
 #################################################################
 def arraymod2pi(x):
     """
     input:
-        x = array of angles in radians
+        x, 1 or 2-d np array, angles in radians
     output:
-        array of angles in radians re-centered from 0-2pi
+        mx, 1 or 2-d np array of angles in radians re-centered from 0-2pi
     """
-    imax = len(x)
+    mx = x.copy()
+    oned = False
+    #make it a 2-d array if it is 1-d
+    if(len(mx.shape)<2):
+        oned = True
+        mx = np.array([mx])
+    imax = mx.shape[0]
     for i in range (0,imax):
-        while (x[i] > 2. * np.pi):
-            x[i] += -2. * np.pi
-        while (x[i] < 0.):
-            x[i] += 2. * np.pi
-
-    return x
+        mx[i] = np.mod(mx[i],2.*np.pi) 
+    #if needed, turn it back into a 1-d array
+    if(oned):
+        mx = mx[0]
+    return mx
 
 #################################################################
 #################################################################
-# returns an angle between -pi and pi
+# take a 1 or 2-d array of angles, returning a new array that is
+# re-centered from -pi to pi
 #################################################################
 def arraymod2pi0(x):
     """
     input:
-        x = array of angles in radians
+        x, 1 or 2-d np array, angles in radians
     output:
-        array of angles in radians re-centered from -pi to pi
+        mx, 1 or 2-d np array of angles in radians re-centered from 0-2pi
     """
-    imax = len(x)
+    mx = x.copy()
+    oned = False
+    #make it a 2-d array if it is 1-d
+    if(len(mx.shape)<2):
+        oned = True
+        mx = np.array([mx])
+    imax = mx.shape[0]
     for i in range (0,imax):
-        while (x[i] > np.pi):
-            x[i] += -2. * np.pi
-        while (x[i] < -np.pi):
-            x[i] += 2. * np.pi
+        mx[i] = np.mod(mx[i]+np.pi,2.*np.pi) - np.pi 
+    #if needed, turn it back into a 1-d array
+    if(oned):
+        mx = mx[0]
+    return mx
 
-    return x
-
-
-def arraymod360(x):
-    """
-    input:
-        x = array of angles in degrees
-    output:
-        array of angles in degrees recentered 0-360
-    """
-    imax = len(x)
-    for i in range(0, imax):
-        while (x[i] > 360):
-            x[i] += -360
-        while (x[i] < 0.):
-            x[i] += 360
-
-    return x
 
 
 ##############################
@@ -427,7 +521,7 @@ def read_sa_by_hash(obj_hash = '', archivefile='',tmin=None,tmax=None,center='ba
 # reads the simulation archive files into barycentric orbital 
 # element arrays
 #################################################################
-def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=None,tmax=None,center='bary'):
+def read_sa_for_sbody(des='', archivefile=None, clones=0,tmin=None,tmax=None,center='bary'):
     """
     Reads the simulation archive file produced by the run_reb
     routines for the small body's orbital evolution
