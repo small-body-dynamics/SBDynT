@@ -88,8 +88,11 @@ def writelog(logfile,logmessage):
         logfile, bool or string
         logmessage, string
     '''
-    with open(logfile,"a") as f:
-        f.write(logmessage)
+    if(logfile=='screen'):
+        print(logmessage)
+    else:
+        with open(logfile,"a") as f:
+            f.write(logmessage)
 
 def orbit_solution_file(des):
     '''
@@ -114,7 +117,7 @@ def orbit_solution_file(des):
         pdes = des
 
 
-    orbit_file = "".join(pdes.split()) + datestring + '.pkl'
+    orbit_file = "".join(pdes.split()) + "-" + datestring + '.pkl'
 
     return orbit_file
 

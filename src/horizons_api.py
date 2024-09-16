@@ -32,7 +32,7 @@ def query_horizons_planets(obj=None, epoch=2459580.5):
 
     flag = 0
 
-    if(obb == None):
+    if(obj == None):
         print("A planet name must be provided")
         print("horizons_api.query_horizons_planets failed")
         return flag, 0., 0., [0.,0.,0.], [0.,0.,0.]
@@ -165,7 +165,7 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
     flag = 0
     if(cloning_method == 'find_3_sigma'):
         find_3_sigma=True
-    else
+    else:
         find_3_sigma=False
 
     if(not cloning_method == 'find_3_sigma' and not cloning_method == 'Gaussian'):
@@ -181,7 +181,7 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-        logfile = datadir + logfile
+        logfile = datadir + '/' + logfile
 
     pdes, destype = tools.mpc_designation_translation(des)
 
@@ -237,9 +237,9 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
     if(save_sbdb):
         if(save_sbdb == True):
             orbit_file = tools.orbit_solution_file(des)
-            orbit_file = datadir + orbit_file
+            orbit_file = datadir + '/' + orbit_file
         else:
-            orbit_file = datadir + save_sbdb
+            orbit_file = datadir + '/' + save_sbdb
         try:
             with open(orbit_file, "wb") as f:
                 dump(obj, f)

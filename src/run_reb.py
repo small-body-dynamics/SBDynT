@@ -2,6 +2,7 @@ import rebound
 import numpy as np
 # local
 import horizons_api
+import tools
 from datetime import datetime
 
 
@@ -187,7 +188,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-        logfile = datadir + logfile
+        logfile = datadir + '/' +logfile
 
 
     # make sure planets is a list and make all planet names lowercase
@@ -224,7 +225,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         return flag, 0., sim
     
     if(logfile):
-        logmessage = "simulation epoch: " + epoch + "\n"
+        logmessage = "simulation epoch: " + str(epoch) + "\n"
         tools.writelog(logfile,logmessage)
 
 
@@ -261,10 +262,10 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des)
-            ic_file = datadir + ic_file
+            ic_file = datadir + '/'  +ic_file
             sim.save_to_file(ic_file)
         else:
-            ic_file = datadir + saveic
+            ic_file = datadir + '/' +saveic
         sim.save_to_file(ic_file)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
@@ -273,7 +274,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
 
     if(cloning_method=='Gaussian'):
         return 1, epoch, sim
-    else
+    else:
         return 1, epoch, sim, weights
 
 def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
@@ -310,7 +311,7 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des[0])
-        logfile = datadir + logfile
+        logfile = datadir + '/' +logfile
 
     if(logfile):
         logmessage = "simulation epoch: " + epoch + "\n"
@@ -373,10 +374,10 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des[0])
-            ic_file = datadir + ic_file
+            ic_file = datadir + '/' +ic_file
             sim.save_to_file(ic_file)
         else:
-            ic_file = datadir + saveic
+            ic_file = datadir + '/' +saveic
         sim.save_to_file(ic_file)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
@@ -422,13 +423,13 @@ def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
     """
     if(archivefile==None):
         archivefile = tools.archive_file_name(des)
-        archivefile = datadir + archivefile
+        archivefile = datadir + '/' +archivefile
     else:
-        archivefile = datadir + archivefile
+        archivefile = datadir + '/' +archivefile
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-        logfile = datadir + logfile
+        logfile = datadir + '/' +logfile
 
 
     #check for integrator choice and set any required extra parameters
@@ -494,13 +495,13 @@ def initialize_simulation_from_simarchive(sim, des, archivefile=None,
 
     if(archivefile==None):
         archivefile = tools.archive_file_name(des)
-        archivefile = datadir + archivefile
+        archivefile = datadir + '/' +archivefile
     else:
-        archivefile = datadir + archivefile
+        archivefile = datadir + '/' +archivefile
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-        logfile = datadir + logfile
+        logfile = datadir + '/' +logfile
 
 
     if(sim.N > 0):
