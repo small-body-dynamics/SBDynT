@@ -131,8 +131,9 @@ dmypy.json
 
 
 #Large files
-*series.csv
 *.bin
+#keep initial conditions binary files as examples
+!*-ic.bin
 *.h5
 
 #Misc

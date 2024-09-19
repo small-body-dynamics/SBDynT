@@ -12,7 +12,7 @@ def add_planets(sim, planets=['all'],
     inputs:
         sim: empty rebound simulation instance
         planets (optional): string list, list of planet names - defaults to all
-        epoch (optional): float, epoch in JD, defaults to Jan 1, 2022\        
+        epoch (optional): float, epoch in JD, defaults to Jan 1, 2022       
     outputs:
         flag: integer, 0 if failed, 1 if successful
         sim: rebound simulation instance with sun and planets added
@@ -24,7 +24,6 @@ def add_planets(sim, planets=['all'],
         svy: float, cartesian velocity correction for missing perturbers (au/yr)
         svz: float, cartesian velocity correction for missing perturbers (au/yr)
     """
-
     flag = 0
 
     #check to see if the sim already has particles in it
@@ -136,7 +135,7 @@ def add_planets(sim, planets=['all'],
 
 
 def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='Gaussian',
-                          datadir='./', saveic=False, logfile=False, save_sbdb=False):
+                          datadir='', saveic=False, logfile=False, save_sbdb=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
@@ -156,7 +155,8 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
                            (default) if False nothing is saved
         logfile (optional): boolean or string; 
                             if True:  will save some messages to adefault log file name
-                            or to a file with the name equal to the string passed
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
                             (default) if False nothing is saved
         save_sbdb (optional): boolean or string; 
                            if True:  will save a pickle file with the results of the 
@@ -188,6 +188,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):        
         logfile = datadir + '/' +logfile
 
 
@@ -262,10 +263,10 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des)
-            ic_file = datadir + '/'  +ic_file
-            sim.save_to_file(ic_file)
         else:
-            ic_file = datadir + '/' +saveic
+            ic_file = saveic
+        if(datadir):
+            ic_file = datadir + '/'  +ic_file
         sim.save_to_file(ic_file)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
@@ -278,7 +279,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         return 1, epoch, sim, weights
 
 def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
-                                   datadir='./', saveic=False, logfile=False):
+                                   datadir='', saveic=False, logfile=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
@@ -293,7 +294,8 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
                            (default) if False nothing is saved
         logfile (optional): boolean or string; 
                             if True:  will save some messages to adefault log file name
-                            or to a file with the name equal to the string passed
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
                             (default) if False nothing is saved
         
     outputs:
@@ -311,6 +313,7 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des[0])
+    if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' +logfile
 
     if(logfile):
@@ -374,10 +377,10 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des[0])
-            ic_file = datadir + '/' +ic_file
-            sim.save_to_file(ic_file)
         else:
-            ic_file = datadir + '/' +saveic
+            ic_file = saveic
+        if(datadir):
+            ic_file = datadir + '/' +ic_file
         sim.save_to_file(ic_file)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
@@ -386,14 +389,15 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
     return 1, epoch, sim
 
 
-def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
+def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
                    deletefile=False,integrator='mercurius',
-                   datadir='./', logfile=False):
+                   datadir='', logfile=False):
     """
     run a simulation saving to a simulation archive every tout
     inputs:
         sim (rebound simulation instance): initialized with all the
             planets and small bodies
+        des: string or list of strings, small body designation or list of designations            
         tmax (float; years): simulation stopping time
         tout (float; years): interval for saving simulation outputs to
             the simulation archive file
@@ -413,7 +417,8 @@ def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
             function; defaults to the current directory   
         logfile (optional): boolean or string; 
             if True:  will save some messages to adefault log file name
-            or to a file with the name equal to the string passed
+            or to a file with the name equal to the string passed or
+            to the screen if 'screen' is passed 
             (default) if False nothing is saved
                           
     outputs:
@@ -421,14 +426,26 @@ def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
         sim (rebound simulation instance): contains the full simulation
             state at tmax
     """
+    flag = 0
     if(archivefile==None):
+        if(des == None):
+            print("You must provide either an archivefile name or a designation ")
+            print("that can be used to generate a default archivefile name")
+            print("failed at run_reb.run_simulation")
+            return flag, sim
         archivefile = tools.archive_file_name(des)
-        archivefile = datadir + '/' +archivefile
-    else:
+    
+    if(datadir):
         archivefile = datadir + '/' +archivefile
 
     if(logfile==True):
+        if(des == None):
+            print("You must provide either a logfile name (or logfile='screen') or ")
+            print("a designation that can be used to generate a default logfile name")
+            print("failed at run_reb.run_simulation")
+            return flag, sim        
         logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' +logfile
 
 
@@ -453,18 +470,20 @@ def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
     sim.save_to_file(archivefile, interval=tout,
                      delete_file=deletefile)
     if(logfile):
-        logmessage = "Running " + des + " from " + tmin + "to " + tmax +" years \n"
-        logmessage +="using " + integrator + " outputting every " + tout+" years \n"
+        logmessage = "Running " + des + " from " + str(tmin) + " to " + str(tmax) +" years \n"
+        logmessage +="using " + integrator + " outputting every " + str(tout) +" years \n"
+        logmessage += "to simulation archivefile " + archivefile + "\n"
         now = datetime.now()
-        logmessage +="starting at " + now + "\n"
+        logmessage +="starting at " + str(now) + "\n"
         tools.writelog(logfile,logmessage)
+        logmessage=''
 
     #run until tmax
     sim.integrate(tmax)
 
     if(logfile):
         now = datetime.now()
-        logmessage +="finishing at " + now + "\n"
+        logmessage ="finishing at " + str(now) + "\n"
         tools.writelog(logfile,logmessage)
 
     flag = 1
@@ -472,59 +491,158 @@ def run_simulation(sim, des, tmax=0, tout=0, archivefile=None,
     return flag, sim
 
 
-def initialize_simulation_from_simarchive(sim, des, archivefile=None,
-                                          datadir='./', logfile=False):
+def initialize_simulation_from_simarchive(des=None, archivefile=None,
+                                          datadir='', logfile=False):
     """
     read in a simulation archive to initialize a simulation instance
     inputs:
-        sim (rebound simulation instance): must be empty
-        archivefile (str; optional): name/path for the simulation
-            archive file that rebound will generate            
+        des: string or list of strings, small body designation or list of designations
+        archivefile (str; optional): name/path for the simulation archive file that 
+            you want to generate the rebound simulation from
+            If it is not provided, a default file name will be searched for
         datadir (optional): string, path for saving any files produced in this 
             function; defaults to the current directory   
         logfile (optional): boolean or string; 
             if True:  will save some messages to a default log file name
-            or to a file with the name equal to the string passed
+            or to a file with the name equal to the string passed or
+            to the screen if 'screen' is passed 
             (default) if False nothing is saved
     outputs:
-        flag (int): 0 if something went wrong, 1 if sucessful
+        flag (int): 0 if something went very wrong, 1 if successful
+                    2 if only some of the exected small bodies were found
         sim (rebound simulation instance): contains the simulation
             state in the last snapshot of the archivefile
+        clones (int): number of clones of "des" in the simulation
     """
     flag = 0
 
-    if(archivefile==None):
-        archivefile = tools.archive_file_name(des)
-        archivefile = datadir + '/' +archivefile
-    else:
-        archivefile = datadir + '/' +archivefile
+    if(des == None):
+        print("The designation of one or more small bodies must be provided")
+        print("run_reb.initialize_simulation_from_simarchive failed")
+        return flag, None, 0
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' +logfile
+    logmessage = ''
 
+    #try all the potential default file names if the archive file is not 
+    #specified
+    if(archivefile==None):
+        archivefile = tools.archive_file_name(des)
+        if(datadir):
+            archivefile = datadir + '/' +archivefile
 
-    if(sim.N > 0):
-        print("run_reb.initialize_simulation_from_simarchive failed")
-        print("This rebound simulation instance passed to the routine")
-        print("already has particles in it!")
-        print("can only accept an empty rebound simulation instance")
-        return flag, sim
+        try:
+            sim = rebound.Simulation(archivefile)
+        except:
+            #that didn't work, see if there's a standard initial conditions file
+            archivefile2 = tools.ic_file_name(des)
+            if(datadir):
+                archivefile2 = datadir + '/' +archivefile2
+            try:
+                sim = rebound.Simulation(archivefile2)
+            except RuntimeError:
+                print("run_reb.initialize_simulation_from_simarchive failed")
+                print("couldn't read the simulation archive file from either default: ")
+                print(archivefile)
+                print(archivefile2)
+                return flag, None, 0
 
-    try:
-        sim = rebound.Simulation(filename)
-    except RuntimeError:
-        print("run_reb.initialize_simulation_from_simarchive failed")
-        print("couldn't read the simulation archive file")
-        return flag, sim
+    else:
+        #try the specified archive file
+        if(datadir):
+            archivefile = datadir + '/' +archivefile
+        try:
+            sim = rebound.Simulation(archivefile)
+        except RuntimeError:
+            print("run_reb.initialize_simulation_from_simarchive failed")
+            print("couldn't read the simulation archive file: ")
+            print(archivefile)
+            return flag, None, 0
 
     if(logfile):
         time = sim.t
-        logmessage = "Loaded integration for " + des + " from " + archivefile + "\n"
-        logmessage = "simulation is at time " + time + "\n";
-        logmessage +="integrator is " + sim.integrator + " years \n"
+        logmessage += "Loaded integration for " + str(des) + " from " + archivefile + "\n"
+        logmessage += "simulation is at time " + str(time) + " years\n";
+        logmessage +="integrator is " + sim.integrator + "\n"
         tools.writelog(logfile,logmessage)
+        logmessage = ''
 
+
+    ntp = sim.N - sim.N_active
+    #check to make sure the expected object(s) are in the file:
+    nfound = 0
+    #first if we are doing a list of objects
+    if(type(des) is list):
+        clones = 0
+        for d in des:
+            nfound+=1
+            try:
+                p = sim.particles[str(d)]
+            except:
+                print("failed to find the following object in the simulation:")
+                print(str(d))
+                logmessage+= str(d) + " not in the simulation\n"
+                nfound+=-1
+        if(nfound == 0):
+            print("run_reb.initialize_simulation_from_simarchive failed")
+            print("couldn't find any of the small bodies in the simulation from: ")
+            print(archivefile)
+            if(logfile):
+                logmessage+="couldn't find any of the small bodies in the simulation\n"
+                tools.writelog(logfile,logmessage)
+            return flag, None, 0
+        elif(nfound < ntp):
+            flag = 2
+            if(logfile):
+                tools.writelog(logfile,logmessage)
+            return flag, sim, clones
+        else:
+            flag = 1
+            if(logfile):
+                tools.writelog(logfile,logmessage)            
+            return flag, sim, clones
+
+    else:
+        clones = ntp-1
+        nfound+=1
+        try:
+            p = sim.particles[str(des)]
+        except:
+            print("failed to find the best-fit in the simulation")
+            logmessage+="Failed to find best-fit of " + str(des) + " in the simulation\n"
+            nfound+=-1
+        for i in range(1,ntp):
+            sbhash = str(des) + '_' + str(i)
+            nfound+=1
+            try:
+                p = sim.particles[sbhash]
+            except:
+                print("missing clone %d from the simulation" % j)
+                logmessage+="missing clone " + str(j) + "from the simulation\n"
+                n_found+=-1
+
+    if(nfound == 0):
+        print("run_reb.initialize_simulation_from_simarchive failed")
+        print("couldn't find any of the small bodies in the simulation from: ")
+        print(archivefile)
+        if(logfile):
+            logmessage+="couldn't find any of the small bodies in the simulation\n"
+            tools.writelog(logfile,logmessage)
+        return flag, None, 0
+    elif(nfound < ntp):
+        flag = 2
+        if(logfile):
+            logmessage+="some of the small bodies were missing\n"            
+            tools.writelog(logfile,logmessage)
+        return flag, sim, clones
+    
+    #everything went as expected
     flag = 1
-
-    return flag, sim
+    logmessage+="Found " + str(des) + " and " + str(clones) + " clones in the simulation\n"
+    if(logfile):
+        tools.writelog(logfile,logmessage)            
+    return flag, sim, clones
+    

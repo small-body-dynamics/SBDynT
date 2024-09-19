@@ -117,7 +117,7 @@ def query_horizons_planets(obj=None, epoch=2459580.5):
 
 
 def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
-                      logfile=False, save_sbdb=False, datadir='./'):
+                      logfile=False, save_sbdb=False, datadir=''):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -136,7 +136,8 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
                            Guassian manner
         logfile (optional): boolean or string; 
                             if True:  will save some messages to adefault log file name
-                            or to a file with the name equal to the string passed
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
                             (default) if False nothing is saved
         save_sbdb (optional): boolean or string; 
                            if True:  will save a pickle file with the results of the 
@@ -181,6 +182,7 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' + logfile
 
     pdes, destype = tools.mpc_designation_translation(des)
@@ -237,9 +239,12 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
     if(save_sbdb):
         if(save_sbdb == True):
             orbit_file = tools.orbit_solution_file(des)
-            orbit_file = datadir + '/' + orbit_file
         else:
-            orbit_file = datadir + '/' + save_sbdb
+            orbit_file = save_sbdb
+
+        if(datadir):
+            orbit_file = datadir + '/' + orbit_file
+
         try:
             with open(orbit_file, "wb") as f:
                 dump(obj, f)
