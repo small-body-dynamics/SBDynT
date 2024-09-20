@@ -411,12 +411,15 @@ def mpc_designation_translation(obj):
 # reads the simulation archive files into barycentric orbital 
 # element arrays by hash
 #################################################################
-def read_sa_by_hash(obj_hash=None, archivefile=None,tmin=None,tmax=None,center='bary'):
+def read_sa_by_hash(obj_hash=None, archivefile=None, datadir='',
+                    tmin=None,tmax=None,center='bary'):
     """
     Reads the simulation archive file produced by the run_reb
     routines
         obj_hash (str): hash of the simulation particle
         archivefile (str): path to rebound simulation archive
+        datadir (optional): string, path for where files are stored,
+            defaults to the current directory
         tmin (optional, float): minimum time to return (years)
         tmax (optional, float): maximum time to return (years)
             if not set, the entire time range is returned
@@ -442,6 +445,10 @@ def read_sa_by_hash(obj_hash=None, archivefile=None,tmin=None,tmax=None,center='
         print("tools.read_sa_by_hash failed")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
     
+
+    if(datadir):
+        archivefile = datadir + "/" + archivefile
+
     #read the simulation archive and return the orbit of the
     #desired particle or planet with the provided hash
     try:
@@ -620,10 +627,18 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
         tmax = tmin
         tmin = temp
 
+    ntp_max = sa[0].N - sa[0].N_active
+    
     if(clones==None):
-        ntp = sim.N - sim.N_active
+        ntp = ntp_max
     else:
         ntp = clones+1
+        if(ntp > ntp_max):
+            print("Warning! the number of clones in the simulation archive is smaller than")
+            print("the number of clones specfied by the user! Resetting the number of clones.")
+            clones = ntp_max - 1
+            ntp = npt_max
+            flag = 2
     
     a = np.zeros([ntp,nout])
     e = np.zeros([ntp,nout])
@@ -770,7 +785,7 @@ def read_sa_for_sbody_cartesian(des=None, archivefile=None, clones=None,
         tmin = temp
 
     if(clones==None):
-        ntp = sim.N - sim.N_active
+        ntp = sa[0].N - sa[0].N_active
     else:
         ntp = clones+1
 
@@ -811,10 +826,10 @@ def read_sa_for_sbody_cartesian(des=None, archivefile=None, clones=None,
 
         for j in range(0,ntp):
             #the hash format for clones
-            tp_hash = sbody + "_" + str(j)
+            tp_hash = str(des) + "_" + str(j)
             #except the best fit is just the designation:
             if(j==0):
-                tp_hash = sbody
+                tp_hash = str(des)
             try:
                 p = sim.particles[tp_hash]
             except:
@@ -890,6 +905,9 @@ def read_sa_by_hash_cartesian(obj_hash=None, archivefile=None, datadir='',
         print("A simulation archive file must be provided as archivefile")
         print("tools.read_sa_for_sbody_cartesian failed")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+
+    if(datadir):
+        archivefile = datadir + "/" + archivefile
 
     try:
         sa = rebound.Simulationarchive(archivefile)
@@ -1127,9 +1145,8 @@ def calc_rotating_frame(des=None,planet=None, archivefile=None,
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
     if(archivefile==None):
-        archivefile = tools.archive_file_name(des)
-        archivefile = datadir + '/' +archivefile
-    else:
+        archivefile = archive_file_name(des)
+    if(datadir):
         archivefile = datadir + '/' +archivefile
 
     planets=['mercury', 'venus', 'earth', 'mars',
@@ -1143,12 +1160,20 @@ def calc_rotating_frame(des=None,planet=None, archivefile=None,
 
     #read the planet orbit for the necessary rotation information
     plflag, apl,epl,ipl,nodepl,aperipl,mapl,t = \
-        read_sa_by_hash(obj_hash=planet, archivefile=archivefile, datadir=datadir,
+        read_sa_by_hash(obj_hash=planet, archivefile=archivefile,
                         tmin=tmin,tmax=tmax)
 
     if(not plflag):
         print("tools.calc_rotating_frame failed")
         print("couldn't read in planet's orbital history")
+        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
+
+    tpflag, x, y, z, vx, vy, vz, t = \
+        read_sa_for_sbody_cartesian(des=des, archivefile=archivefile,
+                                    clones=clones,tmin=tmin,tmax=tmax)
+    if(not tpflag):
+        print("tools.calc_rotating_frame failed")
+        print("couldn't read in small body's cartesian positions")
         return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
@@ -1160,13 +1185,6 @@ def calc_rotating_frame(des=None,planet=None, archivefile=None,
         clones = tsim.N - tsim.N_active - 1
     tsim = None
 
-    tpflag, x, y, z, vx, vy, vz, t = \
-        read_sa_for_sbody_cartesian(des=des, archivefile=archivefile,datadir=datadir,
-                                    clones=clones,tmin=tmin,tmax=tmax)
-    if(not tpflag):
-        print("tools.calc_rotating_frame failed")
-        print("couldn't read in small body's cartesian positions")
-        return 0,np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1),np.zeros(1)
 
 
     nout=len(t)

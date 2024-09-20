@@ -13,6 +13,10 @@ import warnings
 warnings.filterwarnings("ignore", message="You have to reset function pointers after creating a reb_simulation struct with a binary file.")
 warnings.filterwarnings("ignore", message="File in use for Simulationarchive already exists. Snapshots will be appended.")
 
+# Globally disable a syntaxwarning that has to do with generating latex-friendly plot labele
+#warnings.filterwarnings("ignore", category=SyntaxWarning)
+
+
 class small_body:
     # class that is returned by the main sbdynt function
     # it contains all of the calculated dynamical parameters and 
