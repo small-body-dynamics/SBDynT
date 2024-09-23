@@ -194,7 +194,7 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
     nrows = 3
     ncol = 3
 
-    fig = plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 10))
     plt.subplots_adjust(left=None, bottom=None, right=None, 
                         top=0.92, wspace=0.35, hspace=0.35)
     
