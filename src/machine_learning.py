@@ -36,17 +36,87 @@ class TNO_ML_outputs:
         # parameters related to the classifier
         self.classes_dictionary = None
         self.class_probs = None
-        self.classification = None
-        self.confidence = None
+        
+        #clone-by-clone predicted classification and 
+        #confidence level for that classification
+        self.clone_classification = None
+        self.clone_confidence = None
 
-    def most_probable_class(self):
-        # find the most probable class and associated confidence
-        n = np.argmax(self.class_probs[0])
-        self.classification = self.classes_dictionary[n]
-        self.confidence = self.class_probs[n]
+        self.most_common_class = None
+        self.fraction_most_common_class = None
+
+    def determine_clone_classification(self):
+        # find the most probable class and associated confidence on a 
+        # clone-by-clone basis
+        # make an empty list and empty array
+        self.clone_classification = (self.clones+1)*[None]
+        self.clone_confidence = np.zeros(self.clones+1)
+        for n in range (self.clones+1):
+            cn = np.argmax(self.class_probs[n])
+            self.clone_classification[n] = self.classes_dictionary[cn]
+            self.clone_confidence[n] = self.class_probs[n,cn]
+
+            #do checks for the scattering/detached boundary
+            if(self.clone_classification[n] == 'class-det'):
+                #check if it meets the scattering requirement
+                if(self.features.a_delta[n] > 1.5):
+                    self.clone_classification[n] = 'scattering'
+                elif(self.features.e_mean[n] < 0.24):
+                    if(self.features.a_mean[n] < 39.4):
+                        self.clone_classification[n] = 'classical-inner'
+                    elif(self.features.a_mean[n] < 47.7):
+                        self.clone_classification[n] = 'classical-main'
+                    else:
+                        self.clone_classification[n] = 'classical-outer'
+                else:
+                    self.clone_classification[n] = 'detached'
+            elif(self.clone_classification[n] == 'scattering'):
+                #check if it meets the scattering requirement
+                if(self.features.a_delta[n] <= 1.5):
+                    self.clone_classification[n] = 'detached'
+                    if(self.features.e_mean[n] < 0.24):
+                        if(self.features.a_mean[n] < 39.4):
+                            self.clone_classification[n] = 'classical-inner'
+                        elif(self.features.a_mean[n] < 47.7):
+                            self.clone_classification[n] = 'classical-main'
+                        else:
+                            self.clone_classification[n] = 'classical-outer'
+
         return
 
 
+    def determine_most_common_classification(self):
+        classes = list(set(self.clone_classification))
+        rate = np.zeros(len(classes))
+        for i in range (len(classes)):
+            rate[i] = self.clone_classification.count(classes[i])
+        mp = np.argmax(rate)
+        self.most_common_class = classes[mp]
+        self.fraction_most_common_class = float(rate[mp])/float(self.clones+1)
+        return
+
+    def print_results(self):
+
+        print("Most common classification: %s\n" % self.most_common_class)
+        percentage = 100*self.fraction_most_common_class
+        print("Shared by %f percent of clones\n\n" % percentage)
+
+        nclas = len(self.classes_dictionary)
+        print("Clone number, most probable G08 class, probability of that class, ",end ="")
+        print("probability of ", end ="")
+        for n in range(nclas):
+            print("%s, " % self.classes_dictionary[n],end ="")
+        print("\n",end ="")
+        format_string = "%d, %s, "
+        for n in range(nclas-1):
+            format_string+="%e, "
+        format_string+="%e,\n"
+        for n in range(0,self.clones+1):
+            print("%d, %s, %e, " % (n,self.clone_classification[n], 
+                                    self.clone_confidence[n]),end ="")
+            for j in range(nclas):
+                print("%e, " % self.class_probs[n][j] ,end ="")
+            print("\n",end ="")
 
 
 class TNO_ML_features:
@@ -430,6 +500,15 @@ class TNO_ML_features:
         return features_list
 
 
+    def print_features(self,n):
+        features_list = np.zeros([(self.clones+1),len(self.feature_names)])
+        for t in self.feature_names:
+            flist = self.__getattribute__(t)
+            print(t, ": ", flist[n])
+        return 
+
+
+
 
 def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
         time_short,a_short,ec_short,inc_short,node_short,argperi_short,\
@@ -766,82 +845,122 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
 
 
 
-def setup_and_run_TNO_integration_for_ML(tno='',clones=2,datadir='./',archivefile=None,logfile=None):
+def setup_and_run_TNO_integration_for_ML(des=None, clones=None, datadir='',
+                                         archivefile=None,logfile=False):
     '''
     '''
     flag = 0
 
-    if(clones==2):
-        find_3_sigma=True
-    else:
-        find_3_sigma=False
 
-    iflag, epoch, sim = run_reb.initialize_simulation(planets=['jupiter', 'saturn', 'uranus', 'neptune'],
-                          des=tno, clones=clones, find_3_sigma=find_3_sigma)
+    if(des == None):
+        print("The designation of a TNO must be provided")
+        print("failed at machine_learning.setup_and_run_TNO_integration_for_ML()")
+        return flag, None, None
+
+
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+    else:
+        logf=logfile
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    if(clones==None):
+        #default to the Gladman approach of best fit + 3-sigma clones
+        clones = 2
+        cloning_method = 'find_3_sigma'
+        if(logf):
+            logmessage = "Clones were not specified, so the default behavior is to return\n"
+            logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
+            tools.writelog(logf,logmessage)  
+        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=['outer'],
+                          des=des, clones=clones, cloning_method= cloning_method,
+                          logfile=logfile)
+    else:
+        cloning_method = 'Gaussian'
+        iflag, epoch, sim = run_reb.initialize_simulation(planets=['outer'],
+                          des=des, clones=clones, cloning_method= cloning_method,
+                          logfile=logfile)
 
     if(iflag < 1):
         return flag, None, sim
 
 
-    fflag, features, sim = run_and_MLclassify_TNO(sim,des=tno,clones=clones,datadir=datadir,archivefile=archivefile)
+    fflag, tno_class, sim = run_and_MLclassify_TNO(sim,des=des,clones=clones,datadir=datadir,
+                                                  archivefile=archivefile,deletefile=True,
+                                                  logfile=logfile)
+
     if(fflag < 1):
-        return flag, features, sim
+        return flag, tno_class, sim
 
     flag = 1
-    return flag, features, sim
+    return flag, tno_class, sim
 
 
 
-def run_and_MLclassify_TNO(sim=None, des=None,clones=0, datadir='./', archivefile=None, deletefile=False):
+def run_and_MLclassify_TNO(sim=None, des=None,clones=None, 
+                           datadir='', archivefile=None, deletefile=False,
+                           logfile=False):
     '''
     '''
-    flag = 0
-    #make an empty set of classification outputs 
-    tno_clf = TNO_ML_outputs(clones)
 
-    if(sim==None):
+    if(sim == None):
         print("No initialized rebound simulation provided")
         print("use the function setup_and_run_TNO_integration_for_ML instead or")
         print("initialize the simulation and try again")
         print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_clf, sim
+        return flag, tno_class, sim
 
     if(des == None):
         print("The designation of the small body must be provided")
         print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_clf, sim
+        return flag, tno_class, sim
+
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+    else:
+        logf=logfile
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    flag = 0
+    #make an empty set of classification outputs 
+    tno_class = TNO_ML_outputs(clones)
 
     if(archivefile == None):
         archivefile = tools.archive_file_name(des=des)
-        archivefile = datadir + archivefile
+    if(datadir):
+        archivefile = datadir + "/" + archivefile
 
     #short integration first
     tmin = sim.t
     tmax = sim.t + 0.5e6
     #run the short integration
-    rflag, sim = run_reb.run_simulation(sim,tmax=tmax,tout=50.,filename=archivefile,deletefile=deletefile)
+    rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=50.,archivefile=archivefile,
+                                        deletefile=deletefile, logfile=logfile)
     if(rflag < 1):
         print("The short integration for the TNO machine learning failed")
         print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_clf, sim
+        return flag, None, sim
     #read the short integration
-    rflag, a_short, ec_short, inc_short, node_short, peri_short, ma_short, t_short = tools.read_sa_for_sbody(
-            sbody=des,archivefile=archivefile,nclones=clones, tmin=tmin, tmax=tmax)
+    rflag, a_short, ec_short, inc_short, node_short, peri_short, ma_short, t_short = \
+            tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         print("Unable to read the output for the short integration")
         print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_clf, sim        
         return flag, None, sim
 
     pomega_short = peri_short+ node_short 
     q_short = a_short*(1.-ec_short)
     
-    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile)
+    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = \
+            tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         return flag, None, sim
 
-    rflag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=des, planet='neptune', 
-                                                                    archivefile=archivefile, nclones=clones)
+    rflag, xr, yr, zr, vxr, vyr, vzr, tr = \
+            tools.calc_rotating_frame(des=des,planet='neptune', 
+                                      archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         return flag, None, sim
 
@@ -850,23 +969,30 @@ def run_and_MLclassify_TNO(sim=None, des=None,clones=0, datadir='./', archivefil
     tiss_short = apl/a_short + 2.*np.cos(inc_short)*np.sqrt(a_short/apl*(1.-ec_short*ec_short))
 
     #continue at lower resolution to 10 Myr
-    rflag, sim = run_reb.run_simulation(sim,tmax=10e6,tout=1000.,filename=archivefile,deletefile=False)
+    tmax = sim.t + 9.5e6
+    tmin = sim.t + 0.001e6 
+    rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=1000.,archivefile=archivefile,
+                                        deletefile=False,logfile=logfile)
     if(rflag < 1):
         return flag, None, sim 
 
     #read the new part of the integration
-    rflag, a, ec, inc, node, peri, ma, t = tools.read_sa_for_sbody(sbody=des,archivefile=archivefile,nclones=clones,tmin=0.501e6)
+
+    rflag, a, ec, inc, node, peri, ma, t = \
+            tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         return flag, None, sim    
     pomega = peri+ node 
 
-    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=0.501e6)
+    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = \
+            tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         return flag, None, sim
 
     q = a*(1.-ec)
-    rflag, xr, yr, zr, vxr, vyr, vzr, tr = tools.calc_rotating_frame(sbody=des, planet='neptune', 
-                                                                    archivefile=archivefile, nclones=clones,tmin=0.501e6)
+    rflag, xr, yr, zr, vxr, vyr, vzr, tr = \
+            tools.calc_rotating_frame(des=des,planet='neptune',archivefile=archivefile,
+                                      clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         return flag, None, sim
 
@@ -891,17 +1017,33 @@ def run_and_MLclassify_TNO(sim=None, des=None,clones=0, datadir='./', archivefil
     
 
 
-    fflag, features = calc_ML_features(t_long,a_long,ec_long,inc_long,node_long,peri_long,
+    fflag, tno_class.features = calc_ML_features(t_long,a_long,ec_long,inc_long,node_long,peri_long,
                                    pomega_long,q_long,rrf_long,phirf_long,tiss_long,
                                     t_short,a_short,ec_short,inc_short,
                                     node_short,peri_short,pomega_short,q_short,
                                     rrf_short,phirf_short,tiss_short,clones=clones)
     if (fflag<1):
-        return flag, features, sim
+        print("failed to calculate data features")
+        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        return flag, None, sim
+
+    cflag, classifier, tno_class.classes_dictionary = initialize_TNO_classifier()
+    if(cflag<1):
+        print("failed to initialize machine learning classifier")
+        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        return flag, None, sim
+
+
+    #apply the classifier
+    tno_class.class_probs = classifier.predict_proba(tno_class.features.return_features_list())
+
+    #run the minor corrections and assign clone-by-clone and most common classes
+    tno_class.determine_clone_classification()
+    tno_class.determine_most_common_classification()
 
    
     flag = 1
-    return flag, features, sim
+    return flag, tno_class, sim
 
 
 
