@@ -268,13 +268,13 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
     #outputs =  np.array(np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])])
     #outputs =  np.array([np.nanmedian(a),np.nanmedian(e),np.nanmedian(np.sin(inc)),np.nanmedian(a),np.median(ecc_f[pc5:-pc5]),np.nanmedian(sini_f[pc5:-pc5])])
     if debug==True:
-        return [np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,freq1,freq2,spread,freq_dist_lims
+        return [np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,freq1,freq2
     
     return np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])
 
 
 
-def prop_calc(objname, filename='Single',windows=9,objdes=None,debug=False):
+def prop_calc(objname, filename='Single',windows=9,debug=False):
     
     """
     Calculate prop elements of small celestial bodies from simulation archive files, using a given file list of names.
@@ -300,7 +300,7 @@ def prop_calc(objname, filename='Single',windows=9,objdes=None,debug=False):
     """    
 #    print(objname)
     try:       
-        fullfile = '../data/'+filename+'/'+str(objname)+'/archive_test_4.bin'
+        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
         print(fullfile)
         archive = rebound.Simulationarchive(fullfile)
         
@@ -458,7 +458,7 @@ def prop_calc(objname, filename='Single',windows=9,objdes=None,debug=False):
     pes = pe_vals(t_init,a_init,p_init,q_init,h_init,k_init,g_arr,s_arr,small_planets_flag,debug)    
     
     if debug == True:
-        return init_vals
+        return pes
 
     error_list = np.zeros((windows,3))
     ds = int(len(t_init)/(windows+1))
