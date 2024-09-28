@@ -7,7 +7,7 @@ import run_reb
 import horizons_api
 import tools
 
-def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
+def integrate(objname, tmax=None, tout=None, objtype='Single'):
     """
     Integrate the given archive.bin file which has been prepared.
 
@@ -28,6 +28,17 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
         # Load the simulation from the archive
         print(file)
         sim2 = rebound.Simulation(file + "/archive_init.bin")
+        try:
+            earth = sim2.particles['earth']
+            small_planets_flag = True
+            if tmax == None:
+                tmax = -1e7
+                tout = 5e2
+        except:
+            if tmax == None:
+                tmax = -1e8
+                tout = 5e3
+            small_planets_flag = False
         
         # Uncomment if you need to print simulation information
         # print(sim2, sim2.particles)
@@ -37,7 +48,7 @@ def integrate(objname, tmax=1e7, tout=1e3, objtype='Single'):
         raise ValueError(f"Failed to integrate {objtype} {objname}. Error: {error}")
 
     # Rest of the integration code
-
+    
     try:
     	sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
     except:
@@ -73,14 +84,15 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python integrate.py <Filename>")
         sys.exit(1)
-
+    from datetime import datetime
+    begin = datetime.now()
     objtype = str(sys.argv[1])
-    print(objtype)
+    #print(objtype)
     if objtype == "Single":
         objname = str(sys.argv[2])
-        print(objname)
+        #print(objname)
         sbody = objname
-        integrate(objname, objtype=objtype, tmax=1e7,tout=1e2)
+        integrate(objname, objtype=objtype)
         # Add specific handling for Generic type if needed
     else:
         # Load data file for the given objtype
@@ -90,4 +102,4 @@ if __name__ == "__main__":
         for i in range(len(names_df)):
             print('Obj #',i)
             integrate_multi(objtype)
-            
+    print(datetime.now()-begin)

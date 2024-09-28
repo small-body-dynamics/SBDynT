@@ -9,6 +9,10 @@ import schwimmbad
 import run_reb
 import json
     
+def autocorr(x):
+    result = numpy.correlate(x, x, mode='full')
+    return result[result.size//2:]    
+
 def integrate_chaos(objname, tmax1=5e4, tout1=1e3, tmax2=1e6, tout2=2e4, objtype='Single'):
     """
     Integrate the given archive.bin file which has been prepared.
@@ -67,18 +71,18 @@ def integrate_chaos(objname, tmax1=5e4, tout1=1e3, tmax2=1e6, tout2=2e4, objtype
         #print('init megno')
         #print(sim2.integrator
         
-        sim1 = run_reb.run_simulation(sim2, tmax=tmax1, tout=tout1, filename=file + "/archive_chaos_short.bin", deletefile=True,integrator=sim2.integrator)
+        sim1 = run_reb.run_simulation(sim2, tmax=tmax1, tout=tout1, filename=file + "/archive_chaos_short.bin", deletefile=False,integrator=sim2.integrator)
         print('short made')
         
         
         sim4 = rebound.Simulation(file + "/archive_init.bin")
 
-        print(clones_flag)
+        #print(clones_flag)
         if clones_flag:
             print(objname)
             sim4.integrator = 'whfast'
             #sim4.init_megno()
-            sim3 = run_reb.run_simulation(sim4, tmax=tmax2, tout=tout2, filename=file + "/archive_chaos_long.bin", deletefile=True,integrator=sim2.integrator)
+            sim3 = run_reb.run_simulation(sim4, tmax=tmax2, tout=tout2, filename=file + "/archive_chaos_long.bin", deletefile=False,integrator=sim2.integrator)
         # Uncomment if you need to print simulation information
         # print(sim2, sim2.particles)
         
@@ -180,8 +184,9 @@ def calc_chaos(objname,objtype,prop_vals=None):
     #print(prop_vals)
     if prop_vals != None:
         #print('making prop_err and delta')
-        prop_err = [prop_vals[-8]/prop_vals[5],prop_vals[-7],prop_vals[-6]]
-        prop_delta = [prop_vals[-4]/prop_vals[5],prop_vals[-3],prop_vals[-2]]
+        prop_err = np.abs(np.array([prop_vals[-8]/prop_vals[5],prop_vals[-7],prop_vals[-6]]))
+        prop_delta = np.abs(np.array([prop_vals[-4]/prop_vals[5],prop_vals[-3],prop_vals[-2]]))
+
         
     if os.path.exists("../data/"+objtype+"/"+objname+"/archive.bin"):
         sim = rebound.Simulationarchive("../data/"+objtype+"/"+objname+"/archive.bin")
@@ -212,15 +217,30 @@ def calc_chaos(objname,objtype,prop_vals=None):
             #print(hist,hist.sum(),entropy)
             #print(len(sim))
             CloneDist[3] = entropy
+            
+            from scipy import stats
+
+            num=int(len(a)/10)
+            Rs = np.zeros(num)
+            for i in range(num):
+                Rs[i] = stats.pearsonr(a[0:num], a[200+i:num+200+i])[0]
+            ACFI = np.sum(abs(Rs)>0.05)/num
+            #autocorr = autocorr(a)
+            #half = int(len(autocorr)/2)
+            #ACFI = (np.abs(autocorr[half:]) > 0.05).sum()/(len(autocorr)-half)
+            #ACFI_flag = (ACFI < 0.5)
+            
         except:
             CloneDist[3] = 0
+            ACFI = 0
         
     M_flag = (MEGNO > 2.5)
     P_flag = (prop_err[0] > 0.01)
     D_flag = (CloneDist[0] > 0.01)
-    E_flag = (CloneDist[3] < 0.9*3.94)        
+    E_flag = (CloneDist[3] < 0.8*4)        
+    ACFI_flag = (ACFI < 0.5)
         
-    return [MEGNO,CloneDist[0],CloneDist[1],CloneDist[2],CloneDist[3],GreatestDist[0],GreatestDist[1],GreatestDist[2],prop_err[0],prop_err[1],prop_err[2],prop_delta[0],prop_delta[1],prop_delta[2],M_flag,P_flag,D_flag,E_flag]
+    return [str(objname),MEGNO,CloneDist[0],CloneDist[1],CloneDist[2],CloneDist[3],GreatestDist[0],GreatestDist[1],GreatestDist[2],prop_err[0],prop_err[1],prop_err[2],prop_delta[0],prop_delta[1],prop_delta[2],ACFI,M_flag,P_flag,D_flag,E_flag,ACFI_flag]
     
 if __name__ == "__main__":
     
@@ -245,27 +265,30 @@ if __name__ == "__main__":
         des = np.array(names_df['Name'])
         #des = np.array(names_df['Name'][:980])
         
-        #pool.map(run1, des)
+        pool.map(run1, des)
         
         run2 = functools.partial(calc_chaos, objtype=objtype)
         data = pool.map(run2, des)
         
-        chaos_df = pd.DataFrame(data,columns=['MEGNO','Div_RMS_a','Div_RMS_e','Div_RMS_sinI','Info Entropy','Delta_a','Delta_e','Delta_sinI','Prop_RMS_a','Prop_RMS_e','Prop_RMS_sinI','Prop_Delta_a','Prop_Delta_e','Prop_Delta_sinI','MEGNO_flag','Proper_SMA_flag','Clone_SMA_flag','Entropy_flag'])
+        chaos_df = pd.DataFrame(data,columns=['Name','MEGNO','Div_RMS_a','Div_RMS_e','Div_RMS_sinI','Info Entropy','Delta_a','Delta_e','Delta_sinI','Prop_RMS_a','Prop_RMS_e','Prop_RMS_sinI','Prop_Delta_a','Prop_Delta_e','Prop_Delta_sinI','ACFI','MEGNO_flag','Proper_SMA_flag','Clone_SMA_flag','Entropy_flag','AFCI_flag'])
         
         entropy_flag = np.where(chaos_df['Info Entropy'] < 0.9*np.median(chaos_df['Info Entropy']))[0]
         PSMA_flag = np.where(chaos_df['Prop_RMS_a'] > 0.01)[0]
         PSMA_flag = np.where(chaos_df['Div_RMS_a'] > 0.01)[0]
         MEGNO_flag = np.where(chaos_df['MEGNO'] > 2.5)[0]
+        AFCI_flag = np.where(chaos_df['AFCI'] < 0.5)[0]
         
         chaos_df['MEGNO_flag'] = np.zeros(len(data))
         chaos_df['Proper_SMA_flag'] = np.zeros(len(data))
         chaos_df['Entropy_flag'] = np.zeros(len(data))
         chaos_df['Clone_SMA_flag'] = np.zeros(len(data))
+        chaos_df['AFCI_flag'] = np.zeros(len(data))
         
         chaos_df['MEGNO_flag'].iloc[MEGNO_flag] = 1
         chaos_df['Proper_SMA_flag'].iloc[PSMA_flag] = 1
         chaos_df['Clone_SMA_flag'].iloc[PSMA_flag] = 1
         chaos_df['Entropy_flag'].iloc[entropy_flag] = 1
+        chaos_df['AFCI_flag'].iloc[entropy_flag] = 1
         
         
         chaos_df.to_csv('../data/results/'+objtype+'_chaos.csv')

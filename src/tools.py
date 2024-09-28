@@ -438,6 +438,7 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     
     #read the simulation archive and calculate resonant angles
     sa = rebound.Simulationarchive(archivefile)
+    #rot = rebound.Rotation.to_new_axes(newz=sa.angular_momentum())
     nout = len(sa)
     if(nout <1):
         print("tools.read_sa_for_sbody failed")
@@ -462,6 +463,9 @@ def read_sa_for_sbody(sbody = '', archivefile='',nclones=0,tmin=0.,tmax=0.):
     imax = 0
         
     for i,sim in enumerate(sa):
+        #rot = rebound.Rotation.to_new_axes(newz=sim.angular_momentum())
+        #sim.rotate(rot)
+        sim.move_to_hel()
         if tmax > 0:
             if(sim.t < tmin or sim.t > tmax):
             #skip this 
