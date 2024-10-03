@@ -6,6 +6,7 @@ from plotting_scripts import *
 from hard_coded_constants import *
 from add_orbits import *
 from machine_learning import *
+from proper_elements import *
 
 # Globally disable two rebound-specific warnings that come up a lot regarding the 
 # use of simulation archive functions
@@ -30,6 +31,7 @@ class small_body:
         self.planets = None
         self.archivefile = None
         self.tno_ml_outputs = TNO_ML_outputs(self.clones)
+        self.proper_elements = proper_elements(self.clones)
 
 
             

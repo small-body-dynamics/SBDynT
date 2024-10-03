@@ -69,21 +69,20 @@ def plot_aei(des=None, datadir='', archivefile=None,
                 return flag, None
     
     if(len(a.shape)<2):
-        if(True):
         #there aren't any clones
-            if(clones==None):
-                clones=0
-            if(clones > 0):
-                print("warning! plotting_scripts.plot_aei() was asked to plot")
-                print("clones, but there are no clones in the archive file or")
-                print("the provided arrays. Only the best fit will be plotted")
-                clones = 0
-                flag = 2
-            ntp = 1
-            #reshape the arrays since everything below assumes 2-d
-            a = np.array([a])
-            e = np.array([e])
-            inc = np.array([inc])
+        if(clones==None):
+            clones=0
+        if(clones > 0):
+            print("warning! plotting_scripts.plot_aei() was asked to plot")
+            print("clones, but there are no clones in the archive file or")
+            print("the provided arrays. Only the best fit will be plotted")
+            clones = 0
+            flag = 2
+        ntp = 1
+        #reshape the arrays since everything below assumes 2-d
+        a = np.array([a])
+        e = np.array([e])
+        inc = np.array([inc])
     else:
         ntp = a.shape[0]
         if(clones==None):

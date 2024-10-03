@@ -475,12 +475,12 @@ def read_sa_by_hash(obj_hash=None, archivefile=None, datadir='',
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
-        tmin = sa[0].t
-        tmax = sa[-1].t
+        tmin = -1e11
+        tmax = 1e11
     elif(tmin==None):
-        tmin = sa[0].t
+        tmin = -1e11
     elif(tmax == None):
-        tmax = sa[-1].t
+        tmax = 1e11
 
     #correct for backwards integrations
     if(tmax < tmin):
@@ -614,12 +614,12 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
-        tmin = sa[0].t
-        tmax = sa[-1].t
+        tmin = -1e11
+        tmax = 1e11
     elif(tmin==None):
-        tmin = sa[0].t
+        tmin = -1e11
     elif(tmax == None):
-        tmax = sa[-1].t
+        tmax = 1e11
 
     #correct for backwards integrations
     if(tmax < tmin):
@@ -771,14 +771,14 @@ def read_sa_for_sbody_cartesian(des=None, archivefile=None, clones=None,
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
-        tmin = sa[0].t
-        tmax = sa[-1].t
+        tmin = -1e11
+        tmax = 1e11
     elif(tmin==None):
-        tmin = sa[0].t
+        tmin = -1e11
     elif(tmax == None):
-        tmax = sa[-1].t
+        tmax = 1e11
 
-    #correct for backwards integrations
+    #correct for backwards integrations if times were entered wrong
     if(tmax < tmin):
         temp = tmax
         tmax = tmin
@@ -927,12 +927,12 @@ def read_sa_by_hash_cartesian(obj_hash=None, archivefile=None, datadir='',
 
     if(tmin == None and tmax == None):
         #user didn't set these, so we will read the whole thing
-        tmin = sa[0].t
-        tmax = sa[-1].t
+        tmin = -1e11
+        tmax = 1e11
     elif(tmin==None):
-        tmin = sa[0].t
+        tmin = -1e11
     elif(tmax == None):
-        tmax = sa[-1].t
+        tmax = 1e11
 
     #correct for backwards integrations
     if(tmax < tmin):
