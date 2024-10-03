@@ -31,7 +31,7 @@ g_arr = []
 s_arr=[]
 #small_planets_flag=False
 
-def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
+def pe_vals(t,a,p,q,h,k,g_arr,s_arr,small_planets_flag,debug=False):
     
     global g1;global g2;global g3;global g4;global g5;global g6;global g7;global g8    
     global s1;global s2;global s3;global s4;global s6;global s7;global s8
@@ -78,6 +78,29 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
         #sind = np.argmax(np.abs(Ypq[1:])**2)+1
         gind = np.argmax(np.abs(Yhk_win[1:])**2)+1    
         sind = np.argmax(np.abs(Ypq_win[1:])**2)+1
+        
+        temp1 = Yhk_win[gind]
+        temp2 = Ypq_win[sind]
+        Yhk_win[gind] = 0
+        Ypq_win[sind] = 0
+        
+        gind2 = np.argmax(np.abs(Yhk_win[1:])**2)+1    
+        sind2 = np.argmax(np.abs(Ypq_win[1:])**2)+1
+
+        Yhk_win[gind] = temp1
+        Ypq_win[sind] = temp2
+        
+        summax1hk = np.sum(Yhk_win[gind-3:gind+4])
+        summax2hk = np.sum(Yhk_win[gind2-3:gind2+4])
+        
+        summax1pq = np.sum(Ypq_win[gind-3:gind+4])
+        summax2pq = np.sum(Ypq_win[gind2-3:gind2+4])
+        
+        if summax2hk > summax1hk:
+            gind = gind2
+        if summax2pq > summax1pq:
+            sind = sind2
+        
         g = freq[gind]  
         s = freq[sind]
         '''
@@ -99,6 +122,7 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
         # Print the error message
         print(error_message)
         print(error)
+        return[0,0,0]
     
     z1 = (g+s-g6-s6); z2 = (g+s-g5-s7); z3 = (g+s-g5-s6); z4 = (2*g6-g5); z5 = (2*g6-g7); z6 = (s-s6-g5+g6); z7 = (g-3*g6+2*g5)
         
@@ -223,7 +247,7 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
                 minarr = Yhk_copy[secresind1[i]-2*spreads[i]-1:secresind1[i]-spreads[i]-1]
             else:
                 minarr = np.array([(Yhk_copy[secresind1[i]-2*spreads[i]-1:secresind1[i]-spreads[i]-1]),(Yhk_copy[secresind1[i]+spreads[i]+1:secresind1[i]+2*spreads[i]+1])]).astype(float)
-            Yhk_f[secresind1[i]-spreads[i]:secresind1[i]+spreads[i]] = 10**(np.nanmean(np.log10(abs(minarr))))
+            Yhk_f[secresind1[i]-spreads[i]:secresind1[i]+spreads[i]] = 10**(np.nanmedian(np.log10(abs(minarr))))
         else:
             Yhk_f[secresind1[i]] = 0.5+0.5j
                 
@@ -245,7 +269,7 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
                 minarr = Ypq_copy[secresind2[i]-2*spreads[i+len(secresind1)]-1:secresind2[i]-spreads[i+len(secresind1)]-1]
             else:
                 minarr = np.array([(Ypq_copy[secresind2[i]-2*spreads[i+len(secresind1)]-1:secresind2[i]-spreads[i+len(secresind1)]-1]),(Ypq_copy[secresind2[i]+spreads[i+len(secresind1)]+1:secresind2[i]+2*spreads[i+len(secresind1)]+1])]).astype(float)
-            Ypq_f[secresind2[i]-spreads[i+len(secresind1)]:secresind2[i]+spreads[i+len(secresind1)]] = 10**(np.nanmean(np.log10(abs(minarr))))
+            Ypq_f[secresind2[i]-spreads[i+len(secresind1)]:secresind2[i]+spreads[i+len(secresind1)]] = 10**(np.nanmedian(np.log10(abs(minarr))))
         else:
             Ypq_f[secresind2[i]] = 0.5+0.5j
 ######################################################################################################################                
@@ -268,9 +292,11 @@ def pe_vals(t,a,h,k,q,p,g_arr,s_arr,small_planets_flag,debug=False):
     #outputs =  np.array(np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])])
     #outputs =  np.array([np.nanmedian(a),np.nanmedian(e),np.nanmedian(np.sin(inc)),np.nanmedian(a),np.median(ecc_f[pc5:-pc5]),np.nanmedian(sini_f[pc5:-pc5])])
     if debug==True:
-        return [np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,freq1,freq2
+        #return [np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,freq1,freq2
+        return [np.nanmedian(a),np.median(ecc_f[pc5:-pc5]),np.nanmedian(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,h,k,p,q,freq1,freq2,g,s
     
-    return np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])
+    #return np.nanmean(a),np.mean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])
+    return np.nanmean(a),np.median(ecc_f[pc5:-pc5]),np.nanmedian(sini_f[pc5:-pc5])
 
 
 
@@ -300,8 +326,12 @@ def prop_calc(objname, filename='Single',windows=9,debug=False):
     """    
 #    print(objname)
     try:       
-        fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
-        print(fullfile)
+        #fullfile = '../data/'+filename+'/'+str(objname)+'/archive.bin'
+        fullfile = '$HOME/../../../hdd/haumea-data/djspenc/SBDynT_sims/'+filename+'/'+str(objname)+'/archive.bin'
+        home = str(os.path.expanduser("~"))
+        #print(os.listdir(home+'/../../../hdd/haumea-data/djspenc/SBDynT_sims/NesvornyAst/13/'))
+        fullfile=home+'/../../../hdd/haumea-data/djspenc/SBDynT_sims/'+filename+'/'+str(objname)+'/archive.bin'
+        #print(fullfile)
         archive = rebound.Simulationarchive(fullfile)
         
         try:
@@ -455,7 +485,10 @@ def prop_calc(objname, filename='Single',windows=9,debug=False):
     
     #print(t_init)
     #Outputs proper a, proper e, proper sin(inc)
-    pes = pe_vals(t_init,a_init,p_init,q_init,h_init,k_init,g_arr,s_arr,small_planets_flag,debug)    
+    
+    ds = int(len(t_init)/10)
+    pes = pe_vals(t_init[:ds],a_init[:ds],p_init[:ds],q_init[:ds],h_init[:ds],k_init[:ds],g_arr,s_arr,small_planets_flag,debug)
+    #pes = pe_vals(t_init,a_init,p_init,q_init,h_init,k_init,g_arr,s_arr,small_planets_flag,debug)    
     
     if debug == True:
         return pes
@@ -552,7 +585,8 @@ if __name__ == "__main__":
         column_names.append('Delta_e')
         column_names.append('Delta_sinI')
         objname = str(sys.argv[2])
-        fullfile = '../data/'+filename+'/'+objname+'/archive.bin'
+        #fullfile = '../data/'+filename+'/'+objname+'/archive.bin'
+        fullfile = '~/../../../hdd/haumea-data/djspenc/SBDynT_sims/'+filename+'/'+objname+'/archive.bin'
         #archive = rebound.SimulationArchive(fullfile)
         data_line = [np.array(prop_calc(objname,filename,windows))]
         #print(data_line,len(data_line),len(column_names))

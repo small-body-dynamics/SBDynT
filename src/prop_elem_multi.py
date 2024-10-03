@@ -42,7 +42,7 @@ if __name__ == "__main__":
         #j = range(len(names_df))
         #begin = datetime.now()
         data = pool.map(run, objname)
-        print(data,len(data),len(data[0]))
+        #print(data,len(data),len(data[0]))
         column_names = ['Objname','ObsSMA','ObsEcc','ObsSin(Inc)','PropSMA','PropEcc','PropSin(Inc)']
 
         for i in range(windows):
