@@ -25,6 +25,7 @@ tno_default_giant_planets_frequencies = 'tno-giant-planet-frequencies.pkl'
 
 class proper_elements:
     def __init__(self,clones,timeseries=False,nout=0):
+        self.clones = clones
         self.a = np.zeros(clones+1)
         self.e = np.zeros(clones+1)
         self.pomega = np.zeros(clones+1)
@@ -51,9 +52,11 @@ class proper_elements:
             self.filtered_ecc = np.zeros([clones+1,nout])
             self.original_sini = np.zeros([clones+1,nout])
             self.original_ecc = np.zeros([clones+1,nout])
-            
             self.time = np.zeros(nout)
-
+    def print_results(self):
+        print("Clone number, proper a, proper e, proper sini:\n")
+        for n in range(0,self.clones+1):
+            print("%d, %e, %e, %e" % (n,self.a[n], self.e[n], self.sini[n])) 
 
 class planet_frequencies:
     def __init__(self):
@@ -172,6 +175,8 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
                 print("proper_elements.calc_proper_elements failed when calculating planet frequencies")
                 return flag, None
 
+    elements.planet_freqs=planet_freqs
+
     dt = t[1:] - t[:-1] 
     dt_mean = np.mean(dt)
 
@@ -220,10 +225,10 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
         [sind1, sind2] = np.argpartition(np.abs(Ypq_win[1:])**2., -2)[-2:] + 1
 
         #look at the sums near both frequencies to pick the better one
-        summax1hk = np.sum(Yhk_win[gind1-3:gind1+4])
-        summax2hk = np.sum(Yhk_win[gind2-3:gind2+4])
-        summax1pq = np.sum(Ypq_win[sind1-3:sind1+4])
-        summax2pq = np.sum(Ypq_win[sind2-3:sind2+4])
+        summax1hk = np.sum(Yhk_win[gind1-3:gind1+4]**2.)
+        summax2hk = np.sum(Yhk_win[gind2-3:gind2+4]**2.)
+        summax1pq = np.sum(Ypq_win[sind1-3:sind1+4]**2.)
+        summax2pq = np.sum(Ypq_win[sind2-3:sind2+4]**2.)
         if (summax2hk > summax1hk):
             gind = gind2
         else:
@@ -235,11 +240,86 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
 
         g = freq[gind]  
         s = freq[sind]
-       
+
+        #check to see if one of the peaks picked up was the planet frequency
+        #and switch to the other one if it was
+        g1 = freq[gind1]  
+        s1 = freq[sind1]
+        g2 = freq[gind2]  
+        s2 = freq[sind2]
+        try:
+            if( np.abs(g -planet_freqs.g5)/np.abs(planet_freqs.g5) <=0.01 ):
+                if(np.abs(g1 -planet_freqs.g5)/np.abs(planet_freqs.g5) > 0.01):
+                    g = g1
+                    gind = gind1
+                else:
+                    g = g2
+                    gind = gind2
+        except:
+            print("warning, Jupiter not in planet list")
+        
+        try:
+            if( np.abs(g -planet_freqs.g6)/np.abs(planet_freqs.g6) <=0.01 ):
+                if(np.abs(g1 -planet_freqs.g6)/np.abs(planet_freqs.g6) > 0.01):
+                    g = g1
+                    gind = gind1
+                else:
+                    g = g2
+                    gind = gind2
+            if( np.abs(s -planet_freqs.s6)/np.abs(planet_freqs.s6) <=0.01 ):
+                if(np.abs(s1 -planet_freqs.s6)/np.abs(planet_freqs.s6) > 0.01):
+                    s = s1
+                    sind = sind1
+                else:
+                    s = s2
+                    sind = sind2
+        except:
+            print("warning, Saturn not in planet list")
+
+        try:
+            if( np.abs(g -planet_freqs.g7)/np.abs(planet_freqs.g7) <=0.01 ):
+                if(np.abs(g1 -planet_freqs.g7)/np.abs(planet_freqs.g7) > 0.01):
+                    g = g1
+                    gind = gind1
+                else:
+                    g = g2
+                    gind = gind2
+            if( np.abs(s -planet_freqs.s7)/np.abs(planet_freqs.s7) <=0.01 ):
+                if(np.abs(s1 -planet_freqs.s7)/np.abs(planet_freqs.s7) > 0.01):
+                    s = s1
+                    sind = sind1
+                else:
+                    s = s2
+                    sind = sind2
+        except:
+            print("warning, Uranus not in planet list")
+        
+        try:
+            if( np.abs(g -planet_freqs.g8)/np.abs(planet_freqs.g8) <=0.01 ):
+                if(np.abs(g1 -planet_freqs.g8)/np.abs(planet_freqs.g8) > 0.01):
+                    g = g1
+                    gind = gind1
+                else:
+                    g = g2
+                    gind = gind2
+            if( np.abs(s -planet_freqs.s8)/np.abs(planet_freqs.s8) <=0.01 ):
+                if(np.abs(s1 -planet_freqs.s8)/np.abs(planet_freqs.s8) > 0.01):
+                    s = s1
+                    sind = sind1
+                else:
+                    s = s2
+                    sind = sind2
+        except:
+            print("warning, Neptune not in planet list")
+
+
+
+
         elements.g[j] = g
         elements.s[j] = s
 
         pflag, g_filt_freq, s_filt_freq = calc_filter_frequencies(planet_freqs, g, s)
+
 
         if(j==0):
             #re-shape elements.filtered_g_frequencies and elements.filtered_s_frequencies
@@ -257,7 +337,7 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
         gindicies = []
         for gf in g_filt_freq:
             #skip any short period terms we are zeroing out later
-            if(gf >= freqlim):
+            if(np.abs(gf) >= freqlim):
                 continue
             #find the index in the frequency array closest to that frequency
             try:
@@ -268,7 +348,7 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
         sindicies = []
         for sf in s_filt_freq:
             #skip any short period terms we are zeroing out later
-            if(sf >= freqlim):
+            if(np.abs(sf) >= freqlim):
                 continue
             #find the index in the frequency array closest to that frequency
             try:
@@ -277,6 +357,21 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
                 continue
 
     
+
+        #sort the frequencies from shortest period to longest
+        temp_freq = 1./np.abs(freq[gindicies])
+        sorted_i = np.argsort(temp_freq)
+        gindicies=np.array(gindicies)
+        gindicies.astype(int)
+        gindicies = gindicies[sorted_i]
+
+        temp_freq = 1./np.abs(freq[sindicies])
+        sorted_i = np.argsort(temp_freq)
+        sindicies=np.array(sindicies)
+        sindicies.astype(int)
+        sindicies = sindicies[sorted_i]
+
+
         spread_dist_g = 1.05
         spread_dist_s = 1.05
         freq_dist_g = 1.1
@@ -296,122 +391,107 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
         i=-1
         for gi in gindicies: 
             i+=1
-            if freq[gi] > 0:
-                while ( ( freq[gi+spreads_g[i]]/freq[gi-spreads_g[i]] ) < spread_dist_g):
-                    spreads_g[i]+=1   
-                    if (gi-spreads_g[i] == 0):
-                        break
-                    if (gi+spreads_g[i]>=len(freq)):
-                        break
-                    if (freq[gi+spreads_g[i]] < 0):
-                        break
-                while ( ( freq[gi+freq_dist_lims_g[i]]/freq[gi-freq_dist_lims_g[i]] ) < freq_dist_g):
-                    freq_dist_lims_g[i]+=1
-                    if (gi+freq_dist_lims_g[i] >= len(freq)):
-                        break
-            else:
-                while ( ( freq[gi-spreads_g[i]]/freq[gi+spreads_g[i]] ) < spread_dist_g):
-                    spreads_g[i]+=1   
-                    if (gi+spreads_g[i] >= len(freq)):
-                        break    
-                    if (freq[gi-spreads_g[i]] > 0):
-                        break
-                while ( (freq[gi-freq_dist_lims_g[i]]/freq[gi+freq_dist_lims_g[i]]) < freq_dist_g):
-                    freq_dist_lims_g[i]+=1
-                    if (gi+freq_dist_lims_g[i] >= len(freq)):
-                         break
-        #inclination        
-        i=-1
-        for si in sindicies: 
-            i+=1
-            if freq[si] > 0:
-                while ( ( freq[si+spreads_s[i]]/freq[si-spreads_s[i]] ) < spread_dist_s):
-                    spreads_s[i]+=1   
-                    if (si-spreads_s[i] == 0):
-                        break
-                    if (si+spreads_s[i]>=len(freq)):
-                        break
-                    if (freq[si+spreads_s[i]] < 0):
-                        break
-                while ( ( freq[si+freq_dist_lims_s[i]]/freq[si-freq_dist_lims_s[i]] ) < freq_dist_s):
-                    freq_dist_lims_s[i]+=1
-                    if (si+freq_dist_lims_s[i] >= len(freq)):
-                        break
-            else:
-                while ( ( freq[si-spreads_s[i]]/freq[si+spreads_s[i]] ) < spread_dist_s):
-                    spreads_s[i]+=1   
-                    if (si+spreads_s[i] >= len(freq)):
-                        break    
-                    if (freq[si-spreads_s[i]] > 0):
-                        break
-                while ( (freq[si-freq_dist_lims_s[i]]/freq[si+freq_dist_lims_s[i]]) < freq_dist_s):
-                    freq_dist_lims_s[i]+=1
-                    if (si+freq_dist_lims_s[i] >= len(freq)):
-                         break
-
-        #do the actual filtering on the FFT results 
-        
-        #eccentricity
-        i=-1
-        for gi in gindicies: 
-            i+=1
-            if ( gi == gind or abs(gi - gind) < freq_dist_lims_g[i] ):
-                #we don't want to filter out the natural frequency
+            if(freq[gi] == 0):
+                #go to the next gi value, no spreads allowed at zero
                 continue
-
-            if spreads_g[i] > 0:
-                if (gi <= 3 or (len(Yhk) - gi) <= 3):
-                    #too close to the edges to filter
-                    continue
-                    
-                if ( (gi - 2*spreads_g[i] - 1) < 0):
-                    minarr = Yhk[gi+spreads_g[i]+1 : gi+2*spreads_g[i]+1].copy()
-                elif ( (gi + 2*spreads_g[i] + 1) > len(freq)):
-                    minarr = Yhk[gi-2*spreads_g[i]-1 : gi-spreads_g[i]-1].copy()
-                else:
-                    minarr = np.concatenate( (Yhk[gi-2*spreads_g[i]-1:gi-spreads_g[i]-1].copy(),
-                                              Yhk[gi+spreads_g[i]+1:gi+2*spreads_g[i]+1].copy()) )
-                
-                #replace those values with the average across that selected range
-                Yhk_f[gi-spreads_g[i]:gi+spreads_g[i]] = 10**(np.nanmean(np.log10(np.abs(minarr))))
-            else:
-                Yhk_f[gi] = 0.5+0.5j
+            #check the ratio of frequencies around gi (ratio defined to be > 1)
+            while( np.max([ (freq[gi+spreads_g[i]]/freq[gi-spreads_g[i]]),(freq[gi-spreads_g[i]]/freq[gi+spreads_g[i]])]) < spread_dist_g ):
+                spreads_g[i]+=1   
+                #go to the next gi value if we've reached the end of the array, a zero frequency, or switched signs in the frequency array
+                if (gi-spreads_g[i] == 0 or freq[gi-spreads_g[i]] == 0):
+                    break
+                if (gi+spreads_g[i] >= len(freq) or freq[gi+spreads_g[i]] == 0):
+                    break
+                if (freq[gi+spreads_g[i]]*freq[gi-spreads_g[i]] < 0):
+                    #go back a step
+                    spreads_g[i] = spreads_g[i]-1
+                    break
 
         #inclination
         i=-1
         for si in sindicies: 
             i+=1
-            if ( si == sind or abs(si - sind) < freq_dist_lims_s[i] ):
-                #we don't want to filter out the natural frequency
+            if(freq[si] == 0):
+                #go to the next si value, no spreads allowed at zero
                 continue
-
-            if spreads_s[i] > 0:
-                if (si <= 3 or (len(Ypq) - si) <= 3):
-                    #too close to the edges to filter
-                    continue
-                    
-                if ( (si - 2*spreads_s[i] - 1) < 0):
-                    minarr = Ypq[si+spreads_s[i]+1 : si+2*spreads_s[i]+1].copy()
-                elif ( (si + 2*spreads_s[i] + 1) > len(freq)):
-                    minarr = Ypq[si-2*spreads_s[i]-1 : si-spreads_s[i]-1].copy()
-                else:
-                    minarr = np.concatenate( (Ypq[si-2*spreads_s[i]-1:si-spreads_s[i]-1].copy(),
-                                              Ypq[si+spreads_s[i]+1:si+2*spreads_s[i]+1].copy()) )
-                
-                #replace those values with the average across that selected range
-                Ypq_f[si-spreads_s[i]:si+spreads_s[i]] = 10**(np.nanmean(np.log10(np.abs(minarr))))
-            else:
-                Ypq_f[si] = 0.5+0.5j
+            #check the ratio of frequencies around si (ratio defined to be > 1)
+            while( np.max([ (freq[si+spreads_s[i]]/freq[si-spreads_s[i]]),(freq[si-spreads_s[i]]/freq[si+spreads_s[i]])]) < spread_dist_s ):
+                spreads_s[i]+=1   
+                #go to the next si value if we've reached the end of the array, a zero frequency, or switched signs in the frequency array
+                if (si-spreads_s[i] == 0 or freq[si-spreads_s[i]] == 0):
+                    break
+                if (si+spreads_s[i] >= len(freq) or freq[si+spreads_s[i]] == 0):
+                    break
+                if (freq[si+spreads_s[i]]*freq[si-spreads_s[i]] < 0):
+                    #go back a step
+                    spreads_s[i] = spreads_s[i]-1
+                    break
 
 
-        #finally, zero out the short period terms
-        limit_ind = np.where(freq >= freqlim)[0]
+        #do the actual filtering on the FFT results 
+        
+        #first, zero out the short period terms
+        limit_ind = np.where(np.abs(freq) >= freqlim)[0]
         limit_indr = np.where(freqn >= freqlim)[0]
 
-        Ypq_f[limit_ind] = 0.
+        Ypq_f[limit_ind] = 0.005+0.005j
         Ypq_f[0] = 0.
-        Yhk_f[limit_ind] = 0.
+        Yhk_f[limit_ind] = 0.005+0.005j
         Ya_f[limit_indr] = 0.
+
+        #eccentricity
+        i=-1
+        for gi in gindicies: 
+            i+=1
+            if ( gi == gind or  abs(gi - gind) < freq_dist_lims_g[i] ):
+                #we don't want to filter out the natural frequency
+                continue
+            if (spreads_g[i] > 0):
+                if ( (gi - 2*spreads_g[i] - 1) <= 0 or 
+                    freq[max(gi - 2*spreads_g[i] - 1,1)]*freq[gi] < 0 ):
+                    #filtered based on average of just the higher frequency side
+                    tmpY = Yhk_f[gi+spreads_g[i]+1:gi+2*spreads_g[i]+1].copy()
+                elif ( (gi + 2*spreads_g[i] + 1) >= len(freq) or 
+                      freq[min(gi + 2*spreads_g[i] + 1,len(freq)-1)]*freq[gi]<0 ):
+                    #filtered based on average of just the higher negative frequency side
+                    tmpY = Yhk_f[gi-2*spreads_g[i]-1:gi-spreads_g[i]-1].copy()
+                else:
+                    tmpY = np.concatenate( (Yhk_f[gi-2*spreads_g[i]-1:gi-spreads_g[i]-1].copy(),
+                                              Yhk_f[gi+spreads_g[i]+1:gi+2*spreads_g[i]+1].copy()) )
+                #replace those values with the average across that selected range
+                Yhk_f[gi-spreads_g[i]:gi+spreads_g[i]] = np.nanmean(tmpY)
+            else:
+                Yhk_f[gi] = 0.005+0.005j
+
+        #inclination
+        i=-1
+        for si in sindicies: 
+            i+=1
+            if ( si == sind or  abs(si - sind) < freq_dist_lims_s[i] ):
+                #we don't want to filter out the natural frequency
+                continue
+            if (spreads_s[i] > 0):
+                if ( (si - 2*spreads_s[i] - 1) <= 0 or 
+                    freq[max(si - 2*spreads_s[i] - 1,1)]*freq[si] < 0 ):
+                    #filtered based on average of just the higher frequency side
+                    tmpY = Ypq_f[si+spreads_s[i]+1:si+2*spreads_s[i]+1].copy()
+                elif ( (si + 2*spreads_s[i] + 1) >= len(freq)  or 
+                      freq[min(si + 2*spreads_s[i] + 1,len(freq)-1)]*freq[si]<0 ):
+                    #filtered based on average of just the higher negative frequency side
+                    tmpY = Ypq_f[si-2*spreads_s[i]-1:si-spreads_s[i]-1].copy()
+                else:
+                    tmpY = np.concatenate( (Ypq_f[si-2*spreads_s[i]-1:si-spreads_s[i]-1].copy(),
+                                              Ypq_f[si+spreads_s[i]+1:si+2*spreads_s[i]+1].copy()) )
+                #replace those values with the average across that selected range
+                Ypq_f[si-spreads_s[i]:si+spreads_s[i]] = np.nanmean(tmpY)
+            else:
+                Ypq_f[si] = 0.005+0.005j
+
+        #apply the short-period filtering again just in case they got 
+        #modified in the above
+        Ypq_f[limit_ind] = 0.005+0.005j
+        Ypq_f[0] = 0.
+        Yhk_f[limit_ind] = 0.005+0.005j
 
         #reconstruct the time-series
         pq_f = np.fft.ifft(Ypq_f,len(p[j,:]))
@@ -430,7 +510,6 @@ def calc_proper_elements(des=None, archivefile=None, datadir = '',
 
         sini_f = np.sqrt(p_f*p_f + q_f*q_f)
         ecc_f = np.sqrt(h_f*h_f + k_f*k_f) 
-        ecc = np.sqrt(h_f*h_f + k_f*k_f) 
         node_f = np.arctan2(p_f/sini_f,q_f/sini_f)
         pomega_f = np.arctan2(h_f/ecc_f, k_f/ecc_f)
 
@@ -982,9 +1061,14 @@ def calc_planet_frequencies(archivefile, planets,obj_type=None,tmin=None,tmax=No
     if(planet_freqs.s7 and planet_freqs.s6):
         z4 = planet_freqs.s7 - planet_freqs.s6
         z5 = 0.5*planet_freqs.s6
+    #    z6 = 0.5*planet_freqs.s7
         s_freqs.append(z4)
         s_freqs.append(z5)
+    #    s_freqs.append(z6)
 
+    #if(planet_freqs.s8):
+    #    z7 = 0.5*planet_freqs.s8
+    #    s_freqs.append(z7)
 
 
     planet_freqs.s = np.array(s_freqs)
@@ -1015,7 +1099,7 @@ def calc_filter_frequencies(planet_freqs, g, s):
 
     #in addition to the 8 modes associated with the planets,
     #we filter the following combinations of modes
-    z = np.zeros(83)
+    z = np.zeros(102)
     #z = np.zeros(75)
     
     #frequencies copied directly from findorb
@@ -1097,146 +1181,43 @@ def calc_filter_frequencies(planet_freqs, g, s):
     z[73]=-2*s-s6 #sonly
     z[74]=-g+2*s-g5
 
-    z[75] = g-g7
-    z[76] = g-g8
-    z[77] = s-s8
+    z[75] = g-g7 #gonly
+    z[76] = g-g8 #gonly
+    z[77] = s-s8 #sonly
     z[78]=g+s-s7-g8 
     z[79]=g+s-s6-g8 
     z[80]=-g+s+g5-s8 
     z[81]=-g+s+g6-s8 
     z[82]=-g+s+g7-s8 
-
+    z[83]=2.*g-2.*g8 #gonly
+    z[84]=2.*g-2.*g7 #gonly
+    z[85]=2.*g-2.*s8 
+    z[86]=2.*s-2.*g7 
+    z[87]=g-2.*g7 #gonly
+    z[88]=g-2.*g8 #gonly
+    z[89]=s-2.*s7 #sonly
+    z[90]=s-2.*s8 #sonly
+    z[91]=3.*g-2.*g8 #gonly
+    z[92]=2.*g-g7 #gonly
+    z[93]=2.*g-g8 #gonly
+    z[94]=2.*s-2.*s7 #sonly
+    z[95]=2.*s-2.*s8 #sonly
+    z[96]=3.*g-(g5-g7) #gonly
+    z[97]=g5-g7 #gonly
+    z[98]=2.*g-(g5-g7) #gonly
+    z[99] = g -(g5-g7-g8)
+    z[100] = -g +(g5-g7-g8)
+    z[101] = -s +(g5-g7-g8)
 
     #eccentricity only z frequencies 
-    eonly = [0,1,2,12,13,54,55,58,59,61,62,71,72]#,75,76]
+    eonly = [0,1,2,12,13,54,55,58,59,61,62,71,72,75,76,
+             83,84,87,88,91,92,93,96,97,98,99,100]
     #inclination only z frequencies
-    ionly = [0,3,4,38,39,40,56,57,73]#,77]
+    ionly = [0,3,4,38,39,40,56,57,73,77,89,90,94,95]
 
     z_e = np.delete(z,ionly)
     z_i = np.delete(z,eonly)
 
     flag = 1
     return flag, z_e, z_i
-
-
-def calc_frequencies(g,s,small_planets_flag):
-
-    import hard_coded_constants as const
-
-    g1 = const.g1
-    g2 = const.g2
-    g3 = const.g3
-    g4 = const.g4
-    g5 = const.g5
-    g6 = const.g6
-    g7 = const.g7
-    g8 = const.g8
-    g9 = const.g9
-    g10 = const.g10
-
-    s1 = const.s1
-    s2 = const.s2
-    s3 = const.s3
-    s4 = const.s4
-    s6 = const.s6
-    s7 = const.s7
-    s8 = const.s8
-
-    #in addition to the 8 modes associated with the planets,
-    #we filter the following combinations of modes
-    z = np.zeros(66)
-    #copied directly from findorb
-    z[1]=g-g5 
-    z[2]=g-g6 
-    # this one cannot give rise to a resonance                              
-    z[3]=g5-g6 
-    z[4]=s-s7 
-    z[5]=s-s6 
-    #! this one cannot give rise to a resonance                              
-    z[6]=s7-s6 
-    z[7]=g+s-s7-g5 
-    z[8]=g+s-s7-g6 
-    z[9]=g+s-s6-g5 
-    z[10]=g+s-s6-g6 
-    z[11]=2.*g-2.*s 
-    z[12]=g-2.*g5+g6 
-    z[13]=g+g5-2.*g6 
-    z[14]=2.*g-g5-g6 
-    z[15]=-g+s+g5-s7 
-    z[16]=-g+s+g6-s7 
-    z[17]=-g+s+g5-s6 
-    z[18]=-g+s+g6-s6 
-    z[19]=g-g5+s7-s6 
-    z[20]=g-g5-s7+s6 
-    z[21]=g-g6+s7-s6 
-    z[22]=g-g6-s7+s6 
-    z[23]=2.*g-s-s7 
-    z[24]=2.*g-s-s6 
-    z[25]=-g+2.*s-g5 
-    z[26]=-g+2.*s-g6 
-    z[27]=2.*g-2.*s7 
-    z[28]=2.*g-2.*s6 
-    z[29]=2.*g-s7-s6 
-    z[30]=g-s+g5-s7 
-    z[31]=g-s+g5-s6 
-    z[32]=g-s+g6-s7 
-    z[33]=g-s+g6-s6 
-    z[34]=g+g5-2.*s7 
-    z[35]=g+g6-2.*s7 
-    z[36]=g+g5-2.*s6 
-    z[37]=g+g6-2.*s6 
-    z[38]=g+g5-s7-s6 
-    z[39]=g+g6-s7-s6 
-    z[40]=s-2.*s7+s6 
-    z[41]=s+s7-2.*s6 
-    z[42]=2.*s-s7-s6 
-    z[43]=s+g5-g6-s7 
-    z[44]=s-g5+g6-s7 
-    z[45]=s+g5-g6-s6 
-    z[46]=s-g5+g6-s6 
-    z[47]=2.*s-2.*g5 
-    z[48]=2.*s-2.*g6 
-    z[49]=2.*s-g5-g6 
-    z[50]=s-2.*g5+s7 
-    z[51]=s-2.*g5+s6 
-    z[52]=s-2.*g6+s7 
-    z[53]=s-2.*g6+s6 
-    z[54]=s-g5-g6+s7 
-    z[55]=s-g5-g6+s6 
-    z[56]=2.*g-2.*g5 
-    z[57]=2.*g-2.*g6 
-    z[58]=2.*s-2.*s7 
-    z[59]=2.*s-2.*s6 
-    #  divisors appearing only in forced terms                              
-    z[60]=g-2.*g6+g7 
-    z[61]=g-3.*g6+2.*g5 
-    #  degree six divisor z2                                                
-    z[62]=2.*(g-g6)+(s-s6) 
-    #!  other nonlinear forced terms                                         
-    z[63]=g+g5-g6-g7 
-    z[64]=g-g5-g6+g7 
-    z[65]=g+g5-2*g6-s6+s7 
-    #eccentricity only z frequencies 
-    eonly = [0,1,2,3,12,13,14,56,57,60,61,63,64]
-    #inclination only z frequencies
-    ionly = [0,4,5,6,58,59]
-
-    z_e = np.delete(z,ionly)
-    z_i = np.delete(z,eonly)
-
-    #z = z[1:65]
-
-    if small_planets_flag:
-        freq1 = [g1,g2,g3,g4,g5,g6,g7,g8,g9,g10]
-        freq2 = [s1,s2,s3,s4,0.5*s6,s6,s7,s8]
-    else:
-        freq1 = [g5,g6,g7,g8,g9,g10]
-        freq2 = [0.5*s6,s6,s7,s8]
-    
-
-
-    freq1.extend(z_e)
-    freq2.extend(z_i)
-
-    return freq1,freq2
 

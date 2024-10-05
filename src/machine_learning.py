@@ -4,8 +4,9 @@ import pandas as pd
 import tools
 import run_reb
 import MLdata
-from os import path
+import tno
 
+from os import path
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
@@ -844,78 +845,29 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
 
 
 
-
-def setup_and_run_TNO_integration_for_ML(des=None, clones=None, datadir='',
-                                         archivefile=None,logfile=False):
-    '''
-    '''
-    flag = 0
-
-
-    if(des == None):
-        print("The designation of a TNO must be provided")
-        print("failed at machine_learning.setup_and_run_TNO_integration_for_ML()")
-        return flag, None, None
-
-
-    if(logfile==True):
-        logf = tools.log_file_name(des=des)
-    else:
-        logf=logfile
-    if(datadir and logf and logf!='screen'):        
-        logf = datadir + '/' +logf
-
-    if(clones==None):
-        #default to the Gladman approach of best fit + 3-sigma clones
-        clones = 2
-        cloning_method = 'find_3_sigma'
-        if(logf):
-            logmessage = "Clones were not specified, so the default behavior is to return\n"
-            logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
-            tools.writelog(logf,logmessage)  
-        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=['outer'],
-                          des=des, clones=clones, cloning_method= cloning_method,
-                          logfile=logfile)
-    else:
-        cloning_method = 'Gaussian'
-        iflag, epoch, sim = run_reb.initialize_simulation(planets=['outer'],
-                          des=des, clones=clones, cloning_method= cloning_method,
-                          logfile=logfile)
-
-    if(iflag < 1):
-        return flag, None, sim
-
-
-    fflag, tno_class, sim = run_and_MLclassify_TNO(sim,des=des,clones=clones,datadir=datadir,
-                                                  archivefile=archivefile,deletefile=True,
-                                                  logfile=logfile)
-
-    if(fflag < 1):
-        return flag, tno_class, sim
-
-    flag = 1
-    return flag, tno_class, sim
-
-
-
-def run_and_MLclassify_TNO(sim=None, des=None,clones=None, 
-                           datadir='', archivefile=None, deletefile=False,
-                           logfile=False):
+def run_and_MLclassify_TNO(sim=None, des=None, clones=None, 
+                       datadir='', archivefile=None, 
+                       deletefile=False,logfile=False):
     '''
     add documentation here...
     '''
-
-    if(sim == None):
-        print("No initialized rebound simulation provided")
-        print("use the function setup_and_run_TNO_integration_for_ML instead or")
-        print("initialize the simulation and try again")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_class, sim
+    flag = 0
 
     if(des == None):
         print("The designation of the small body must be provided")
         print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, tno_class, sim
+        return flag, None, sim
+
+
+    if(sim == None):
+        #initialize a default simulation
+        iflag, sim, epoch, clones, cloning_method, weights = \
+                tno.setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
+                        save_sbdb=False,saveic=False,archivefile=archivefile,logfile=logfile)
+        if(iflag < 1):
+            print("Failed at simulation initialization stage")
+            print("failed at machine_learning.run_and_MLclassify_TNO()")    
+            return flag, None, sim
 
     if(logfile==True):
         logf = tools.log_file_name(des=des)
