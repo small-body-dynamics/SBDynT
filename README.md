@@ -2,7 +2,7 @@
 We are developing a well-documented, open-source Python package, the Small Body Dynamics Tool (SBDynT), that can be used to calculate a variety of dynamical parameters and determine dynamical characterizations and classifications from integrations of a solar system small body’s orbital evolution.
 
 ### Current state of development
-We are in the very early stages of development, primarily focusing on adding individual functions that will later be incoporated into a larger work-flow. Functions currently available are shown in the demonstration notebook in the example-notebooks directory. These include already useful tools to generate clones of an observed small body's orbit over its orbit uncertainties using JPL's orbit fit and associated covariance matrix and to initialize and run rebound simulations for those clones.
+This code is still in development! Most of the main structures are in place, but thigs could still change. Functions currently available are shown in the demonstration notebook in the example-notebooks directory. These include a machine learning classifier for transneptunian objects (TNOs), the start of standard synthetic proper elements calcaultion tool (currently implemented on this branch only for TNOs! expansion coming very soon!), and useful tools to initialize rebound simulations and generate clones of any observed small body's orbit over its orbit uncertainties using JPL's orbit fit and associated covariance matrix.
 
 ### Requirements and installation
 Currently, to use SBDynT, download the repository and either place it in your path or add the following to your python code:<br>
@@ -22,7 +22,6 @@ pickle<br>
 importlib<br>
 os<br>
 datetime<br>
-
 
 
 ### Contact information
