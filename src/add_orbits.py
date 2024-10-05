@@ -1,22 +1,25 @@
 import numpy as np
+import rebound
 
 # internal modules
 import tools
 import horizons_api
 import run_reb
 
-def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
+def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
                                                 a=1.,e=0.,inc=0.,
                                                 node=0.,aperi=0.,ma=0.,
-                                                planets=['mercury', 'venus', 
-                                                'earth', 'mars','jupiter', 'saturn', 
-                                                'uranus', 'neptune'],
-                                                epoch=0.):
+                                                planets=['all'],
+                                                epoch=None,
+                                                datadir='', saveic=False,
+                                                logfile=False):
     """
     inputs:
         sim: empty rebound simulation instance
         des (string): designation/name for object 
-        nclones (integer): number of clones, if 0 only best-fit orbit is input
+        clones (integer, optional): number of clones,
+            defaults to use all of the provided orbital elements
+            if 0 only the first provided orbit is used
         a (float): heliocentric semimajor axis (au)
         e (float): heliocentric eccentricity
         inc (float): heliocentric ecliptic inclination (rad)
@@ -31,56 +34,52 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
              a test particle with the desired heliocentric orbit added
              (all are adjusted for missing major perturbers)
     """
-    #check to see if the sim already has particles in it
-    if(sim.N > 0):
+
+    if(logfile==True):
+        logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):
+        logfile = datadir + '/' + logfile
+
+    sim = rebound.Simulation()
+    if(des==None):
         print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
-        print("This rebound simulation instance already has particles in it!")
-        print("This can only accept an empty rebound simulation instance")
+        print("you must provide a designation (used to label the particle within rebound)")
         return 0, sim
 
-    if(des==''):
-        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
-        print("you must provide a designation (used to label the particle)")
-        return 0, sim
-
-    if(nclones == 0 and np.isscalar(a)):
-        #reshape the arrays since everything assumes 2-d
+    if(np.isscalar(a)):
+        #reshape the arrays since everything assumes arrays
         a = np.array([a])
         e = np.array([e])
         inc = np.array([inc])
         node = np.array([node])
         aperi = np.array([aperi])
         ma = np.array([ma])
-    elif (nclones == 0):
+    
+    ntp_avail = len(a)
+    if(clones == None):
+        clones = ntp_avail-1
+    elif (clones > ntp_avail-1):
         print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
-        print("the number of clones specified is 0, but more than one set of orbital")
-        print("elements were provided. Please specify the number of clones")
+        print("the number of clones specified is more than than the length of orbital")
+        print("element arrays that were provided.")
         return 0, sim
 
 
 
-    # make all planet names lowercase
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
     planets = [pl.lower() for pl in planets]
-    # create an array of planets not included in the simulation
-    # will be used to correct the simulation's barycenter for their absence
-    notplanets = []
-    
-    # set up massive body variables
-    npl = len(planets) + 1  # for the sun    
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['all']):
+        planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
 
-    # define the planet-id numbers used by Horizons for the barycenters of each
-    # major planet in the solar system
-    planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars',
-                 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-
-    # import the following hard-coded constants:
+    # import some hard-coded constants including:
     # The value of GM for the sun assumed in Find_orb (not the same as JPL!):
     # find_orb_sunGM
-    # Planet physical parameters
-    # SS_GM[0:9] in km^3 s^–2
-    # SS_r[0:9] all in au
-    # reasonable integration timesteps for each planet:
-    # dt[0:9]
+    # and some unit conversions to get to units of au, yr, and msun
+
     import hard_coded_constants as const
 
     # set up the rebound simulation, adding the planets first
@@ -99,7 +98,7 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
     # cartesian variables using Find_Orb's assumed solar GM
     # which is in km^2/s^2, so have to convert a to km first
     a = a/const.kmtoau
-    for n in range(0,nclones+1):
+    for n in range(0,clones+1):
         i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.find_orb_sunGM, 
                         a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n])
         # those positions and velocities are in km and km/s, so need to convert
@@ -125,6 +124,20 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',nclones=0,
         sim.add(m=0., x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=sbhash)
     
     sim.move_to_com()
+
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+            sim.save_to_file(ic_file)
+        else:
+            ic_file = saveic
+
+        if(datadir):
+            ic_file = datadir + '/' +ic_file
+        sim.save_to_file(ic_file)
+        if(logfile):
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            tools.writelog(logfile,logmessage)       
 
     return 1, sim
 

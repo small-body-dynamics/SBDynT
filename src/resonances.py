@@ -11,22 +11,34 @@ import tools
 # reads the simulation archive files into orbital element
 # arrays necessary to produce a resonant plot
 #################################################################
-def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
-                          ,q=0,m=0,n=0,r=0,s=0,nclones=0):
+def read_sa_for_resonance(des = None, archivefile=None,planet=None,
+                          datadir = '', p=0 ,q=0,m=0,n=0,r=0,s=0,
+                          tmin=None,tmax=None,
+                          center = 'bary',clones=None):
     """
     Reads the simulation archive file produced by the run_reb
     routines
     If only p and q are input for the resonance integers, we 
     will assume an eccentricity-type resonance
     input:
-        sbody (str): name of the small body
-        archivefile (str): path to rebound simulation archive
+        des: string, user-provided small body designation
         planet (str): hash for the planet the resonance is with
+        archivefile (str; optional): name/path for the simulation
+            archive file to be read. If not provided, the default
+            file name will be tried
+        clones (optional): number of clones to read, 
+            defaults to reading all clones in the simulation            
+        datadir (optional): string, path for where files are stored,
+            defaults to the current directory
         p,q,m,n,r,s (int): the integers for the p:q resonance 
             with the planet where the resonance angle will be 
             phi = p*lambda_tp - q*lambda_planet - m*varpi_tp
                   -n*node_tp - r*varpi_planet - s*node_planet
-        nclones (int): number of clones of the best-fit orbit
+        center (optional, string): 'bary' for barycentric orbits 
+            (default) and 'helio' for heliocentric orbits      
+        tmin (optional, float): minimum time to return (years)
+        tmax (optional, float): maximum time to return (years)
+            if not set, the entire time range is returned                          
     output:
         ## if nclones=0, all arrays are 1-d    
         flag (int): 1 if successful and 0 if there was a problem
@@ -46,6 +58,25 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
             the resonance angle calculated
     """
 
+
+    if(des == None):
+        print("You must pass a designation to this function")
+        print("resonances.read_sa_for_resonance failed")
+        return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
+
+
+    if(planet == None):
+        print("You must pass a planet name to this function")
+        print("resonances.read_sa_for_resonance failed")
+        return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
+
+  
+
+    if(archivefile==None):
+        archivefile = tools.archive_file_name(des)
+    if(datadir):
+        archivefile = datadir + '/' +archivefile
+
     #check if any integers besides p and q were set. If not, 
     #calculate m for the eccentricity-type resonance. If they
     #are set, check for legal resonant argument
@@ -55,24 +86,55 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
         checkint = p - q - m - n - r - s
         if(checkint != 0):
             print("The specified resonant integers are not allowed! They do not sum to zero!")
+            print("resonances.read_sa_for_resonance failed")        
             return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
         node_sum = s+n
         if(node_sum % 2):
             print("The specified resonant integers are not allowed! The sum of nodes is odd!")
+            print("resonances.read_sa_for_resonance failed")
             return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
 
 
     #read the simulation archive and calculate resonant angles
-    sa = rebound.Simulationarchive(archivefile)
+    try:
+        sa = rebound.Simulationarchive(archivefile)
+    except:
+        print("Problem reading the simulation archive file:")
+        print(archivefile)
+        print("resonances.read_sa_for_resonance failed")
+        return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
+        
 
     nout = len(sa)
 
-    if(nout <1):
+    if(nout <2):
         print("resonances.read_sa_for_resonance failed")
-        print("Problem reading the simulation archive file")
+        print("There are fewer than two snapshots in the archive file:")
+        print(archivefile)        
         return 0, [0.], [0.], [0.], [0.], [0.], [0.], [0.], [0.], ''
 
-    ntp = nclones+1
+    if(clones==None):
+        ntp = sa[0].N - sa[0].N_active
+    else:
+        ntp = clones+1
+
+
+
+    if(tmin == None and tmax == None):
+        #user didn't set these, so we will read the whole thing
+        tmin = sa[0].t
+        tmax = sa[-1].t
+    elif(tmin==None):
+        tmin = sa[0].t
+    elif(tmax == None):
+        tmax = sa[-1].t
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
+
 
 
     a = np.zeros([ntp,nout])
@@ -84,22 +146,41 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
     phi = np.zeros([ntp,nout])
     t = np.zeros(nout)
 
+    it=0
     for i,sim in enumerate(sa):
-        #calculate the planet's orbit relative to the barycenter
-        pl = sim.particles[planet]
-        com = sim.com()
+        if(sim.t < tmin or sim.t > tmax):
+            #skip this 
+            continue
+        t[it] = sim.t
+        #calculate the planet's orbit
+        try:
+            pl = sim.particles[planet]
+        except:
+            print("resonances.read_sa_for_resonance failed")
+            print("Problem finding the planet in the archive")
+            return 0, a, e, inc, node, aperi, ma, phi, t, ''
+
+        if(center == 'bary'):
+            com = sim.com()
+        elif(center == 'helio'):
+            com = sim.particles[0]
+        else:
+            print("resonances.read_sa_for_resonance failed")
+            print("center can only be 'bary' or 'helio'\n")
+            return 0, a, e, inc, node, aperi, ma, phi, t, ''
+        
         o_pl = pl.orbit(com)
         #planet's mean longitude for the resonant angles
         lamda_pl = o_pl.Omega+o_pl.omega+o_pl.M
 
-        t[i] = sim.t
+        t[it] = sim.t
 
         for j in range(0,ntp):
             #the hash format for clones
-            tp_hash = sbody + "_" + str(j)
+            tp_hash = str(des) + "_" + str(j)
             #except the best fit is just the designation:
             if(j==0):
-                tp_hash = sbody 
+                tp_hash = str(des) 
             #grab the particle and calculate its barycentric orbit
             try:
                 tp = sim.particles[tp_hash]
@@ -108,36 +189,52 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
                 print("Problem finding a particle with that hash in the archive")
                 return 0, a, e, inc, node, aperi, ma, phi, t, ''
             o = tp.orbit(com)
-            a[j,i] = o.a
-            e[j,i] = o.e
-            inc[j,i] = o.inc
-            node[j,i] = o.Omega
-            aperi[j,i] = o.omega
-            ma[j,i] = o.M
+            a[j,it] = o.a
+            e[j,it] = o.e
+            inc[j,it] = o.inc
+            node[j,it] = o.Omega
+            aperi[j,it] = o.omega
+            ma[j,it] = o.M
             
             lamda = o.Omega+o.omega+o.M
             #calculate the resonant angle
             pt = float(p)*lamda - float(q)*lamda_pl - float(m)*(o.Omega+o.omega)
             if(n!=0 or r!=0 or s!=0):
                 pt = pt - float(n)*o.Omega - float(r)*(o_pl.Omega+o_pl.omega) - float(s)*o_pl.Omega
-            pt = tools.mod2pi(pt)
-            phi[j,i] = pt
+            pt = np.mod(pt,2.*np.pi)
+            phi[j,it] = pt
+        it+=1
+    if(it==0):
+        print("resonances.read_sa_for_resonance failed")
+        print("There were no simulation archives in the desired time range")
+        return 0, a, e, inc, node, aperi, ma, phi, t, ''
+    else:
+        t = t[0:it]
+        a = a[:,0:it]
+        e = e[:,0:it]
+        inc = inc[:,0:it]
+        node = node[:,0:it]
+        aperi = aperi[:,0:it]
+        ma = ma[:,0:it]
+        phi = phi[:,0:it]
+
+
     
     flag = 1
 
-    res_string = '$' + "\phi = " + str(p) + "\lambda - " + str(q) + "\lambda_{" + planet + "}"
+    res_string = '$' + "\\"+"phi = " + str(p) + "\\"+"lambda - " + str(q) + "\\"+"lambda_{" + planet + "}"
     if(m!=0):
         res_string+= " - " + str(m) + "\\varpi "
     if(n!=0):
-        res_string+= " - " + str(n) + "\Omega "
+        res_string+= " - " + str(n) + "\\"+"Omega "
     if(r!=0):
         res_string+= " - " + str(r) + "\\varpi_{" + planet + "} "
     if(s!=0):
-        res_string+= " - " + str(s) + "\Omega_{" + planet + "} "
+        res_string+= " - " + str(s) + "\\"+"Omega_{" + planet + "} "
     res_string+='$'
 
 
-    if(nclones == 0):
+    if(clones == 0):
         return flag, a[0,:], e[0,:], inc[0,:], node[0,:], aperi[0,:], ma[0,:], phi[0,:], t, res_string
     else:
         return flag, a, e, inc, node, aperi, ma, phi, t, res_string
@@ -149,24 +246,38 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
 #################################################################
 # plots the resonance angle and a, e, i
 #################################################################
-def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], phi=[[0.],], 
-                   t=[0.],nclones=0,figfile=None,bfps=1.,cps=0.5,calpha=0.5,tmin=None,tmax=None):
+def plot_resonance(des=None, archivefile=None,datadir='',clones=None,planet=None,
+                   res_string=None, a=None, e=None, inc=None, phi=None,  t=None,
+                   p=0 ,q=0,m=0,n=0,r=0,s=0,
+                   figfile=None,bfps=1.,cps=0.5,calpha=0.5,tmin=None,tmax=None):
     """
     Makes a plot of a, e, inc, phi for a resonance based on having
     read in the simulation archive using read_sa_for_resonance
     input:
-        sbody (str): name of the small body
-        res_string (str): the string that prints the resonant angle
-        a (2-d float array): semimajor axis (au)        
-        e (2-d float array): eccentricity
-        inc (2-d float array): inclination (rad)
+        des (str; optional if a,e,i,t provided): user-provided 
+            small body designation
+        planet (str; optional if a,e,i,t provided): planet name
+        archivefile (str; optional): name/path for the simulation
+            archive file to be read if a,e,i,t provided. 
+            If not provided, the default file name will be tried
+        clones (int, optional): number of clones to read, 
+            defaults to reading all clones in the simulation            
+        datadir (optional): string, path for where files are stored,
+            defaults to the current directory
+        a (1-d or 2-d float array; optional): semimajor axis (au)        
+        e (1-d or 2-d float array; optional): eccentricity
+        inc (1-d or 2-d float array; optional): inclination (rad)
         phi (2-d float array): resonant angle (rad)
             all arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
             starting at 1 
         time (1-d float array): simulations time (years)
-        nclones (int): number of clones of the best-fit orbit
+        p,q,m,n,r,s (int, optional if a,e,i,phi,t are provided): 
+            the integers for the p:q resonance 
+            with the planet where the resonance angle will be 
+            phi = p*lambda_tp - q*lambda_planet - m*varpi_tp
+                  -n*node_tp - r*varpi_planet - s*node_planet
         figfile (str): path to save the figure to; if not set, the
             figure will not be saved but just displayed
         bfps (optional,float): matplotlib point size argument for best-fit orbit
@@ -176,16 +287,57 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         tmax (optional, float): maximum time for x-axis (years)        
     output:
         flag (int): 1 if successful and 0 if there was a problem
+        fig: matplotlib figure instance        
     """
 
-    ntp = nclones+1
+    flag = 0
+    if(des == None or planet==None):
+        #see if orbital element arrays were provided. If so, we don't need des
+        try:
+            temp = len(a.shape)
+        except:
+            print("You must either pass orbital element arrays (a,e,i, phi and time)")
+            print("or a designation and this planet to this routine to generate plots")
+            print("failed at resonances.plot_resonance()")
+            return flag, None
+    else:
+        try:
+            temp = len(a.shape)
+        except:
+            #read in the orbital elements
+            rflag, a, e, inc, node, aperi, ma, phi, t,res_string = read_sa_for_resonance(des=des,
+                                                datadir=datadir,archivefile=archivefile,
+                                                planet=planet,p=p,q=q,m=m,n=n,r=r,s=s,
+                                                tmax=tmax,tmin=tmin,clones=clones)
+            if(rflag<1):
+                print("failed at resonances.plot_resonance()")
+                print("couldn't read in the simulation archive")
+                return flag, None
 
-    if(nclones == 0 and len(a.shape)<2):
-        #reshape the arrays since everything assumes 2-d
+    if(len(a.shape)<2):
+        #there aren't any clones
+        if(clones==None):
+            clones=0
+        if(clones > 0):
+            print("warning! plotting_scripts.plot_aei() was asked to plot")
+            print("clones, but there are no clones in the archive file or")
+            print("the provided arrays. Only the best fit will be plotted")
+            clones = 0
+            flag = 2
+        ntp = 1
+        #reshape the arrays since everything below assumes 2-d
         a = np.array([a])
         e = np.array([e])
         inc = np.array([inc])
         phi = np.array([phi])
+    else:
+        ntp = a.shape[0]
+        if(clones==None):
+            clones = ntp-1
+        #if fewer clones were requested, adjust
+        if(clones < ntp-1):
+            ntp = clones+1
+
     #we will plot in degrees, so convert inc and phi
     rad_to_deg = 180./np.pi
     inc=inc*rad_to_deg
@@ -194,7 +346,7 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
 
     nrows = 4
 
-    if(nclones > 0):
+    if(clones > 0):
         ncol = 2
         xwidth= 10
     else:
@@ -205,35 +357,37 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         tmin = t[0]
     if(tmax == None):
         tmax = t[-1]
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
 
     deltat = tmax-tmin
     timelabel = "time (yr)"
     tscale =1.
-
-    if(tmax >=1e4 and deltat>1e3):
-        tscale = 1e3
-        timelabel = "time (kyr)"
-    if(tmax >=1e6 and deltat>1e5):
-        tscale = 1e6
-        timelabel = "time (Myr)"
-    elif(tmax >=1e6 and deltat>1e4):
-        tscale = 1e3
-        timelabel = "time (kyr)"
-    if(tmax >1e9 and deltat > 1e8):
+    #choose reasonable units for the time-axis
+    if(deltat >= 1e9):
         tscale = 1e9
         timelabel = "time (Gyr)"
-    elif(tmax >1e9 and deltat > 1e6):
+    elif(deltat >= 1e6):
         tscale = 1e6
         timelabel = "time (Myr)"
-    elif(tmax >1e9 and deltat > 1e4):
+    elif(deltat >= 1e4):
         tscale = 1e3
         timelabel = "time (kyr)"
-    
+
+
     fig = plt.figure(figsize=(xwidth, 10))
     plt.subplots_adjust(left=None, bottom=None, right=None, 
                         top=0.92, wspace=0.35, hspace=0.25)
     
-    plt.suptitle('object ' + sbody+ ' plotting '+ res_string)
+    titlestring = ''
+    if(des != None):
+        titlestring+='object ' + str(des) + ' '
+    if(res_string !=None):
+        titlestring+=' plotting ' + res_string
+    plt.suptitle(titlestring)
 
     a_ax1=plt.subplot2grid((nrows,ncol),(0,0))
     a_ax1.set_ylabel('a (au)')
@@ -243,7 +397,8 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
     i_ax1=plt.subplot2grid((nrows,ncol),(2,0))
     i_ax1.set_ylabel('inc (deg)')
     p_ax1=plt.subplot2grid((nrows,ncol),(3,0))
-    p_ax1.set_ylabel('$\phi$ (deg)')
+    philabel = '$' +  "\\" + "phi$ (deg)"
+    p_ax1.set_ylabel(philabel)
 
 
     p_ax1.set_ylim([0,360])
@@ -262,16 +417,16 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
     p_ax1.scatter(t/tscale,phi[0,:],s=bfps,c='k')
 
 
-    if(nclones > 0):
+    if(clones > 0):
         a_ax2=plt.subplot2grid((nrows,ncol),(0,1))
         a_ax2.set_ylabel('a (au)')
-        a_ax2.set_title(str(nclones) + ' clones')
+        a_ax2.set_title(str(clones) + ' clones')
         e_ax2=plt.subplot2grid((nrows,ncol),(1,1))
         e_ax2.set_ylabel('e')
         i_ax2=plt.subplot2grid((nrows,ncol),(2,1))
         i_ax2.set_ylabel('inc (deg)')
         p_ax2=plt.subplot2grid((nrows,ncol),(3,1))
-        p_ax2.set_ylabel('$\phi$ (deg)')
+        p_ax2.set_ylabel(philabel)
         p_ax2.set_ylim([0,360])
         p_ax2.set_xlabel(timelabel)
         p_ax2.set_yticks(np.arange(0, 361, 60))
@@ -289,6 +444,8 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
             p_ax2.scatter(t/tscale,phi[tp,:],s=cps,alpha=calpha)
 
     if(figfile != None):
+        if(datadir):
+            figfile = datadir + "/" + figfile
         plt.savefig(figfile)
 
     flag = 1
@@ -544,3 +701,129 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
              
     
     return flag, a_stats, e_stats, i_stats, phi_stats, fwindows
+
+
+
+
+##########################################################################################################
+##########################################################################################################
+
+def nearest_resonance(period_ratio, prtol=0.01):
+    '''
+    finds the nearest, lowest-order p:q resonance for a given
+    period ratio with a planet
+    inputs:
+        period_ratio: float, small body period/planet period
+        prtol: float, percentage range around the provided
+               period ratio to search for integer ratios
+               defaults to 1%
+    outputs:
+        p, integer
+        q, integer
+            p/q is approximately equal to period_ratio
+            and the resonant angle is:
+            phi = p*lambda_pl - q*lambda_small-body ....
+    '''
+    pr = 0
+    qr = 0
+    if(period_ratio > 1):
+        prmax=1./((1.0-prtol)*period_ratio)
+        prmin=1./((1.0+prtol)*period_ratio)
+    else:
+        prmax=(1.0-prtol)*period_ratio
+        prmin=(1.0+prtol)*period_ratio
+
+    num = np.array([0, 1])
+    denom = np.array([1, 1])
+    #find the nearest, lowest order resonance for an example resonant angle
+    flag=1
+    while flag>0:
+        flag, num, denom, new_q, new_p, n_new = farey_tree(num,denom,prmin, prmax)
+        if(n_new > 0):
+            if(period_ratio > 1):
+                pr = int(new_p[0])
+                qr = int(new_q[0])
+            else:
+                pr = int(new_q[0])
+                qr = int(new_p[0])
+            flag=0
+
+    return pr, qr
+
+def farey_tree(num, denom, prmin, prmax):
+    order_max = 20
+    # Initialize fractions
+    flag = 0
+    oldnum = num.copy()  
+    olddenom = denom.copy()
+    nfractions = len(oldnum)
+    if nfractions == 1:
+        # Only one fraction left, can't keep building the tree
+        return flag, num, denom,np.array([0.]),np.array([0.]), 0
+        
+    # the next layer in the farey tree will have nfraction-1 new fractions
+    newnum = np.zeros(nfractions-1)  
+    newdenom = np.zeros(nfractions-1)
+
+    # the full set of numbers will have 2*nfractions -1 entries
+    num = np.zeros(2*nfractions-1)  
+    denom = np.zeros(2*nfractions-1)
+    
+    nn = 0
+    new_n = 0
+    for n in range(0,nfractions-1):
+        num[nn] = oldnum[n]
+        denom[nn] = olddenom[n] 
+        nn+=1
+        num[nn] = oldnum[n] + oldnum[n + 1]
+        denom[nn] = olddenom[n] + olddenom[n + 1]
+        if(num[nn]<=order_max):
+            nn+=1
+            newnum[new_n] = oldnum[n] + oldnum[n + 1]
+            newdenom[new_n] = olddenom[n] + olddenom[n + 1]
+            new_n+=1
+
+
+    num[nn] = oldnum[nfractions-1]
+    denom[nn] = olddenom[nfractions-1]
+
+    if(new_n <1):
+        flag = 0
+    else:
+        flag = 1
+    
+    newnum = newnum[0:new_n]
+    newdenom = newdenom[0:new_n]
+    num = num[0:nn+1]
+    denom = denom[0:nn+1]
+    
+    
+    left = 0
+    right = nn+1
+    for n in range(0,nn):
+        if(prmin > float(num[n]/denom[n])):# and left ==0):
+            left = n
+
+    for n in range(nn,0,-1):
+        if(prmax < float(num[n]/denom[n])):# and right==nn):
+            right = n+1
+    num = num[left:right]
+    denom = denom[left:right]
+
+    new_check_q = np.empty(0)
+    new_check_p = np.empty(0)
+
+    for n in range(0,new_n):
+        pr = float(newnum[n]/newdenom[n])
+        if(pr>=prmin and pr<=prmax):
+            new_check_q = np.append(new_check_q,int(newnum[n]))
+            new_check_p = np.append(new_check_p,int(newdenom[n]))
+            
+
+    n_check = len(new_check_p)
+    return flag, num, denom,new_check_q, new_check_p, n_check 
+
+
+
+
+

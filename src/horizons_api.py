@@ -4,12 +4,14 @@ import numpy as np
 import requests
 import json
 import textwrap
+from pickle import dump
+
 
 # internal modules
 import tools
 
 
-def query_horizons_planets(obj='', epoch=2459580.5):
+def query_horizons_planets(obj=None, epoch=2459580.5):
     """
     Get the heliocentric position and velocity of a major planet from 
     JPL Horizons via web API request
@@ -27,6 +29,13 @@ def query_horizons_planets(obj='', epoch=2459580.5):
         v: np array, cartesian heliocentric velocities (in au/year)
         all return values set to 0 if unsuccessful
     """
+
+    flag = 0
+
+    if(obj == None):
+        print("A planet name must be provided")
+        print("horizons_api.query_horizons_planets failed")
+        return flag, 0., 0., [0.,0.,0.], [0.,0.,0.]
 
     obj = obj.lower()
     # define the planet-id numbers used by Horizons for the barycenter
@@ -58,7 +67,8 @@ def query_horizons_planets(obj='', epoch=2459580.5):
     # we don't actually need to query for the Sun because
     # we are working in heliocentric coordinates
     if(obj == 'sun'):
-        return 1, mass, rad, x, v    
+        flag = 1
+        return flag, mass, rad, x, v    
     
     # build the url to query horizons
     start_time = "JD"+str(epoch)
@@ -75,7 +85,7 @@ def query_horizons_planets(obj='', epoch=2459580.5):
     except ValueError:
         print("horizons_api.query_horizons_planets failed")
         print("Unable to decode JSON results from Horizons API request")
-        return 0, mass, rad, x, v
+        return flag, mass, rad, x, v
     # pull the lines we need from the resulting plain text return
     try:
         xvline = data["result"].split("X =")[1].split("\n")
@@ -83,7 +93,7 @@ def query_horizons_planets(obj='', epoch=2459580.5):
         print("horizons_api.query_horizons_planets failed")
         print("Unable to find \"X =\" in Horizons API request result:")
         print(data["result"])
-        return 0, mass, rad, x, v
+        return flag, mass, rad, x, v
 
     try:
         # heliocentric positions:
@@ -98,14 +108,16 @@ def query_horizons_planets(obj='', epoch=2459580.5):
     except:
         print("horizons_api.query_horizons_planets failed")
         print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API request result")
-        return 0, mass, rad, x, v
+        return flag, mass, rad, x, v
 
     # the query was successful, return the results!
-    return 1, mass, rad, x, v
+    flag = 1
+    return flag, mass, rad, x, v
 ###############################################################################
 
 
-def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
+def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
+                      logfile=False, save_sbdb=False, datadir=''):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -116,9 +128,23 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         des: string, the designation for the object in the SBDB
         clones (optional): integer, number of times to clone using the
                            covariance matrix
-        find_3_sigma (optional): boolean, if True and clones==2, the
-                           returned clones will be approximately 3-
-                           sigma min and max semimajor axis clones
+        cloning_method (optional): string,  defaults to standard Guassian 
+                           sampling if set to 'find_3_sigma' the first two
+                           returned clones will be approximately 3-sigma
+                           min and max semimajor axis clones
+                           if clones>2, the rest will be sampled in a 
+                           Guassian manner
+        logfile (optional): boolean or string; 
+                            if True:  will save some messages to adefault log file name
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
+                            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string; 
+                           if True:  will save a pickle file with the results of the 
+                           JPL SBDB query either to a default file name or to a file
+                           with the name equal to the string passed
+                           (default) if False nothing is saved
+                           
     outputs:
         flag: integer, 1 if query worked, 0 otherwise)
         x: np array (size clones+1), cartesian heliocentric x (au)
@@ -127,13 +153,37 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         vx: np array (size clones+1), cartesian heliocentric vx (au)
         vy: np array (size clones+1), cartesian heliocentric vy (au)
         vz: np array (size clones+1), cartesian heliocentric vz (au)
+        weights:
+            numpy array of weights for the clones added to the simulation
+            in the default sampling method, clones are equally weighted, 
+            so it's an array of ones
+            when cloning_method = 'find_3_sigma' and nclones > 2, the weights 
+            of the two extreme clones are set to 0 and the rest to 1
+
         all return values set to 0 if unsuccessful
     """
 
-    if(find_3_sigma and clones != 2):
+    flag = 0
+    if(cloning_method == 'find_3_sigma'):
+        find_3_sigma=True
+    else:
+        find_3_sigma=False
+
+    if(not cloning_method == 'find_3_sigma' and not cloning_method == 'Gaussian'):
+        print("unsupported cloning method!")
+        print("Right now only 'Gaussian' and 'find_3_sigma' are implemented")
         print("horizons_api.query_sb_from_jpl failed")
-        print("if using find_3_sigma, clones must = 2")
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
+
+    if(find_3_sigma and clones < 2):
+        print("horizons_api.query_sb_from_jpl failed")
+        print("if using cloning_method='find_3_sigma', clones must >= 2")
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
+
+    if(logfile==True):
+        logfile = tools.log_file_name(des=des)
+    if(datadir and logfile and logfile!='screen'):
+        logfile = datadir + '/' + logfile
 
     pdes, destype = tools.mpc_designation_translation(des)
 
@@ -145,7 +195,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         print("horizons_api.query_sb_from_jpl failed")
         print("first attempted JPL small body database browser query failed, returning:")
         print(obj)
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
     
 
     #some objects can't be found with their packed designation, 
@@ -166,7 +216,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
             print("horizons_api.query_sb_from_jpl failed")
             print("second attempted JPL small body database browser query failed, returning:")
             print(obj)
-            return 0, 0., 0., 0., 0., 0., 0., 0.
+            return flag, 0., 0., 0., 0., 0., 0., 0., 0.
 
     #check to see if the user-provided designation is the same type as the primary one
     #if the user gave a provisional designation, but the object is numbered, the SBDB
@@ -183,10 +233,31 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
             print("The user-provided designation was not the most up to date designation")            
             print("third attempted JPL small body database browser query failed, returning:")
             print(obj) 
-            return 0, 0., 0., 0., 0., 0., 0., 0.
+            return flag, 0., 0., 0., 0., 0., 0., 0., 0.
+
+    #save the SBDB query results using pickle if that's desired
+    if(save_sbdb):
+        if(save_sbdb == True):
+            orbit_file = tools.orbit_solution_file(des)
+        else:
+            orbit_file = save_sbdb
+
+        if(datadir):
+            orbit_file = datadir + '/' + orbit_file
+
+        try:
+            with open(orbit_file, "wb") as f:
+                dump(obj, f)
+        except:
+            print("unable to write the SBDB query to a file")
+            print("tried to write to %s" % orbit_file)
+            return flag, 0., 0., 0., 0., 0., 0., 0., 0.
+        if(logfile):
+            logmessage = "SBDB query results saved to " + orbit_file + "\n"
+            tools.writelog(logfile,logmessage)
+
 
     deg2rad = np.pi/180.
-
     try:
         # pull the best-fit orbit that was calculated at the same
         # epoch as the covariance matrix
@@ -219,14 +290,14 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                                + "the covariance matrix. Query Failed.")
                 print(textwrap.fill(warningstring, 80))
             if(cepoch != oepoch and clones > 0 and cepoch == 0.):
-                return 0, 0., 0., 0., 0., 0., 0., 0.
+                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
                 print("horizons_api.query_sb_from_jpl failed")
                 warningstring = ("JPL small body database browser query did not "
                               + "return the expected data for the orbit and "
                               + "covariance matrix")
                 print(textwrap.fill(warningstring, 80))
                 print(obj)
-                return 0, 0., 0., 0., 0., 0., 0., 0.
+                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
 
             arc = np.float64(str(obj['orbit']['data_arc'].split()[0]))
             if(arc < 30. and clones == 0):
@@ -238,6 +309,11 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                               + "This best-fit orbit will still be run, but "
                               + "the results should be used with caution")
                 print(textwrap.fill(warningstring, 80))
+                flag = 2
+                if(logfile):
+                    logmessage = "best-fit-orbit has a <30 day arc!\n"
+                    tools.writelog(logfile,logmessage)
+
             elif(arc < 30.):
                 print("horizons_api.query_sb_from_jpl failed")
                 warningstring = ("WARNING!!! The object's observational arc is "
@@ -249,7 +325,7 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                               + "clones=0 and even then he results should be "
                               + "used with caution.")
                 print(textwrap.fill(warningstring, 80))
-                return 0, 0., 0., 0., 0., 0., 0., 0.
+                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
             #no clones, so we can just use the other best-fit orbit instead
             epoch = oepoch
             objorbit = obj['orbit']['elements']
@@ -266,12 +342,12 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                           + "covariance matrix")
             print(textwrap.fill(warningstring, 80))
             print(obj)
-            return 0, 0., 0., 0., 0., 0., 0., 0.
+            return flag, 0., 0., 0., 0., 0., 0., 0., 0.
     
     if(bfecc >= 1. or bfecc < 0.):
         print("horizons_api.query_sb_from_jpl failed")
         print("orbital eccentricity not between 0 and 1, cannot proceed")
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
     
     # We have to query JPL horizons to find out what exact value of GM
     # was used for the orbit fit above (this should be in the SBDB but
@@ -302,7 +378,8 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
     except ValueError:
         print("horizons_api.query_sb_from_jpl failed")
         print("Unable to decode JSON results from Horizons API request")
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        flag = 0
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
     
     # this is the GM in au^2/day^2
     try:
@@ -312,7 +389,8 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
         print("horizons_api.query_sb_from_jpl failed")
         print("\nunable to pull the GM value from the horizons results:\n")
         print(data["result"])
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        flag = 0
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
     
     # calculate the more standard orbital elements for the best-fit orbit
     a0 = bfq/(1.-bfecc)
@@ -328,8 +406,10 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
     if(i < 1):
         print("horizons_api.query_sb_from_jpl failed")
         print("failed to convert to cartesian inside query_sb_from_jpl")
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+        flag = 0
+        return flag, 0., 0., 0., 0., 0., 0., 0., 0.
 
+    weights = np.ones(clones+1)
     if(clones > 0):
         covmat = (obj['orbit']['covariance']['data'])
         mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
@@ -359,15 +439,38 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                         stop = 1
             else:
                 c2 = sorted_a_index[5991]
+            
             ecc = np.array([tecc[c1],tecc[c2]])
             q = np.array([tq[c1],tq[c2]])
             tp = np.array([ttp[c1],ttp[c2]])
             node = np.array([tnode[c1],tnode[c2]])
             argperi = np.array([targperi[c1],targperi[c2]])
             inc = np.array([tinc[c1],tinc[c2]])
+            
+            if(clones > 2):
+                #sample the rest of the clones 
+                tecc, tq, ttp, tnode, targperi, tinc = \
+                    np.random.multivariate_normal(mean, covmat, clones).T
+                tecc[0:2] = ecc[0:2]
+                tq[0:2] = q[0:2]
+                ttp[0:2] = tp[0:2]
+                tnode[0:2] = node[0:2]
+                targperi[0] = argperi[0:2]
+                tinc[0:2] = inc[0:2]
+                ecc = tecc.copy()
+                q = tq.copy()
+                tp = ttp.copy()
+                argperi = targperi.copy()
+                node = tnode.copy()
+                inc = tinc.copy()
+                #set the weights of the 3-sigma clones to zero so the gaussian
+                #clones can still be used later to calculate clone statistics
+                weights[1] = 0.
+                weights[2] = 0.
         else:
             ecc, q, tp, node, argperi, inc = \
                 np.random.multivariate_normal(mean, covmat, clones).T
+        
         node = node*deg2rad
         argperi = argperi*deg2rad
         inc = inc*deg2rad
@@ -400,22 +503,27 @@ def query_sb_from_jpl(des='', clones=0, find_3_sigma=False):
                 print("horizons_api.query_sb_from_jpl failed")
                 print("failed to convert to cartesian "
                       + "inside cloning part of query_sb_from_jpl")
-                return 0, 0., 0., 0., 0., 0., 0., 0.
+                flag = 0
+                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
         # convert from au/d to au/yr
         vx = vx*365.25
         vy = vy*365.25
-        vz = vz*365.25       
-        return 1, epoch, x, y, z, vx, vy, vz
+        vz = vz*365.25 
+        if(flag<1):
+            flag = 1
+        return flag, epoch, x, y, z, vx, vy, vz, weights
     else:
         # send back just the best-fit
         # after converting from au/d to au/yr
         vx0 = vx0*365.25
         vy0 = vy0*365.25
         vz0 = vz0*365.25
-        return 1, epoch, x0, y0, z0, vx0, vy0, vz0
+        if(flag<1):
+            flag = 1        
+        return flag, epoch, x0, y0, z0, vx0, vy0, vz0, weights
 
 
-def query_sb_from_horizons(des=[''], epoch=2459580.5):
+def query_sb_from_horizons(des=None, epoch=2459580.5):
     """
     Get the orbit of a small body (or list of small bodies) from
     Horizons at a specific epoch, returning heliocentric cartesian
@@ -436,6 +544,13 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
         vz: np array (size=len(des)), cartesian heliocentric vz (au)
         all return values set to 0 if unsuccessful
     """
+
+    flag = 0
+
+    if(des == None):
+        print("The designation of one or more small bodies must be provided")
+        print("failed in horizons_api.query_sb_from_horizons()")
+        return flag, 0.,0.,0.,0.,0.,0.
 
     # if the user provided just a single string as the designation
     # turn it into a list
@@ -480,7 +595,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             print("horizons_api.query_sb_from_horizons failed")
             print("Unable to decode JSON results from Horizons API request for %s"
                   % (des[n]))
-            return 0, x, y, z, vx, vy, vz
+            return flag, x, y, z, vx, vy, vz
 
         try:
             data = json.loads(response.text)
@@ -488,7 +603,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             print("horizons_api.query_sb_from_horizons failed")
             print("Unable to decode JSON results from Horizons API request for %s"
                    % (des[n]))
-            return 0, x, y, z, vx, vy, vz
+            return flag, x, y, z, vx, vy, vz
 
         # pull the lines we need from the resulting plain text return
         try:
@@ -498,7 +613,7 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             print("Unable to find \"X =\" in Horizons API request result for %s:"
                   % (des[n]))
             print(data["result"])
-            return 0, x, y, z, vx, vy, vz
+            return flag, x, y, z, vx, vy, vz
 
         try:
             # heliocentric positions:
@@ -514,10 +629,11 @@ def query_sb_from_horizons(des=[''], epoch=2459580.5):
             print("horizons_api.query_sb_from_horizons failed")
             print("Unable to find Y,Y,Z, VX, VY, VZ in Horizons API "
                   "request result for %s" %(des[n]))
-            return 0, x, y, z, vx, vy, vz
+            return flag, x, y, z, vx, vy, vz
 
+    flag = 1
     if(ntp == 1):
         #return just single values instead of numpy arrays
-        return 1, x[0], y[0], z[0], vx[0], vy[0], vz[0]
+        return flag, x[0], y[0], z[0], vx[0], vy[0], vz[0]
     else:
-        return 1, x, y, z, vx, vy, vz
+        return flag, x, y, z, vx, vy, vz

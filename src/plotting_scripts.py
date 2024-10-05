@@ -3,22 +3,35 @@ import numpy as np
 import tools
 
 
-def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
-             figfile=None,bfps=1.0,cps=0.5,calpha=0.5,tmin=None,tmax=None):
+def plot_aei(des=None, datadir='', archivefile=None, 
+             a=None, e=None, inc=None, t=None, clones=None,
+             figfile=None,bfps=1.0,cps=0.5,calpha=0.5,
+             tmin=None,tmax=None):
     """
     Makes a plot of a, e, inc over time
     input:
-        sbody (str): name of the small body
-        a (1-d or 2-d float array): semimajor axis (au)        
-        e (1-d or 2-d float array): eccentricity
-        inc (1-d or 2-d float array): inclination (rad)
+        des (str; optional if a,e,i,t provided): string, user-provided 
+            small body designation
+        archivefile (str; optional): name/path for the simulation
+            archive file to be read if a,e,i,t provided. 
+            If not provided, the default file name will be tried
+        clones (optional): number of clones to read, 
+            defaults to reading all clones in the simulation            
+        datadir (optional): string, path for where files are stored,
+            defaults to the current directory
+        a (1-d or 2-d float array; optional): semimajor axis (au)        
+        e (1-d or 2-d float array; optional): eccentricity
+        inc (1-d or 2-d float array; optional): inclination (rad)
             all arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
             starting at 1 
-            if there are no clones, a 1-d array is fine
+            if there are no clones, a 1-d array is used
+            if these are not provided, they will be read from 
+            archivefile
         time (1-d float array): simulations time (years)
-        nclones (optional,int): number of clones of the best-fit orbit
+            if this is not provided, it will be read from 
+            archivefile
         figfile (optional,str): path to save the figure to; if not set, the
             figure will not be saved but just displayed
         bfps (optional,float): matplotlib point size argument for best-fit orbit
@@ -28,23 +41,64 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
         tmax (optional, float): maximum time for x-axis (years)
     output:
         flag (int): 1 if successful and 0 if there was a problem
+        fig: matplotlib figure instance
     """
+    flag = 0
 
-    ntp = nclones+1
-
-    if(nclones == 0 and len(a.shape)<2):
-        #reshape the arrays since everything assumes 2-d
+    if(des == None):
+        #see if orbital element arrays were provided. If so, we don't need des
+        try:
+            temp = len(a.shape)
+        except:
+            print("You must either pass orbital element arrays (a,e,i and time)")
+            print("or a designation to this routine to generate plots")
+            print("failed at plotting_scripts.plot_aei()")
+            return flag, None
+    else:
+        try:
+            temp = len(a.shape)
+        except:
+            #read in the orbital elements since they weren't provided
+            rflag, a, e, inc, node, aperi, ma, t = tools.read_sa_for_sbody(des=des,
+                                                datadir=datadir,archivefile=archivefile,
+                                                tmax=tmax,tmin=tmin,clones=clones)
+            if(rflag < 1):
+                print("Could not generate arrays (a,e,i and time) for the provided")
+                print("designation and/or archivefile")
+                print("failed at plotting_scripts.plot_aei()")
+                return flag, None
+    
+    if(len(a.shape)<2):
+        #there aren't any clones
+        if(clones==None):
+            clones=0
+        if(clones > 0):
+            print("warning! plotting_scripts.plot_aei() was asked to plot")
+            print("clones, but there are no clones in the archive file or")
+            print("the provided arrays. Only the best fit will be plotted")
+            clones = 0
+            flag = 2
+        ntp = 1
+        #reshape the arrays since everything below assumes 2-d
         a = np.array([a])
         e = np.array([e])
         inc = np.array([inc])
-    #we will plot in degrees, so convert inc 
+    else:
+        ntp = a.shape[0]
+        if(clones==None):
+            clones = ntp-1
+        #if fewer clones were requested, adjust
+        if(clones < ntp-1):
+            ntp = clones+1
+
+
     rad_to_deg = 180./np.pi
     inc=inc*rad_to_deg
 
 
     nrows = 3
 
-    if(nclones > 0):
+    if(clones > 0):
         ncol = 2
         xwidth= 10
     else:
@@ -56,39 +110,33 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
     plt.subplots_adjust(left=None, bottom=None, right=None, 
                         top=0.92, wspace=0.35, hspace=0.25)
     
-    plt.suptitle('object ' + sbody)
+    if(des != None):
+        plt.suptitle('object ' + str(des))
         
     if(tmin == None):
         tmin = t[0]
     if(tmax == None):
         tmax = t[-1]
+    #correct for backwards integrations
+    if(tmax < tmin):
+        temp = tmax
+        tmax = tmin
+        tmin = temp
+
 
     deltat = tmax-tmin
     timelabel = "time (yr)"
     tscale =1.
-
-
-    if(tmax >=1e4 and deltat>1e3):
-        tscale = 1e3
-        timelabel = "time (kyr)"
-    if(tmax >=1e6 and deltat>1e5):
-        tscale = 1e6
-        timelabel = "time (Myr)"
-    elif(tmax >=1e6 and deltat>1e4):
-        tscale = 1e3
-        timelabel = "time (kyr)"
-    if(tmax >1e9 and deltat > 1e8):
+    #choose reasonable units for the time-axis
+    if(deltat >= 1e9):
         tscale = 1e9
         timelabel = "time (Gyr)"
-    elif(tmax >1e9 and deltat > 1e6):
+    elif(deltat >= 1e6):
         tscale = 1e6
         timelabel = "time (Myr)"
-    elif(tmax >1e9 and deltat > 1e4):
+    elif(deltat >= 1e4):
         tscale = 1e3
         timelabel = "time (kyr)"
-    else:
-        tscale =1.
-        timelabel = "time (yr)"
 
 
     
@@ -112,11 +160,11 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
     e_ax1.scatter(t/tscale,e[0,:],s=bfps,c='k')
     i_ax1.scatter(t/tscale,inc[0,:],s=bfps,c='k')
 
-    if(nclones > 0):
+    if(clones > 0):
 
         a_ax2=plt.subplot2grid((nrows,ncol),(0,1))
         a_ax2.set_ylabel('a (au)')
-        a_ax2.set_title(str(nclones) + ' clones')
+        a_ax2.set_title(str(clones) + ' clones')
         e_ax2=plt.subplot2grid((nrows,ncol),(1,1))
         e_ax2.set_ylabel('e')
         i_ax2=plt.subplot2grid((nrows,ncol),(2,1))
@@ -133,6 +181,8 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
             i_ax2.scatter(t/tscale,inc[tp,:],s=cps,alpha=calpha)
 
     if(figfile != None):
+        if(datadir):
+            figfile = datadir + "/" + figfile
         plt.savefig(figfile)
 
     flag = 1
@@ -141,16 +191,22 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
 
 
 
-def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0,
-                                     figfile=None,bfps=1.0,cps=0.5,calpha=0.5,
-                                     tmin=None, tmax=None):
+def calc_and_plot_rotating_frame(des=None, planet=None, archivefile=None, clones=None,
+                                 datadir = '', figfile=None,
+                                 bfps=0.1, cps=0.5,calpha=0.5,
+                                 tmin=None, tmax=None):
     """
     Makes a plot of a small body in the rotating frame 
     input:
-        sbody (str): name of the small body
+        des: string, user-provided small body designation
         planet (str): name of the planet that sets the rotating frame
-        archivefile (str): path to rebound simulation archive        
-        nclones (optional,int): number of clones of the best-fit orbit
+        archivefile (str; optional): name/path for the simulation
+            archive file to be read. If not provided, the default
+            file name will be tried
+        clones (optional): number of clones to read, 
+            defaults to reading all clones in the simulation            
+        datadir (optional): string, path for where files are stored,
+            defaults to the current directory
         figfile (optional,str): path to save the figure to; if not set, the
             figure will not be saved but just displayed
         tmin (optional, float): minimum time (years)
@@ -163,33 +219,65 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         flag (int): 1 if successful and 0 if there was a problem
     """
 
+    flag = 0
 
-   
+    if(des == None):
+        print("You must pass a designation to this function")
+        print("plotting_scripts.calc_and_plot_rotating_frame failed")
+        return flag, None
+
+    if(planet == None):
+        print("You must pass a planet name to this function")
+        print("plotting_scripts.calc_and_plot_rotating_frame failed")
+        return flag, None
+  
+
+    if(archivefile==None):
+        archivefile = tools.archive_file_name(des)
+    if(datadir):
+        archivefile = datadir + '/' +archivefile
 
     #calculate the rotating frame values for the small body
-    flag, xr, yr, zr, vxr, vyr, vzr, t = \
-            tools.calc_rotating_frame(sbody=sbody, archivefile=archivefile,
-                                      planet=planet, nclones=nclones,
+    rflag, xr, yr, zr, vxr, vyr, vzr, t = \
+            tools.calc_rotating_frame(des=des, archivefile=archivefile,
+                                      planet=planet, clones=clones,
                                       tmin=tmin,tmax=tmax)
 
-    if(not flag):
+    if(rflag<1):
         print("plotting_scripts.calc_and_plot_rotating_frame failed")
         print("couldn't get the rotating frame positions for the small body")
-        return 0,None
+        return flag,None
     #calculate the rotating frame values for the planet
-    flag, pxr, pyr, pzr, pvxr, pvyr, pvzr, t = \
-            tools.calc_rotating_frame(sbody=planet, archivefile=archivefile,
-                                      planet=planet, nclones=0,
+    rflag, pxr, pyr, pzr, pvxr, pvyr, pvzr, t = \
+            tools.calc_rotating_frame(des=planet, archivefile=archivefile,
+                                      planet=planet, clones=0,
                                       tmin=tmin,tmax=tmax)
 
-    if(not flag):
+    if(rflag<1):
         print("plotting_scripts.calc_and_plot_rotating_frame failed")
         print("couldn't get the rotating frame positions for the planet")
-        return 0,None
+        return flag,None
 
 
-    ntp = nclones+1
 
+    if(len(xr.shape)<2):
+        #there aren't any clones
+        if(clones==None):
+            clones=0
+        if(clones > 0):
+            print("warning! plotting_scripts.plot_aei() was asked to plot")
+            print("clones, but there are no clones in the archive file or")
+            print("the provided arrays. Only the best fit will be plotted")
+            clones = 0
+            flag = 2
+        ntp = 1
+    else:
+        ntp = xr.shape[0]
+        if(clones==None):
+            clones = ntp-1
+        #if fewer clones were requested, adjust
+        if(clones < ntp-1):
+            ntp = clones+1
     
     nrows = 3
     ncol = 3
@@ -198,41 +286,8 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
     plt.subplots_adjust(left=None, bottom=None, right=None, 
                         top=0.92, wspace=0.35, hspace=0.35)
     
-        
-    if(tmin == None):
-        tmin = t[0]
-    if(tmax == None):
-        tmax = t[-1]
-
-    deltat = tmax-tmin
-    timelabel = "time (yr)"
-    tscale =1.
-
-    if(tmax >=1e4 and deltat>1e3):
-        tscale = 1e3
-        timelabel = "kyr "
-    if(tmax >=1e6 and deltat>1e5):
-        tscale = 1e6
-        timelabel = "Myr "
-    elif(tmax >=1e6 and deltat>1e4):
-        tscale = 1e3
-        timelabel = "kyr "
-    if(tmax >1e9 and deltat > 1e8):
-        tscale = 1e9
-        timelabel = "Gyr "
-    elif(tmax >1e9 and deltat > 1e6):
-        tscale = 1e6
-        timelabel = "Myr "
-    elif(tmax >1e9 and deltat > 1e4):
-        tscale = 1e3
-        timelabel = "kyr "
-
-
-    time1 = tmin/tscale
-    time2 = tmax/tscale
-    timestring = " from %1.4f to %1.4f " % (time1,time2)
     
-    plt.suptitle('object ' + sbody + timestring + timelabel + "in "+planet+"'s rotating frame")
+    plt.suptitle('object ' + str(des) + " in " + planet + "'s rotating frame")
 
 
     
@@ -263,7 +318,7 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
     ax6.set_xlabel('vy (au/year)')
 
 
-    if(nclones > 0):
+    if(clones > 0):
         for tp in range (1,ntp):
             ax1.scatter(xr[tp,:],yr[tp,:],s=cps,alpha=calpha)
             ax2.scatter(xr[tp,:],zr[tp,:],s=cps,alpha=calpha)
@@ -301,6 +356,8 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
 
 
     if(figfile != None):
+        if(datadir):
+            figfile = datadir + "/" + figfile        
         plt.savefig(figfile)
 
     flag = 1
