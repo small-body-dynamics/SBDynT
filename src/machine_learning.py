@@ -1395,8 +1395,8 @@ def train_and_test_TNO_classifier(training_file=None):
     classes_predict = clf.predict(features_test)
     score = accuracy_score(classes_test, classes_predict)
     
-
-    return clf, score, feature_names, classes_dict
+    #added ids_train and ids_test for now (2-25-25)
+    return clf, score, feature_names, classes_dict, ids_train, ids_test, features_test, classes_test
 
 
 
