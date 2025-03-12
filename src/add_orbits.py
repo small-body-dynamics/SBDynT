@@ -5,6 +5,8 @@ import rebound
 import tools
 import horizons_api
 import run_reb
+import hard_coded_constants as const
+
 
 def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
                                                 a=1.,e=0.,inc=0.,
@@ -75,24 +77,17 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
 
-    # import some hard-coded constants including:
-    # The value of GM for the sun assumed in Find_orb (not the same as JPL!):
-    # find_orb_sunGM
-    # and some unit conversions to get to units of au, yr, and msun
-
-    import hard_coded_constants as const
+    # Note: the value of GM for the sun assumed in Find_orb (not the same as JPL!):
+    # is coded as const.find_orb_sunGM
 
     # set up the rebound simulation, adding the planets first
     # add the planets and return the position/velocity corrections for
     # missing planets
 
-    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim, planets=planets,
-                epoch=epoch)
+    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim,planets=planets,epoch=epoch)
     if(apflag < 1):
         print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets")
         return 0, sim
-
-
 
     # First, we need to convert the Find_Orb orbit to heliocentric
     # cartesian variables using Find_Orb's assumed solar GM

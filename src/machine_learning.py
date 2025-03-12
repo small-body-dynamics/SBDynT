@@ -5,119 +5,48 @@ import tools
 import run_reb
 import MLdata
 import tno
+import resonances
 
 from os import path
+from os import remove
+
+import matplotlib.pyplot as plt
+
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import SGDClassifier
+
+from skimage.feature import hog
+from skimage.io import imread
+
 from datetime import date
 from pickle import dump
 from pickle import load
 from importlib import resources as impresources
 
 
+####################################################################################
+# This file contains the details of all the machine learning classifiers and
+# feature calculations for the TNO classifiers.
+#
+# The calls to the classifier are in tno_classifier.py to make it a bit easier
+# to see how to interact with the classifier and to find some of the logic flow 
+# for overriding the pure machine learning results. 
+####################################################################################
+
+
+
 # define the default file scheme for the machine learning datasets
 
 # this file is provided with the package
 default_TNO_training_data = '09-06-2024-ML-features.csv'
+default_TNO_train_test_data = 'TNO_training_testing_set.pkl'
 
 # these files will be generated the first time the ML is called
 # so that the trained classifier can be saved and used later
 default_trained_classifier = 'trained-TNO-classifier.pkl'
 default_trained_classifier_dictionary = 'trained-TNO-classifier-dictionary.pkl'
-
-
-class TNO_ML_outputs:
-    # class that stores the information that comes out of the 
-    # TNO machine learning classifier
-    def __init__(self,clones=0):
-        self.clones = clones
-        # make an empty features instance
-        self.features = TNO_ML_features(self.clones)
-        # parameters related to the classifier
-        self.classes_dictionary = None
-        self.class_probs = None
-        
-        #clone-by-clone predicted classification and 
-        #confidence level for that classification
-        self.clone_classification = None
-        self.clone_confidence = None
-
-        self.most_common_class = None
-        self.fraction_most_common_class = None
-
-    def determine_clone_classification(self):
-        # find the most probable class and associated confidence on a 
-        # clone-by-clone basis
-        # make an empty list and empty array
-        self.clone_classification = (self.clones+1)*[None]
-        self.clone_confidence = np.zeros(self.clones+1)
-        for n in range (self.clones+1):
-            cn = np.argmax(self.class_probs[n])
-            self.clone_classification[n] = self.classes_dictionary[cn]
-            self.clone_confidence[n] = self.class_probs[n,cn]
-
-            #do checks for the scattering/detached boundary
-            if(self.clone_classification[n] == 'class-det'):
-                #check if it meets the scattering requirement
-                if(self.features.a_delta[n] > 1.5):
-                    self.clone_classification[n] = 'scattering'
-                elif(self.features.e_mean[n] < 0.24):
-                    if(self.features.a_mean[n] < 39.4):
-                        self.clone_classification[n] = 'classical-inner'
-                    elif(self.features.a_mean[n] < 47.7):
-                        self.clone_classification[n] = 'classical-main'
-                    else:
-                        self.clone_classification[n] = 'classical-outer'
-                else:
-                    self.clone_classification[n] = 'detached'
-            elif(self.clone_classification[n] == 'scattering'):
-                #check if it meets the scattering requirement
-                if(self.features.a_delta[n] <= 1.5):
-                    self.clone_classification[n] = 'detached'
-                    if(self.features.e_mean[n] < 0.24):
-                        if(self.features.a_mean[n] < 39.4):
-                            self.clone_classification[n] = 'classical-inner'
-                        elif(self.features.a_mean[n] < 47.7):
-                            self.clone_classification[n] = 'classical-main'
-                        else:
-                            self.clone_classification[n] = 'classical-outer'
-
-        return
-
-
-    def determine_most_common_classification(self):
-        classes = list(set(self.clone_classification))
-        rate = np.zeros(len(classes))
-        for i in range (len(classes)):
-            rate[i] = self.clone_classification.count(classes[i])
-        mp = np.argmax(rate)
-        self.most_common_class = classes[mp]
-        self.fraction_most_common_class = float(rate[mp])/float(self.clones+1)
-        return
-
-    def print_results(self):
-
-        print("Most common classification: %s\n" % self.most_common_class)
-        percentage = 100*self.fraction_most_common_class
-        print("Shared by %f percent of clones\n\n" % percentage)
-
-        nclas = len(self.classes_dictionary)
-        print("Clone number, most probable G08 class, probability of that class, ",end ="")
-        print("probability of ", end ="")
-        for n in range(nclas):
-            print("%s, " % self.classes_dictionary[n],end ="")
-        print("\n",end ="")
-        format_string = "%d, %s, "
-        for n in range(nclas-1):
-            format_string+="%e, "
-        format_string+="%e,\n"
-        for n in range(0,self.clones+1):
-            print("%d, %s, %e, " % (n,self.clone_classification[n], 
-                                    self.clone_confidence[n]),end ="")
-            for j in range(nclas):
-                print("%e, " % self.class_probs[n][j] ,end ="")
-            print("\n",end ="")
 
 
 class TNO_ML_features:
@@ -844,162 +773,7 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
     return flag, f
 
 
-
-def run_and_MLclassify_TNO(sim=None, des=None, clones=None, 
-                       datadir='', archivefile=None, 
-                       deletefile=False,logfile=False):
-    '''
-    add documentation here...
-    '''
-    flag = 0
-
-    if(des == None):
-        print("The designation of the small body must be provided")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
-
-
-    if(sim == None):
-        #initialize a default simulation
-        iflag, sim, epoch, clones, cloning_method, weights = \
-                tno.setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
-                        save_sbdb=False,saveic=False,archivefile=archivefile,logfile=logfile)
-        if(iflag < 1):
-            print("Failed at simulation initialization stage")
-            print("failed at machine_learning.run_and_MLclassify_TNO()")    
-            return flag, None, sim
-
-    if(logfile==True):
-        logf = tools.log_file_name(des=des)
-    else:
-        logf=logfile
-    if(datadir and logf and logf!='screen'):        
-        logf = datadir + '/' +logf
-
-    flag = 0
-    #make an empty set of classification outputs 
-    tno_class = TNO_ML_outputs(clones)
-
-    if(archivefile == None):
-        archivefile = tools.archive_file_name(des=des)
-    if(datadir):
-        archivefile = datadir + "/" + archivefile
-
-    #short integration first
-    tmin = sim.t
-    tmax = sim.t + 0.5e6
-    #run the short integration
-    rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=50.,archivefile=archivefile,
-                                        deletefile=deletefile, logfile=logfile)
-    if(rflag < 1):
-        print("The short integration for the TNO machine learning failed")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
-    #read the short integration
-    rflag, a_short, ec_short, inc_short, node_short, peri_short, ma_short, t_short = \
-            tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        print("Unable to read the output for the short integration")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
-
-    pomega_short = peri_short+ node_short 
-    q_short = a_short*(1.-ec_short)
-    
-    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = \
-            tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        return flag, None, sim
-
-    rflag, xr, yr, zr, vxr, vyr, vzr, tr = \
-            tools.calc_rotating_frame(des=des,planet='neptune', 
-                                      archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        return flag, None, sim
-
-    rrf_short = np.sqrt(xr*xr + yr*yr + zr*zr)
-    phirf_short = np.arctan2(yr, xr)
-    tiss_short = apl/a_short + 2.*np.cos(inc_short)*np.sqrt(a_short/apl*(1.-ec_short*ec_short))
-
-    #continue at lower resolution to 10 Myr
-    tmax = sim.t + 9.5e6
-    tmin = sim.t + 0.001e6 
-    rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=1000.,archivefile=archivefile,
-                                        deletefile=False,logfile=logfile)
-    if(rflag < 1):
-        return flag, None, sim 
-
-    #read the new part of the integration
-
-    rflag, a, ec, inc, node, peri, ma, t = \
-            tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        return flag, None, sim    
-    pomega = peri+ node 
-
-    rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = \
-            tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        return flag, None, sim
-
-    q = a*(1.-ec)
-    rflag, xr, yr, zr, vxr, vyr, vzr, tr = \
-            tools.calc_rotating_frame(des=des,planet='neptune',archivefile=archivefile,
-                                      clones=clones,tmin=tmin,tmax=tmax)
-    if(rflag < 1):
-        return flag, None, sim
-
-    rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
-    phirf = np.arctan2(yr, xr)
-    tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
-
-
-            
-    #concatenate the downsampled short integration with the rest of the long integration
-    t_long = np.concatenate((t_short[::20],t))
-    a_long = np.concatenate((a_short[:,::20],a),axis=1)
-    ec_long = np.concatenate((ec_short[:,::20],ec),axis=1)
-    inc_long = np.concatenate((inc_short[:,::20],inc),axis=1)
-    node_long = np.concatenate((node_short[:,::20],node),axis=1)
-    peri_long = np.concatenate((peri_short[:,::20],peri),axis=1)
-    pomega_long = np.concatenate((pomega_short[:,::20],pomega),axis=1)
-    q_long = np.concatenate((q_short[:,::20],q),axis=1)
-    rrf_long = np.concatenate((rrf_short[:,::20],rrf),axis=1)
-    phirf_long = np.concatenate((phirf_short[:,::20],phirf),axis=1)
-    tiss_long = np.concatenate((tiss_short[:,::20],tiss),axis=1)
-    
-
-
-    fflag, tno_class.features = calc_ML_features(t_long,a_long,ec_long,inc_long,node_long,peri_long,
-                                   pomega_long,q_long,rrf_long,phirf_long,tiss_long,
-                                    t_short,a_short,ec_short,inc_short,
-                                    node_short,peri_short,pomega_short,q_short,
-                                    rrf_short,phirf_short,tiss_short,clones=clones)
-    if (fflag<1):
-        print("failed to calculate data features")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
-
-    cflag, classifier, tno_class.classes_dictionary = initialize_TNO_classifier()
-    if(cflag<1):
-        print("failed to initialize machine learning classifier")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
-
-
-    #apply the classifier
-    tno_class.class_probs = classifier.predict_proba(tno_class.features.return_features_list())
-
-    #run the minor corrections and assign clone-by-clone and most common classes
-    tno_class.determine_clone_classification()
-    tno_class.determine_most_common_classification()
-
-   
-    flag = 1
-    return flag, tno_class, sim
-
-
-
+#################################################################
 def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
     nclas = len(classes_dictionary)
     print("Clone number, most probable class, probability of most probable class, ",end ="")
@@ -1038,14 +812,222 @@ def print_TNO_ML_results_to_file(des,pred_class,classes_dictionary,class_probs,c
         out.write(line)
 
     out.close()
+#################################################################
 
+    
+def check_angle(img_clf, phi, max_prob=0.):
+    '''
+    Generates the images and data features for the phi classifier
+    then runs the classifier to get the probability the angle is
+    librating. If that probability is sufficiently high, also 
+    calculates the standard deviation and range of phi
 
+    inputs:
+        img_clf: the scikitlearn classifier 
+        phi, 1-d numpy array: phi values from a 1e7 year integration
+        max_prob, float: the highest-probability resonance angle so far
+    outputs: 
+        flag, integer:  0 for failure, 1 for success
+        prob, float: the probability that phi is librating according to img_clf
+        sigma_phi, float: standard deviation in phi (minimally corrected for wrapping)
+        delta_phi, float: max range in phi (minimally corrected for wrapping)
+    '''
+    flag = 0
+    prob = 0.
+    sigma_phi = 0.
+    delta_phi = 0.
 
+    img1 = '0centered.png'
+    img2 = '180centered.png'
+
+    iflag, phi, phi0 = make_ml_phi_plots(phi,time,img1,img2)
+    if(not(iflag)):
+        print("machine_learning.check_angle failed")
+        return flag, prob, sigma_phi, delta_phi
+    hflag, comb_hog = calc_ml_combined_hog(img1,img2)
+    if(not(hflag)):
+        print("machine_learning.check_angle failed")
+        return flag, prob, sigma_phi, delta_phi
+    
+    try:
+        class_probs = img_clf.predict_proba([comb_hog])
+    except:
+        print("machine_learning.check_angle failed at the image classifier")
+        return flag, prob, sigma_phi, delta_phi
+
+    prob = class_probs[0][1]
+    if(prob >= max_prob):
+        sigma_phi = min(np.std(phi),np.std(phi0))
+        dp1 = np.max(phi) - np.min(phi)
+        dp2 = np.max(phi0) - np.min(phi0)
+        delta_phi = min(dp1,dp2)    
+
+    #remove the image files
+    remove(img1)
+    remove(img2)
+
+    flag = 1
+    return flag, prob, sigma_phi, delta_phi
+    
 
 ##########################################################################################################
 # Helper functions for calculating the ML features
 ##########################################################################################################
 
+
+#################################################################
+# Functions needed for the resonance angle search
+#################################################################
+def make_ml_phi_plots(phi,time,img1,img2):
+    '''
+    Makes the plots that the ML image classifier uses to determine
+    if a resonant angle is librating or not
+
+    inputs:
+        phi, 1-d numpy array of resonant angle values
+        time, 1-d numpy array of time (0,1e7 years)
+        img1, string: name/path for image file to be saved to
+                      for phi vs time, phi running from -pi to pi
+        img2, string: name/path for image file to be saved to
+                      for phi vs time, phi running from 0 to 2pi
+    outputs:
+        flag, integer: 0 for failure, 1 for success
+        phi, 1-d numpy array of resonant angle values from 0-2pi
+        phi0, 1-d numpy array of resonant angle values from -pi-pi
+    '''
+
+    flag = 0
+
+    phi = tools.arraymod2pi(phi)
+    phi0 = tools.arraymod2pi0(phi)
+
+    #none of these plot parameters should be changed!
+    #the classifier was trained on images of this 
+    #specific size, point type, etc!
+    fig = plt.figure()
+    fig.set_size_inches(5,3.6)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.set_ylim(-np.pi,np.pi)
+    ax.set_xlim(0,1e7)
+    try:
+        ax.scatter(time,phi0,s=5,c='k')
+    except:
+        print("problem in machine_learning.make_ml_phi_plots")
+        print("couldn't make the -pi to pi plot of phi")
+        return flag, phi, phi0
+    ax.set_axis_off()
+    try:
+        plt.savefig(img1,dpi=200)
+    except:
+        print("problem in machine_learning.make_ml_phi_plots")
+        print("couldn't save the -pi to pi plot of phi to file:")
+        print(img1)
+        return flag, phi, phi0
+
+    plt.close('all')
+
+    fig = plt.figure()
+    fig.set_size_inches(5,3.6)
+    ax = plt.Axes(fig, [0., 0., 1., 1.])
+    ax.set_axis_off()
+    fig.add_axes(ax)
+    ax.set_ylim(0,2.*np.pi)
+    ax.set_xlim(0,1e7)
+    try:
+        ax.scatter(time,phi,s=5,c='k')
+    except:
+        print("problem in machine_learning.make_ml_phi_plots")
+        print("couldn't make the 0 to 2pi plot of phi")
+        return flag, phi, phi0
+    ax.set_axis_off()
+    try:
+        plt.savefig(img2,dpi=200)
+    except:
+        print("problem in machine_learning.make_ml_phi_plots")
+        print("couldn't save the 0 to 2pi plot of phi to file:")
+        print(img2)
+        return flag, phi, phi0        
+    plt.close('all')
+    flag = 1
+    return flag, phi, phi0
+
+
+def calc_ml_combined_hog(img1,img2):
+    '''
+    Calculates the HOG (histogram of oriented gradients) for the 
+    resonant angle plots. This is the data feature the image 
+    classifier uses to determine libration.
+
+    inputs:
+        img1, string: name/path for image file showing
+                      for phi vs time, phi running from -pi to pi
+        img2, string: name/path for image file showing
+                      for phi vs time, phi running from 0 to 2pi
+    outputs:
+        flag, integer: 0 for failure, 1 for success
+        comb_hog, numpy array: concatenated HOG values for the two
+                      input images
+
+    '''    
+
+    flag = 0
+
+    #do not change these values because the training set for the 
+    #classifier uses these specific values
+    ppc_1 = 40
+    ppc_2 = 20
+    ori=10
+
+    try:
+        read1 = imread(img1, as_gray=True)
+    except:
+        print("problem in machine_learning.calc_ml_combined_hog")
+        print("could not read the first image: ")
+        print(img1)
+        return flag, [0.]
+
+    try:
+        hog1 = hog(read1, pixels_per_cell=(ppc_1,ppc_2), 
+                   cells_per_block=(1, 1), 
+                   orientations=ori, visualize=False, 
+                   block_norm='L1-sqrt')
+    except:
+        print("problem in machine_learning.calc_ml_combined_hog")
+        print("could not calculate the HOG for the first image: ")
+        print(img1)
+        return flag, [0.]
+
+    try:    
+        read2 = imread(img2, as_gray=True)
+    except:
+        print("problem in machine_learning.calc_ml_combined_hog")
+        print("could not read the second image: ")
+        print(img2)
+        return flag, [0.]
+
+    try:
+        hog2 = hog(read2, pixels_per_cell=(ppc_1,ppc_2), 
+                   cells_per_block=(1, 1), 
+                   orientations=ori, visualize=False, 
+                   block_norm='L1-sqrt')
+    except:
+        print("problem in machine_learning.calc_ml_combined_hog")
+        print("could not calculate the HOG for the second image: ")
+        print(img2)
+        return flag, [0.]
+
+    comb_hog = np.append(hog2,hog1)
+    flag = 1
+
+    return flag, comb_hog
+########################################################################
+
+
+#################################################################
+# Functions needed for the main classifier
+#################################################################
 def basic_time_series_features(x):
     '''
     input:
@@ -1315,26 +1297,60 @@ def rotating_frame_features(rh,phirf):
 ##########################################################################################################
 # Helper functions for reading in the provided csv of pre-calculated and labeled features and then using
 # those to train and test the classifier.
+# Or for reading in pkl files with the pre-split training and testing data
 ##########################################################################################################
 
-def read_TNO_training_data(training_file):
+#################################################################
+def read_TNO_training_data(training_file,default=False):
     '''
     Read in the csv file with all the TNO data features and labels
     removes any TNOs with a>1000 au or those that have drastic changes
     in semimajor axis (da>30 au in 0.5 Myr or da>100 au in 10 Myr)
+    inputs:
+        training_file, string: name of the csv file
+        default, boolean: True if the default file is being read
+    outputs:
+        flag, integer: 0 for failure, 1 for success
+        filtered_TNOs, pandas dataframe: the filtered TNO training/testing data
     '''
-    all_TNOs = pd.read_csv(training_file, skipinitialspace=True, index_col=False, low_memory=False)
+    
+    flag = 0
+
+    if(not default):
+        print("machine_learning.read_TNO_training_data is only designed to read the default file")
+        print("if you are providing a different file, it needs identical columns")
+        print("or you need to write your own function")
+        return flag, None
+
+    try:
+        all_TNOs = pd.read_csv(training_file, skipinitialspace=True, index_col=False, low_memory=False)
+    except:
+        print("machine_learning.read_TNO_training_data failed")
+        print("could not read the training file: ")
+        print(training_file)
+        return flag, None
     
     #remove extremely large-a objects and those that scatter a lot in a
-    filtered1_TNOs = all_TNOs[all_TNOs['a_mean']<1000.0].copy()
-    filtered2_TNOs = filtered1_TNOs[filtered1_TNOs['a_delta_short']<30.0].copy()
-    filtered_TNOs = filtered2_TNOs[filtered2_TNOs['a_delta']<100.0].copy()
+    try:
+        filtered1_TNOs = all_TNOs[all_TNOs['a_mean']<1000.0].copy()
+        filtered2_TNOs = filtered1_TNOs[filtered1_TNOs['a_delta_short']<30.0].copy()
+        filtered_TNOs = filtered2_TNOs[filtered2_TNOs['a_delta']<100.0].copy()
+    except:
+        print("machine_learning.read_TNO_training_data failed")
+        print("could not filter the TNOs based on expected column labels")
+        return flag, None
 
-    filtered_TNOs['simplified_G08'] = filtered_TNOs.apply(label_particle_simplifiedG08, axis=1)
+    try:
+        filtered_TNOs['simplified_G08'] = filtered_TNOs.apply(label_particle_simplifiedG08, axis=1)
+    except:
+        print("machine_learning.read_TNO_training_data failed")
+        print("could not add the simplified G08 labels to the TNOs")
+        return flag, filtered_TNOs
 
-    return filtered_TNOs
+    flag = 1
+    return flag, filtered_TNOs
 
-
+##############################################################
 def label_particle_simplifiedG08(row):
     newlabel = 'none'
     if (row['G08_class'] == 'detached' or row['G08_class'] == 'classical'):
@@ -1351,6 +1367,7 @@ def train_and_test_TNO_classifier(training_file=None):
     '''
     if (training_file == None):
         training_file = impresources.files(MLdata) / default_TNO_training_data
+
 
     dataset = read_TNO_training_data(training_file)
 
@@ -1397,6 +1414,133 @@ def train_and_test_TNO_classifier(training_file=None):
     
     #added ids_train and ids_test for now (2-25-25)
     return clf, score, feature_names, classes_dict, ids_train, ids_test, features_test, classes_test
+
+
+def train_and_test_TNO_classifiers_from_csv(training_file=None,savefile=None,default=False):
+    '''
+    read in the provided csv file of labeled features
+    and use it as both a training and testing set
+    Then save that training and testing set to a pickle file
+    '''
+
+    flag = 0
+    if (savefile == None):
+        if(training_file != None):
+            print("You must specify a savefile if you provide a training_file")
+            return flag, None, None
+        savefile = impresources.files(MLdata) / default_TNO_train_test_data
+
+    if (training_file == None):
+        default = True
+        training_file = impresources.files(MLdata) / default_TNO_training_data
+
+    if(not default):
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv is only designed to read the default file")
+        print("if you are providing a different file, it needs identical columns")
+        print("in which case you must pass default=True to this function")
+        return flag, None, None
+
+    rflag, dataset = read_TNO_training_data(training_file,default=default)
+    if(rflag<1):
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not read the training file")
+        return flag, None, None
+
+    #before training the classifier, we have to drop the labels from the dataset
+    drop_columns = ['real_or_articial_TNO', 'designation', 'particle_id', 'simplified_G08',
+                    'G08_class', 'res_character', 'res_p', 'res_q', 'res_m', 'res_n']
+
+    feature_names = []
+    for i in range(0,len(dataset.columns)):
+        if(dataset.columns[i] not in (drop_columns)):
+            feature_names.append(dataset.columns[i])
+    
+    clasfeat = 'simplified_G08'
+    all_types = list( set(dataset[clasfeat]) )
+    if(len(all_types)!=3):
+        print("The training file has the wrong number of classes. There should be 3")
+        print("The classes found from the file are:")
+        print(all_types)
+        print("The file is:")
+        print(training_file)
+        return flag, None, None
+    types_dict = { all_types[i] : i for i in range( len(all_types) ) }
+    classes_dict = { i : all_types[i] for i in range( len(all_types) ) }
+    classes = dataset[clasfeat].map(types_dict)
+
+    rs=283
+    try:
+        features_train, features_test, classes_train, classes_test = train_test_split(
+                        dataset, classes, test_size=0.333, random_state=rs)
+    except:
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not split the training and testing data")
+        return flag, None, None
+
+    try:
+        ids_train = features_train['particle_id'].to_numpy()
+        ids_test = features_test['particle_id'].to_numpy()
+    except:
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not get the particle_ids from the training and testing data")
+        return flag, None, None
+
+    try:
+        features_train.drop(drop_columns, axis=1, inplace=True)
+        features_train = features_train.to_numpy()
+
+        features_test.drop(drop_columns, axis=1, inplace=True)
+        features_test = features_test.to_numpy()
+    except:
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not drop the expected columns from the training and testing data")
+        return flag, None, None
+
+    rs = 42
+    clf = GradientBoostingClassifier(max_leaf_nodes = None, 
+                                    min_impurity_decrease=0.0, 
+                                    min_weight_fraction_leaf = 0.0, 
+                                    min_samples_leaf = 1, 
+                                    min_samples_split=3, 
+                                    criterion = 'friedman_mse',
+                                    subsample = 0.9, 
+                                    learning_rate=0.15,
+                                    max_depth=8, 
+                                    max_features='log2', 
+                                    n_estimators=300, 
+                                    random_state=rs)
+    try:
+        clf.fit(features_train, classes_train)
+    except:
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not train the classifier")
+        return flag, None, None
+
+    try:
+        classes_predict = clf.predict(features_test)
+        score = accuracy_score(classes_test, classes_predict)
+    except:
+        print("machine_learning.train_and_test_TNO_classifiers_from_csv failed")
+        print("could not test the classifier and retrieve a score")
+        return flag, None, None
+
+    if(score < 0.95 and default):
+        print 
+        print("The default classifier is less accurate than expected, something isn't right")
+        flag = 2
+
+    try:
+        with open(savefile, "wb") as f:
+            dump([classes_dict,classes_train,features_train,classes_test,features_test], f, protocol=5)
+    except:
+        print("could not save the training and testing data to:")
+        print(savefile)
+        flag = 2
+
+    if(flag == 0):
+        flag = 1
+
+    return flag, clf, score, ids_train, ids_test
 
 
 

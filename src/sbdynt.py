@@ -6,6 +6,7 @@ from plotting_scripts import *
 from hard_coded_constants import *
 from add_orbits import *
 from machine_learning import *
+from tno_classifier import *
 from proper_elements import *
 from tno import *
 

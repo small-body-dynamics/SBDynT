@@ -141,4 +141,4 @@ dmypy.json
 *.swp
 
 #trained classifiers (package dependent, must be locally made)
-src/MLdata/*.pkl
+#src/MLdata/*.pkl
