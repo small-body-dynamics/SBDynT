@@ -25,34 +25,181 @@ from pickle import dump
 from pickle import load
 from importlib import resources as impresources
 
+'''
+This file contains the details of all the machine learning classifiers and
+feature calculations for the TNO classifiers.
 
-####################################################################################
-# This file contains the details of all the machine learning classifiers and
-# feature calculations for the TNO classifiers.
-#
-# The calls to the classifier are in tno_classifier.py to make it a bit easier
-# to see how to interact with the classifier and to find some of the logic flow 
-# for overriding the pure machine learning results. 
-####################################################################################
-
+The calls to the classifier are in tno_classifier.py to make it a bit easier
+to see how to interact with the classifier and to find some of the logic flow 
+for overriding the pure machine learning results. 
+'''
 
 
 # define the default file scheme for the machine learning datasets
 
 # this file is provided with the package
 default_TNO_training_data = '09-06-2024-ML-features.csv'
-default_TNO_train_test_data = 'TNO_training_testing_set.pkl'
+#default_TNO_train_test_data = 'TNO_training_testing_set.pkl'
 
 # these files will be generated the first time the ML is called
 # so that the trained classifier can be saved and used later
 default_trained_classifier = 'trained-TNO-classifier.pkl'
 default_trained_classifier_dictionary = 'trained-TNO-classifier-dictionary.pkl'
 
+class TNO_ML_classifier:
+    '''
+    class that stores the trained TNO machine learning classifier
+    and the training data used to train it
+    '''
+    def __init__(self,G08_training_testing_data=None,G08_classifier_file=None,
+                phi_training_testing_data=None,phi_classifier_file=None):
+        
+        #initialize the file names for the training/testing data and 
+        #stored trained classifiers
+        self.G08_training_testing_data = G08_training_testing_data
+        self.G08_classifier_file = G08_classifier_file
+        self.phi_training_testing_data = phi_training_testing_data
+        self.phi_classifier_file = phi_classifier_file
+        
+        #initialize the main Gladman et al 2008 classifier
+        self.G08_classifier = None
+        self.classes_dictionary = None
+        #initialize the main Gladman et al 2008 classifier
+        self.phi_classifier = None
+
+    def initialize_classifiers(self):
+        #start with the Gladman et al 2008 classifier
+        default = False
+        if(self.G08_classifier_file is None):
+            self.G08_classifier_file =  impresources.files(MLdata) / 'trained-G08-TNO-classifier.pkl'
+        if(path.exists(self.G08_classifier_file)):
+            try:
+                with open(self.G08_classifier_file, 'rb') as f:
+                    [self.classes_dictionary,self.G08_classifier] = load(f)
+            except:
+                print("Error loading the Gladman et al 2008 classifier from:")
+                print(self.G08_classifier_file)
+                print("Will try to load the training/testing data instead.")
+        if(self.G08_classifier is None):
+            if(self.G08_training_testing_data is None):
+                self.G08_training_testing_data =  impresources.files(MLdata) / 'G08_TNO_training_testing_set.pkl'
+                default = True
+            if(path.exists(self.G08_training_testing_data)):
+                try:
+                    with open(self.G08_training_testing_data, 'rb') as f:
+                        [classes_dict,classes_train,features_train,classes_test,features_test] = load(f)
+                except:
+                    print("Error loading the training/testind data for the G08 classifier from:")
+                    print(self.G08_training_testing_data)
+                    print("Please check the file and try again.")
+                #train the classifier
+                rs = 42
+                clf = GradientBoostingClassifier(max_leaf_nodes = None, 
+                                                min_impurity_decrease=0.0, 
+                                                min_weight_fraction_leaf = 0.0, 
+                                                min_samples_leaf = 1, 
+                                                min_samples_split=3, 
+                                                criterion = 'friedman_mse',
+                                                subsample = 0.9, 
+                                                learning_rate=0.15,
+                                                max_depth=8, 
+                                                max_features='log2', 
+                                                n_estimators=300, 
+                                                random_state=rs)
+                try:
+                    clf.fit(features_train, classes_train)
+                except:
+                    print("TNO_ML_classifier.initialize_classifiers() failed when trying to fit the G08 classifier")
+                    return 0
+                try:
+                    classes_predict = clf.predict(features_test)
+                    score = accuracy_score(classes_test, classes_predict)
+                except:
+                    print("TNO_ML_classifier.initialize_classifiers() failed")
+                    print("could not test the classifier and retrieve a score")
+                    return 0
+                self.G08_classifier = clf
+                self.classes_dictionary = classes_dict
+                if(score < 0.95 and default):
+                    print 
+                    print("The default G08 classifier is less accurate than expected, something isn't right")
+                    print("the score is: ", score)
+                    print("This classifier will not be saved to be read in later")
+                else:
+                    #save the classifier
+                    try:
+                        with open(self.G08_classifier_file, 'wb') as f:
+                            dump([self.classes_dictionary,self.G08_classifier],f,protocol=5)
+                    except:
+                        print("TNO_ML_classifier.initialize_classifiers() failed when trying to save the G08 classifier")
+            else:
+                print("The specified G08 classifier files were not found")
+                return 0
+
+        #initialize the phi classifier
+        if(self.phi_classifier_file is None):
+            self.phi_classifier_file =  impresources.files(MLdata) / 'trained-phi-TNO-classifier.pkl'
+        if(path.exists(self.phi_classifier_file)):
+            try:
+                with open(self.phi_classifier_file, 'rb') as f:
+                    [self.phi_classifier] = load(f)
+            except:
+                print("Error loading the phi classifier from:")
+                print(self.phi_classifier_file)
+                print("Will try to load the training/testing data instead.")
+        if(self.phi_classifier is None):
+            if(self.phi_training_testing_data is None):
+                self.phi_training_testing_data =  impresources.files(MLdata) / 'phi_TNO_training_testing_set.pkl'
+                default = True
+            if(path.exists(self.phi_training_testing_data)):
+                try:
+                    with open(self.phi_training_testing_data, 'rb') as f:
+                        [label_train,hog_train,label_test,hog_test] = load(f)
+                except:
+                    print("Error loading the training/testind data for the phi classifier from:")
+                    print(self.phi_training_testing_data)
+                    print("Please check the file and try again.")
+                    return 0
+                #train the classifier
+                img_clf = SGDClassifier(random_state=42, max_iter=1000, tol=1e-3, loss='log_loss')
+
+                try:
+                    img_clf.fit(hog_train,label_train)
+                except:
+                    print("TNO_ML_classifier.initialize_classifiers() failed when trying to fit the phi classifier")
+                    return 0
+                try:
+                    label_predict = img_clf.predict(hog_test)
+                    score = 100*np.sum(label_predict == label_test)/len(label_test)
+                except:
+                    print("TNO_ML_classifier.initialize_classifiers() failed")
+                    print("could not test the phi classifier and retrieve a score")
+                    return 0
+                self.phi_classifier = img_clf
+                if(score < 0.98 and default):
+                    print 
+                    print("The default phi classifier is less accurate than expected, something isn't right")
+                    print("the score is: ", score)
+                    print("This classifier will not be saved to be read in later")
+                else:
+                    #save the classifier
+                    try:
+                        with open(self.phi_classifier_file, 'wb') as f:
+                            dump([self.phi_classifier],f,protocol=5)
+                    except:
+                        print("TNO_ML_classifier.initialize_classifiers() failed when trying to save the phi classifier")
+            else:
+                print("The specified phi classifier files were not found")
+                return 0 
+        return 1           
+
 
 class TNO_ML_features:
-    # class that stores the pre-determined set of data features that 
-    # the TNO machine learning classifier uses
-    # non-obvious terms are defined the first time they appear
+    '''
+    class that stores the pre-determined set of data features that 
+    the TNO machine learning classifier uses
+    non-obvious terms are defined the first time they appear
+    '''
     def __init__(self,clones=0):
         self.clones = clones
         # initialize all of the data features
@@ -162,11 +309,12 @@ class TNO_ML_features:
         self.tn_stddev = np.zeros(self.clones+1)
         self.tn_delta = np.zeros(self.clones+1)
 
-        ##########
-        # summary statistics of the distribution
-        # of points in a grid of heliocentric distance
-        # vs angle from Neptune in the rotating frame
-        ##########
+        '''
+        summary statistics of the distribution
+        of points in a grid of heliocentric distance
+        vs angle from Neptune in the rotating frame
+        with Neptune
+        '''
         # number of grid spaces at the smallest heliocentric
         # distances that have no visits
         self.empty_peri_sec = np.zeros(self.clones+1)
@@ -225,9 +373,9 @@ class TNO_ML_features:
         # e and i
         self.ei_correlation = np.zeros(self.clones+1)
 
-        ##########
-        # features based on FFTs
-        #########
+        '''
+        features based on FFTs
+        '''
         # the spectral fraction of the semimajor axis
         self.a_spectral_fraction = np.zeros(self.clones+1)
         # normalized power in the dominant frequency
@@ -517,6 +665,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
         print("to that expected for the TNO machine learning classifier. The classifier was trained")
         print("on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and")
         print("2) a longer, 10 Myr integration with outputs every 1000 years.")
+        print("delta_nlong, delta_nshort, delta_length_long, delta_length_short")
+        print(delta_nlong, delta_nshort, delta_length_long, delta_length_short)
         print("Failed at machine_learning.calc_ML_features()")
         return flag, None
     if(delta_nlong > 0 or delta_nshort > 0 or delta_length_long > 5. or delta_length_long > 100.):
@@ -524,6 +674,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
         print("to that expected for the TNO machine learning classifier. The classifier was trained")
         print("on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and")
         print("2) a longer, 10 Myr integration with outputs every 1000 years.")
+        print("delta_nlong, delta_nshort, delta_length_long, delta_length_short")
+        print(delta_nlong, delta_nshort, delta_length_long, delta_length_short)
         print("The provided time series are close, so the code will proceed, but consider adjusting")
         print("your integrations to exactly match those criteria.")
         flag = 2
@@ -773,49 +925,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
     return flag, f
 
 
-#################################################################
-def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
-    nclas = len(classes_dictionary)
-    print("Clone number, most probable class, probability of most probable class, ",end ="")
-    for n in range(nclas):
-        print("probability of %s," % classes_dictionary[n],end ="")
-    print("\n",end ="")
-    format_string = "%d, %s, "
-    for n in range(nclas-1):
-        format_string+="%e, "
-    format_string+="%e,\n"
-    for n in range(0,clones+1):
-        print("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]),end ="")
-        for j in range(nclas):
-            print("%e, " % class_probs[n][j] ,end ="")
-        print("\n",end ="")
-
-def print_TNO_ML_results_to_file(des,pred_class,classes_dictionary,class_probs,clones=2):
-    outfile = des + "-classes.txt"
-    out = open(outfile,"w")
-    nclas = len(classes_dictionary)
-    line = "Designation, clone number, most probable class, probability of most probable class, "
-    for n in range(nclas):
-        line+= ("probability of %s, " % classes_dictionary[n])
-    line+="\n"
-    out.write(line)
-    format_string = "%d, %s, "
-    for n in range(nclas-1):
-        format_string+="%e, "
-    format_string+="%e,\n"
-    for n in range(0,clones+1):
-        line = des + ', '
-        line+=("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]))
-        for j in range(nclas):
-            line+=("%e, " % class_probs[n][j])
-        line+="\n"
-        out.write(line)
-
-    out.close()
-#################################################################
-
     
-def check_angle(img_clf, phi, max_prob=0.):
+def check_angle(img_clf, time, phi, max_prob=0.):
     '''
     Generates the images and data features for the phi classifier
     then runs the classifier to get the probability the angle is
@@ -824,6 +935,7 @@ def check_angle(img_clf, phi, max_prob=0.):
 
     inputs:
         img_clf: the scikitlearn classifier 
+        time, 1-d numpy array: time values from a 1e7 year integration
         phi, 1-d numpy array: phi values from a 1e7 year integration
         max_prob, float: the highest-probability resonance angle so far
     outputs: 
@@ -1294,6 +1406,11 @@ def rotating_frame_features(rh,phirf):
 ##########################################################################################################
 
 
+'''
+Everything below this point is for development and testing only
+'''
+
+
 ##########################################################################################################
 # Helper functions for reading in the provided csv of pre-calculated and labeled features and then using
 # those to train and test the classifier.
@@ -1424,11 +1541,11 @@ def train_and_test_TNO_classifiers_from_csv(training_file=None,savefile=None,def
     '''
 
     flag = 0
-    if (savefile == None):
-        if(training_file != None):
-            print("You must specify a savefile if you provide a training_file")
-            return flag, None, None
-        savefile = impresources.files(MLdata) / default_TNO_train_test_data
+    #if (savefile == None):
+    #    if(training_file != None):
+    #        print("You must specify a savefile if you provide a training_file")
+    #        return flag, None, None
+    #    savefile = impresources.files(MLdata) / default_TNO_train_test_data
 
     if (training_file == None):
         default = True
@@ -1529,13 +1646,13 @@ def train_and_test_TNO_classifiers_from_csv(training_file=None,savefile=None,def
         print("The default classifier is less accurate than expected, something isn't right")
         flag = 2
 
-    try:
-        with open(savefile, "wb") as f:
-            dump([classes_dict,classes_train,features_train,classes_test,features_test], f, protocol=5)
-    except:
-        print("could not save the training and testing data to:")
-        print(savefile)
-        flag = 2
+    #try:
+    #    with open(savefile, "wb") as f:
+    #        dump([classes_dict,classes_train,features_train,classes_test,features_test], f, protocol=5)
+    #except:
+    #    print("could not save the training and testing data to:")
+    #    print(savefile)
+    #    flag = 2
 
     if(flag == 0):
         flag = 1
@@ -1822,7 +1939,46 @@ def calc_ML_features_from_trainingset_datafiles(short_fname, long_fname):
 
 
 
+#################################################################
+def print_TNO_ML_results(pred_class,classes_dictionary,class_probs,clones=2):
+    nclas = len(classes_dictionary)
+    print("Clone number, most probable class, probability of most probable class, ",end ="")
+    for n in range(nclas):
+        print("probability of %s," % classes_dictionary[n],end ="")
+    print("\n",end ="")
+    format_string = "%d, %s, "
+    for n in range(nclas-1):
+        format_string+="%e, "
+    format_string+="%e,\n"
+    for n in range(0,clones+1):
+        print("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]),end ="")
+        for j in range(nclas):
+            print("%e, " % class_probs[n][j] ,end ="")
+        print("\n",end ="")
 
+def print_TNO_ML_results_to_file(des,pred_class,classes_dictionary,class_probs,clones=2):
+    outfile = des + "-classes.txt"
+    out = open(outfile,"w")
+    nclas = len(classes_dictionary)
+    line = "Designation, clone number, most probable class, probability of most probable class, "
+    for n in range(nclas):
+        line+= ("probability of %s, " % classes_dictionary[n])
+    line+="\n"
+    out.write(line)
+    format_string = "%d, %s, "
+    for n in range(nclas-1):
+        format_string+="%e, "
+    format_string+="%e,\n"
+    for n in range(0,clones+1):
+        line = des + ', '
+        line+=("%d, %s, %e, " % (n,classes_dictionary[pred_class[n]], class_probs[n][pred_class[n]]))
+        for j in range(nclas):
+            line+=("%e, " % class_probs[n][j])
+        line+="\n"
+        out.write(line)
+
+    out.close()
+#################################################################
 
 
 

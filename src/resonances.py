@@ -267,7 +267,7 @@ def plot_resonance(des=None, archivefile=None,datadir='',clones=None,planet=None
         a (1-d or 2-d float array; optional): semimajor axis (au)        
         e (1-d or 2-d float array; optional): eccentricity
         inc (1-d or 2-d float array; optional): inclination (rad)
-        phi (2-d float array): resonant angle (rad)
+        phi (1-d or 2-d float array; optional): resonant angle (rad)
             all arrays are for the test particles in the 
             format [particle id number, output number]
             best-fit clone is id=0, clones are numbered
@@ -788,7 +788,7 @@ def farey_tree(num, denom, prmin, prmax):
     denom[nn] = olddenom[nfractions-1]
 
     if(new_n <1):
-        flag = 0
+        flag = 2
     else:
         flag = 1
     
