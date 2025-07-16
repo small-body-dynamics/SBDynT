@@ -34,7 +34,7 @@ if __name__ == "__main__":
         names_df = pd.read_csv('../data/data_files/'+filename+'.csv')
         data = []
         
-        objname = np.array(names_df['Name'])
+        objname = np.array(names_df['Name'])[165:167]
         #objname = np.array(names_df['Name'].iloc[:20])
         windows=5
         run = functools.partial(prop_calc, filename=filename,windows=windows)
@@ -59,6 +59,6 @@ if __name__ == "__main__":
         column_names.append('Delta_sinI')
         print(len(column_names))
         data_df = pd.DataFrame(data,columns=column_names)
-        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi.csv')
+        data_df.to_csv('../data/results/'+filename+'_prop_elem_multi_3.csv')
         
     

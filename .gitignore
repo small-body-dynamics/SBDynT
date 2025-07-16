@@ -134,6 +134,7 @@ dmypy.json
 *series.csv
 *.bin
 *.h5
+*.csv
 
 #Misc
 .idea/

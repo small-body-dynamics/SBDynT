@@ -27,7 +27,8 @@ if __name__ == "__main__":
         
         run = functools.partial(integrate.integrate, objtype=objtype)
 
-        des = np.array(names_df['Name'])
+        #des = np.array(names_df['Name'])
+        des = np.array(os.listdir('../../nobackup/archive/SBDynT_sims/'+str(objtype)))
         
         pool.map(run, des)
 

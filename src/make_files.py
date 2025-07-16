@@ -23,16 +23,18 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
         
     """     
     if rocky_planets == 'True':
-        print(rocky_planets)
+        #print(rocky_planets)
         #planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
         planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-        print('done')
+        #print('done')
     else:
         planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-    print(planet_id)
+    #planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+    print('Adding:',planet_id)
     obj_directory = '../data/'+filename+'/'+str(des)
     os.makedirs(obj_directory, exist_ok=True)
     flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
+    #flag, epoch, sim = run_reb.initialize_simulation_at_epoch(planets=list(planet_id.values()), des=str(des))
     
     # Save the initial state to an archive file
     archive_file = os.path.join(obj_directory, "archive_init.bin")
@@ -54,7 +56,7 @@ def make_multi(filename='Single',rockp=False,clones=0):
         None
         
     """ 
-    print('rockp',rockp)
+    #print('rockp',rockp)
     name_list = pd.read_csv('../data/data_files/' + filename + '.csv')
     
     # Create main data directory if it doesn't exist
@@ -64,10 +66,12 @@ def make_multi(filename='Single',rockp=False,clones=0):
       
 
     for i, objname in enumerate(name_list['Name']):
-    #for i,objname in enumerate(name_list['Name'].iloc[4500:]):
+    	#for i,objname in enumerate(name_list['Name'].iloc[0:2000]):
+        #if i%100 == 0:
+        #    print(i)
         #for i in range(len(name_list)):
 
-        #print(objname)
+        print(i,objname)
     
         # Create directory for each object
         obj_directory = os.path.join(main_data_directory, str(objname))
@@ -84,7 +88,7 @@ def make_multi(filename='Single',rockp=False,clones=0):
     
         # Initialize simulation
         
-        print('rockp',rockp)
+        #print('rockp',rockp)
         make(str(des),rockp,clones,filename)
     
 if __name__ == "__main__":
@@ -93,6 +97,7 @@ if __name__ == "__main__":
     if filetype != 'Single':
         if len(sys.argv) > 2:
             rockp = sys.argv[2]
+            print('setting rocky_planets to ', rockp)
             #rockp = False
         else: 
             rockp = False
@@ -101,7 +106,7 @@ if __name__ == "__main__":
             clones = int(sys.argv[3])
         else:
             clones = 0
-        print('rockp',rockp)
+        #print('rockp',rockp)
         make_multi(filetype,rockp,clones)
            
     else:
@@ -109,6 +114,7 @@ if __name__ == "__main__":
         
         if len(sys.argv) > 3:
             rockp = sys.argv[3]
+            print('setting rocky_planets to ', rockp)
             #rockp = False
         else: 
             rockp = False

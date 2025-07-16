@@ -95,7 +95,10 @@ def integrate_chaos(objname, tmax1=5e4, tout1=1e3, tmax2=1e6, tout2=2e4, objtype
     # Rest of the integration code
 
     return 1
- 
+
+def D_diff(q,an):
+    return 8/5/np.pi*mn/M*np.sqrt(G*M*an)*np.exp(-(q/an)**2/2)
+
 def calc_chaos(objname,objtype,prop_vals=None):
     #print(objname)
     file = '../data/' + objtype + '/' + str(objname)
@@ -119,6 +122,7 @@ def calc_chaos(objname,objtype,prop_vals=None):
             clones_flag = True
             numclones = len(sim2.particles)-10
             objnum = 9
+            
         elif not small_planets_flag and len(long_sim[-1].particles) > 6:
             clones_flag = True
             numclones = len(long_sim[-1].particles)-6
@@ -126,22 +130,32 @@ def calc_chaos(objname,objtype,prop_vals=None):
             objnum = 5
         else:
             numclones = 0
-        sb = long_sim[-1].particles[5]
+        sb = long_sim[-1].particles[objnum]
         #print(sb)
             
         diff = np.zeros((numclones,3))        
         CloneDist = np.zeros(4)
         GreatestDist = np.zeros(3)
-        
+
+        a_diffusion = np.zeros(numclones+1)  
+
         a_p = np.zeros(len(long_sim))
         e_p = np.zeros(len(long_sim))
         i_p = np.zeros(len(long_sim))
+
+        a_n = np.zeros(len(long_sim))
         
         for i in range(len(long_sim)):
-            a_p[i] = long_sim[-1].particles[5].a
-            e_p[i] = long_sim[-1].particles[5].e
-            i_p[i] = long_sim[-1].particles[5].inc
+            a_p[i] = long_sim[i].particles[objnum].a
+            e_p[i] = long_sim[i].particles[objnum].e
+            i_p[i] = long_sim[i].particles[objnum].inc
+            
+            a_n[i] = long_sim[i].particles[objnum].a
         
+
+        if a_p[0] >= 30:
+            q = (1-e_p)*a_p
+            a_diffusion[0] = np.max(D_diff(q*1.496e11,a_n*1.496e11))
         
         for i in range(numclones):          
             a_clone = np.zeros(len(long_sim))
@@ -149,9 +163,9 @@ def calc_chaos(objname,objtype,prop_vals=None):
             i_clone = np.zeros(len(long_sim))
             
             for j in range(len(long_sim)):
-                a_clone[j] = long_sim[j].particles[objnum+i].a
-                e_clone[j] = long_sim[j].particles[objnum+i].e
-                i_clone[j] = long_sim[j].particles[objnum+i].inc
+                a_clone[j] = long_sim[j].particles[objnum+i+1].a
+                e_clone[j] = long_sim[j].particles[objnum+i+1].e
+                i_clone[j] = long_sim[j].particles[objnum+i+1].inc
             
             #print(abs(sb.a - long_sim[-1].particles[objnum+i].a) > GreatestDist[0])
             if np.max(abs(a_p - a_clone)) > GreatestDist[0]:
@@ -165,6 +179,14 @@ def calc_chaos(objname,objtype,prop_vals=None):
             diff[i][1] = np.mean((sb.e - long_sim[-1].particles[objnum+i].e)**2)
             diff[i][2] = np.mean((np.sin(sb.inc) - np.sin(long_sim[-1].particles[objnum+i].inc))**2)
 
+            if a_p[0] >= 30:
+                q = (1-e_clone)*a_clone
+                a_diffusion[i+1] = np.max(D_diff(q*1.496e11,a_n*1.496e11))
+
+        
+            
+        D_metric = np.nanmean(a_diffusion)
+        D_std = np.std(a_diffusion)
         #print(sb.a,sb.e,sb.inc)
         #print(long_sim[-1].particles[objnum+i].a,long_sim[-1].particles[objnum+i].e,long_sim[-1].particles[objnum+i].inc)
         CloneDist[0:3] = np.sqrt(np.nanmean(diff,axis=0))
@@ -239,8 +261,19 @@ def calc_chaos(objname,objtype,prop_vals=None):
     D_flag = (CloneDist[0] > 0.01)
     E_flag = (CloneDist[3] < 0.8*4)        
     ACFI_flag = (ACFI < 0.5)
+
+    if (D_metric < 0.5*1e-3 and D_std < D_metric):
+        Diff_Flag = 0
+    elif (D_metric < 5e-3 and D_std < D_metric):
+        Diff_flag = 1
+    elif D_metric == 0:
+        Diff_flag = np.nan
+    else:
+        Diff_flag = 2
+    
+
         
-    return [str(objname),MEGNO,CloneDist[0],CloneDist[1],CloneDist[2],CloneDist[3],GreatestDist[0],GreatestDist[1],GreatestDist[2],prop_err[0],prop_err[1],prop_err[2],prop_delta[0],prop_delta[1],prop_delta[2],ACFI,M_flag,P_flag,D_flag,E_flag,ACFI_flag]
+    return [str(objname),MEGNO,CloneDist[0],CloneDist[1],CloneDist[2],CloneDist[3],GreatestDist[0],GreatestDist[1],GreatestDist[2],prop_err[0],prop_err[1],prop_err[2],prop_delta[0],prop_delta[1],prop_delta[2],D_metric,D_std,ACFI,M_flag,P_flag,D_flag,E_flag,ACFI_flag,Diff_flag]
     
 if __name__ == "__main__":
     
@@ -270,7 +303,7 @@ if __name__ == "__main__":
         run2 = functools.partial(calc_chaos, objtype=objtype)
         data = pool.map(run2, des)
         
-        chaos_df = pd.DataFrame(data,columns=['Name','MEGNO','Div_RMS_a','Div_RMS_e','Div_RMS_sinI','Info Entropy','Delta_a','Delta_e','Delta_sinI','Prop_RMS_a','Prop_RMS_e','Prop_RMS_sinI','Prop_Delta_a','Prop_Delta_e','Prop_Delta_sinI','ACFI','MEGNO_flag','Proper_SMA_flag','Clone_SMA_flag','Entropy_flag','AFCI_flag'])
+        chaos_df = pd.DataFrame(data,columns=['Name','MEGNO','Div_RMS_a','Div_RMS_e','Div_RMS_sinI','Info Entropy','Delta_a','Delta_e','Delta_sinI','Prop_RMS_a','Prop_RMS_e','Prop_RMS_sinI','Prop_Delta_a','Prop_Delta_e','Prop_Delta_sinI','ACFI','Diffusion Coefficient','Diffusion STD','MEGNO_flag','Proper_SMA_flag','Clone_SMA_flag','Entropy_flag','AFCI_flag','Diffusion Flag'])
         
         entropy_flag = np.where(chaos_df['Info Entropy'] < 0.9*np.median(chaos_df['Info Entropy']))[0]
         PSMA_flag = np.where(chaos_df['Prop_RMS_a'] > 0.01)[0]

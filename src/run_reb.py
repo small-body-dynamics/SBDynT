@@ -162,6 +162,7 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     
     # add the planets and return the position/velocity corrections for
     # missing planets
+    #planets = ['jupiter', 'saturn', 'uranus', 'neptune']
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):
@@ -247,11 +248,11 @@ def initialize_simulation_at_epoch(
 
     for i in range(0, ntp):
         sbhash = str(des[i])
+        print(i,sbx,sx)
         # correct for the missing planets
         sbx[i] += sx; sby[i] += sy; sbz[i] += sz
         sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
-        sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                
+        sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],                
                 vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
 
     sim.move_to_com()
@@ -260,7 +261,7 @@ def initialize_simulation_at_epoch(
 
 def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
                                    'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0, sb=[0,0,0,0,0,0,0]):
+                          des='', clones=0, sb=[0,0,0,0,0,0,0],return_sxyz=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
@@ -283,7 +284,7 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     sim.units = ('yr', 'AU', 'Msun')
 
     # set up small body variables
-    ntp = 1 + clones
+    ntp = len(sb[1]) + clones
     sbx = np.zeros(ntp)
     sby = np.zeros(ntp)
     sbz = np.zeros(ntp)
@@ -303,6 +304,10 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     #print(planets)
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
+    
+    if return_sxyz == True:
+        return sim, sx, sy, sz, svx, svy, svz
+    
     if(apflag < 1):
         print("run_reb.initialize_simulation failed at run_reb.add_planets")
         return 0, 0., sim
@@ -336,9 +341,12 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     else:
         sbx += sx; sby += sy; sbz += sz
         sbvx += svx; sbvy += svy; sbvz += svz
-        sbhash = str(des) 
-        sim.add(m=0., x=sbx, y=sby, z=sbz,
-                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
+        #sbhash = str(des) 
+        #print(des)
+        for j in range(len(sbx)):
+            sbhash = str(des[j]) 
+            sim.add(m=0., x=sbx[j], y=sby[j], z=sbz[j],
+                vx=sbvx[j], vy=sbvy[j], vz=sbvz[j], hash=sbhash)
 
     sim.move_to_com()
 
