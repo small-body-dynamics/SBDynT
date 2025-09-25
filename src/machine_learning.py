@@ -1150,15 +1150,41 @@ def basic_time_series_features(x):
     x_mean = np.mean(x,axis=1)
     x_std = np.std(x,axis=1)
     x_del = x_max - x_min
-    x_std_norm = x_std/x_mean
-    x_del_norm = x_del/x_mean
+    #test for divide by zero and remove issues there
+    if(x_mean.any(0)):
+        x_std_norm = np.zeros(len(x_mean))
+        x_del_norm = np.zeros(len(x_mean))
+        for i, val in enumerate(x_mean):
+            if(val==0):
+                x_std_norm[i] = x_std[i]
+                x_del_norm[i] = x_del[i]
+            else:
+                x_std_norm[i] = x_std[i]/val
+                x_del_norm[i] = x_del[i]/val
+    else:
+        x_std_norm = x_std/x_mean
+        x_del_norm = x_del/x_mean
+
     return x_min, x_max, x_mean, x_std, x_del, x_std_norm, x_del_norm
 
 
 def max_corelation(d1, d2):
-    d1 = (d1 - np.mean(d1)) / (np.std(d1))
-    d2 = (d2 - np.mean(d2)) / (np.std(d2))  
-    cmax = (np.correlate(d1, d2, 'full')/len(d1)).max()
+    '''
+    input: 
+        d1, 1-d np array
+        d2, 1-d np array
+    '''
+    if(len(d1)<1):
+        return 0
+    std_d1 = np.std(d1)
+    std_d2 = np.std(d2)
+    if(std_d1 == 0 or std_d2 == 0):
+        nd1 = (d1 - np.mean(d1))
+        nd2 = (d2 - np.mean(d2))  
+    else:
+        nd1 = (d1 - np.mean(d1)) / (std_d1)
+        nd2 = (d2 - np.mean(d2)) / (std_d2)  
+    cmax = (np.correlate(nd1, nd2, 'full')/len(d1)).max()
     return cmax
 
 
@@ -1179,9 +1205,12 @@ def spectral_characteristics(data,dt):
     ytot = 0.
     for Y in (sorted_Y):
         ytot+=Y
-    norm_Y = sorted_Y/ytot
-    count=0
+
+    if(sorted_Y[0] == 0 or ytot == 0):
+        return 0.,0.,0.,0.,0.,0.
+        
     maxnorm_Y = sorted_Y/sorted_Y[0]
+    count=0
     for j in range(0,jmax-1):
         if(maxnorm_Y[j] > 0.05):
             count+=1
@@ -1193,6 +1222,8 @@ def spectral_characteristics(data,dt):
 
 def histogram_features(x,xmin,xmax,xmean,xstd,delta=False):
     dx = (xmax-xmin)/8.
+    if(dx == 0):
+        return 0.,0.,0.,0.
     x1 = xmin
     x2 = xmin + 2.*dx
     x3 = x2 + dx
@@ -1269,6 +1300,10 @@ def rotating_frame_features(rh,phirf):
     #into 20 bins
     qmin = np.amin(rh) - 0.01
     Qmax = np.amax(rh) + 0.01
+
+    if( (Qmax - qmin) == 0.02 ):
+        return 0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
     nrbin = 10.
     nphbin = 20.
     dr = (Qmax - qmin) / nrbin

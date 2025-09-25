@@ -637,9 +637,9 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
         ntp = clones+1
         if(ntp > ntp_max):
             print("Warning! the number of clones in the simulation archive is smaller than")
-            print("the number of clones specfied by the user! Resetting the number of clones.")
-            clones = ntp_max - 1
-            ntp = ntp_max
+            print("the number of clones specfied by the user!")
+            #clones = ntp_max - 1
+            #ntp = ntp_max
             flag = 2
     
     a = np.zeros([ntp,nout])
@@ -678,19 +678,12 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
             try:
                 p = sim.particles[tp_hash]
             except:
-                #print("tools.read_sa_for_sbody failed")
-                #print("Problem finding a particle with that hash in the archive")
-                #return 0, a, e, inc, node, aperi, ma, t
-                #it's not in the simulation, so set values to 0
-                a[j,it] = 0.
-                e[j,it] = 0.
-                inc[j,it] = 0.
-                node[j,it] = 0.
-                aperi[j,it] = 0.
-                ma[j,it] = 0.
+                #go to the next particle, this one isn't in the simulation
+                continue
             
             found_any = 1
             o = p.orbit(com)
+            #if the orbit is bound, record the orbit
             if(o.a > 0):
                 a[j,it] = o.a
                 e[j,it] = o.e
@@ -698,10 +691,6 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
                 node[j,it] = o.Omega
                 aperi[j,it] = o.omega
                 ma[j,it] = o.M
-            else:
-                a[j,it] = 0.01
-                e[j,it] = 0.01
-                inc[j,it] = 0.01
 
         if(found_any == 0):
             #if we didn't find any clones, then we are done
@@ -825,7 +814,6 @@ def read_sa_for_sbody_cartesian(des=None, archivefile=None, clones=None,
     it=0
         
     for i,sim in enumerate(sa):
-        #if(sim.t < tmin or sim.t > tmax):
         if( (sim.t - tmin) < -sim.dt or (sim.t - tmax) > sim.dt or (it > 0 and  np.abs(sim.t-t[it-1])<sim.dt) ):
             #skip this 
             continue
@@ -862,16 +850,7 @@ def read_sa_for_sbody_cartesian(des=None, archivefile=None, clones=None,
             try:
                 p = sim.particles[tp_hash]
             except:
-                #print("tools.read_sa_for_sbody_cartesian failed")
-                #print("Problem finding a particle with that hash in the archive")
-                #return 0, x, y, z, vx, vy, vz, t
-                #that clone has been removed from the simulation, so set values to 0
-                x[j,it] = 0.
-                y[j,it] = 0.
-                z[j,it] = 0.
-                vx[j,it] = 0.
-                vz[j,it] = 0.
-                vx[j,it] = 0.
+                #clone not in the simulation, move to next clone
                 continue
 
             found_any = 1
@@ -1020,9 +999,7 @@ def read_sa_by_hash_cartesian(obj_hash=None, archivefile=None, datadir='',
         try:
             p = sim.particles[obj_hash]
         except:
-            #print("tools.read_sa_by_hash_cartesian failed")
-            #print("Problem finding a particle with that hash in the archive")
-            #return 0, x, y, z, vx, vy, vz, t
+            #clone not in the simulation, leave the loop
             break
 
         x[it] = p.x - dx
