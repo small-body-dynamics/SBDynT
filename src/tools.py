@@ -2,6 +2,7 @@ import numpy as np
 import re
 import rebound
 from datetime import date
+import os
 
 #define the default file-naming schemes
 def archive_file_name(des=None):
@@ -93,6 +94,21 @@ def writelog(logfile,logmessage):
     else:
         with open(logfile,"a") as f:
             f.write(logmessage)
+
+
+def check_datadir(datadir):
+    '''
+    check if the speficied datadir exists and make it if not
+    inputs:
+        datadir, string directory or directory path
+    '''
+    if(not (os.path.exists(datadir))):
+       print("The specified datadir did not exist, we will create it at:")
+       print(datadir)
+       os.makedirs(datadir)
+
+
+
 
 def orbit_solution_file(des):
     '''
@@ -638,8 +654,6 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
         if(ntp > ntp_max):
             print("Warning! the number of clones in the simulation archive is smaller than")
             print("the number of clones specfied by the user!")
-            #clones = ntp_max - 1
-            #ntp = ntp_max
             flag = 2
     
     a = np.zeros([ntp,nout])
@@ -652,7 +666,6 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
         
     it=0
     for i,sim in enumerate(sa):
-        #if(sim.t < tmin or sim.t > tmax):
         if( (sim.t - tmin) < -sim.dt or (sim.t - tmax) > sim.dt or (it > 0 and  np.abs(sim.t-t[it-1])<sim.dt) ):
             #skip this 
             continue

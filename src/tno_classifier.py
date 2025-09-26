@@ -1,4 +1,5 @@
 import sys
+import rebound
 import numpy as np
 import pandas as pd
 import tools
@@ -6,7 +7,6 @@ import run_reb
 import tno
 import resonances
 import machine_learning
-
 
 from os import path
 from datetime import date
@@ -70,11 +70,11 @@ class TNO_ML_outputs:
                     self.clone_classification[n] = 'scattering'
                 elif(self.features.e_mean[n] < 0.24):
                     if(self.features.a_mean[n] < 39.4):
-                        self.clone_classification[n] = 'classical-inner'
+                        self.clone_classification[n] = 'classical_inner'
                     elif(self.features.a_mean[n] < 47.7):
-                        self.clone_classification[n] = 'classical-main'
+                        self.clone_classification[n] = 'classical_main'
                     else:
-                        self.clone_classification[n] = 'classical-outer'
+                        self.clone_classification[n] = 'classical_outer'
                 else:
                     self.clone_classification[n] = 'detached'
             elif(self.clone_classification[n] == 'scattering'):
@@ -83,11 +83,11 @@ class TNO_ML_outputs:
                     self.clone_classification[n] = 'detached'
                     if(self.features.e_mean[n] < 0.24):
                         if(self.features.a_mean[n] < 39.4):
-                            self.clone_classification[n] = 'classical-inner'
+                            self.clone_classification[n] = 'classical_inner'
                         elif(self.features.a_mean[n] < 47.7):
-                            self.clone_classification[n] = 'classical-main'
+                            self.clone_classification[n] = 'classical_main'
                         else:
-                            self.clone_classification[n] = 'classical-outer'
+                            self.clone_classification[n] = 'classical_outer'
         return
 
 
@@ -108,10 +108,13 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("#Clone number, most probable G08 class, p, q, m, n, phi_std, phi_delta, res_image_prob, probability of that class, ",end ="")
-        print("probability of ", end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        #print("probability_of_", end ="")
         for n in range(nclas):
-            print("%s, " % self.classes_dictionary[n],end ="")
+            class_string =  self.classes_dictionary[n]
+            if(class_string == 'class-det'):
+                class_string = "class_det"
+            print("probability_%s, " % class_string,end ="")
         print("\n",end ="")
         format_string = "%d, %s, "
         for n in range(nclas-1):
@@ -133,10 +136,13 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("#Clone number, most probable G08 class, p, q, m, n, phi_std, phi_delta, res_image_prob, probability of that class, ",end ="")
-        print("probability of ", end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        print("probability_of_", end ="")
         for n in range(nclas):
-            print("%s, " % self.classes_dictionary[n],end ="")
+            class_string =  self.classes_dictionary[n]
+            if(class_string == 'class-det'):
+                class_string = "class_det"
+            print("probability_%s, " % class_string,end ="")
         print("mean_a, mean_e, mean_i, std_a, std_e, std_i ",end ="")
         print("\n",end ="")
         format_string = "%d, %s, "
@@ -180,12 +186,30 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             print("failed at machine_learning.run_and_MLclassify_TNO()")    
             return flag, None, sim
 
+
     if(logfile==True):
         logf = tools.log_file_name(des=des)
     else:
         logf=logfile
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
+
+    if(archivefile == None):
+        archivefile = tools.archive_file_name(des=des)
+    
+    if(datadir):
+        archivefile = datadir + "/" + archivefile
+
+    if(classify_only==True and clones==None):
+        try:
+            sa = rebound.Simulationarchive(archivefile)
+        except:
+            print("tno_classifier.run_and_MLclassify_TNO failed")
+            print("Problem reading the simulation archive file:")
+            print(archivefile)
+            return flag, None, sim
+        ntp_max = sa[0].N - sa[0].N_active
+        clones = ntp_max - 1
 
     flag = 0
     #make an empty set of classification outputs 
@@ -209,11 +233,6 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
 
     tno_class.classes_dictionary = clf.classes_dictionary
 
-    if(archivefile == None):
-        archivefile = tools.archive_file_name(des=des)
-    
-    if(datadir):
-        archivefile = datadir + "/" + archivefile
 
     #short integration first
 
