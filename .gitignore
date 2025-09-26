@@ -141,4 +141,9 @@ dmypy.json
 *.swp
 
 #trained classifiers (package dependent, must be locally made)
-#src/MLdata/*.pkl
+#and proper elements pre-stored frequencies
+src/MLdata/trained*.pkl
+src/PEdata/*.pkl
+
+#example output data
+example-notebooks/outputs-from-example-notebooks
