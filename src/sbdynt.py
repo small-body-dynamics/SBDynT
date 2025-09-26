@@ -54,6 +54,10 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         logf = log_file_name(des=des)
     else:
         logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
 

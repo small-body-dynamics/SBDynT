@@ -186,6 +186,8 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             print("failed at machine_learning.run_and_MLclassify_TNO()")    
             return flag, None, sim
 
+    if(datadir):
+        tools.check_datadir(datadir)
 
     if(logfile==True):
         logf = tools.log_file_name(des=des)

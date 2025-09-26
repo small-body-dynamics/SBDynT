@@ -18,6 +18,10 @@ def setup_default_tno_integration(des=None, clones=None, datadir='',save_sbdb=Fa
         logf = tools.log_file_name(des=des)
     else:
         logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
 
