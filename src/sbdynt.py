@@ -6,6 +6,7 @@ from plotting_scripts import *
 from hard_coded_constants import *
 from add_orbits import *
 from machine_learning import *
+from tno_classifier import *
 from proper_elements import *
 from tno import *
 
@@ -53,6 +54,10 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         logf = log_file_name(des=des)
     else:
         logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
 

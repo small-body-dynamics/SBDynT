@@ -3,6 +3,7 @@ import numpy as np
 # local
 import horizons_api
 import tools
+
 from datetime import datetime
 
 
@@ -181,6 +182,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     flag = 0
     epoch = None
 
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(des == None):
         print("The designation of the small body must be provided")
         print("failed in horizons_api.initialize_simulation()")
@@ -311,6 +315,9 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
         print("failed in run_reb.initialize_simulation_at_epoch()")
         return flag, 0.,sim
 
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(logfile==True):
         logfile = tools.log_file_name(des=des[0])
     if(datadir and logfile and logfile!='screen'):
@@ -436,6 +443,7 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
         archivefile = tools.archive_file_name(des)
     
     if(datadir):
+        tools.check_datadir(datadir)
         archivefile = datadir + '/' +archivefile
 
     if(logfile==True):
@@ -523,6 +531,8 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
+    if(datadir):
+        tools.check_datadir(datadir)
     if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' +logfile
     logmessage = ''
