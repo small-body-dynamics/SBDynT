@@ -435,12 +435,12 @@ def run_simulation(sim, tmax=0, tout=0, filename="archive.bin",
     sim.save_to_file(filename, interval=tout,
                                   delete_file=deletefile)
 
-    #run until tmax
-
     try:
         sim.integrate(tmax)
-    except:
-        print('Particle ejected')
+    except Exception as e:
+        print('Error during rebound sim.integrate:', e)
+        print(filename)
+        #print('Particle ejected')
         return 1, sim
     return 1, sim
 

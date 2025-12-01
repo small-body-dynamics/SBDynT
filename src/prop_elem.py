@@ -2000,13 +2000,10 @@ def prop_multi(filename):
     for i,objname in enumerate(names_df['Name']):
         if i%50==0:
             print(i)
-        #archive = rebound.SimulationArchive(fullfile)
-        windows=5
-        
+        windows=5        
         data_line = prop_calc(objname,filename,windows=windows)
-        #data_line = prop_calc(str(i),filename)
-        #print(data_line)
         data.append(data_line)
+        
     column_names = ['Objname','ObsSMA','ObsEcc','ObsSin(Inc)','Obs_omega','Obs_Omega','Obs_M','MeanSMA','MeanEcc','MeanSin(Inc)','PropSMA','PropEcc','PropSin(Inc)','Prop_omega','Prop_Omega']
     for i in range(windows):
         numrange = str(i)+'_'+str(i+2)+'PE'

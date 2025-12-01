@@ -39,7 +39,8 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
     # Save the initial state to an archive file
     archive_file = os.path.join(obj_directory, "archive_init.bin")
     sim.save_to_file(archive_file)
-    sim = None
+    #sim = None
+    return sim
 
 
 def make_multi(filename='Single',rockp=False,clones=0):
