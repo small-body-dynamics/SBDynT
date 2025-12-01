@@ -2,7 +2,9 @@ import rebound
 import numpy as np
 # local
 import horizons_api
-
+from hard_coded_constants import find_orb_sunGM as gm
+from hard_coded_constants import SS_GM 
+import tools
 
 def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
                 'jupiter', 'saturn', 'uranus', 'neptune'],
@@ -18,7 +20,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
              with adjustments for missing major perturbers
         sx: float, cartesian position correction for missing perturbers (au)
         sy: float, cartesian position correction for missing perturbers (au)
-        sz: float, cartesian position correction for missing perturbers (au)
+        sz: float, cartesian position correction for missing perturbersiniti (au)
         svx: float, cartesian velocity correction for missing perturbers (au/yr)
         svy: float, cartesian velocity correction for missing perturbers (au/yr)
         svz: float, cartesian velocity correction for missing perturbers (au/yr)
@@ -124,7 +126,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
 
 def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
                                    'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0):
+                          des='', clones=0, query_cov = False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
@@ -154,8 +156,14 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     sbvz = np.zeros(ntp)
 
     # get the small body's position and velocity
-    flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = \
-        horizons_api.query_sb_from_jpl(des=des, clones=clones)
+    if query_cov:
+        flag, epoch, ecc, q, tp, node, argperi, inc   = \
+        horizons_api.query_sb_from_jpl(des=des, clones=clones, query_cov=query_cov)    
+        return ecc, q, tp, node, argperi, inc
+    else:
+        flag, epoch, sbx, sby, sbz, sbvx, sbvy, sbvz = \
+            horizons_api.query_sb_from_jpl(des=des, clones=clones)
+        
     if(flag < 1):
         print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
         return 0, 0., sim
@@ -261,7 +269,7 @@ def initialize_simulation_at_epoch(
 
 def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
                                    'jupiter', 'saturn', 'uranus', 'neptune'],
-                          des='', clones=0, sb=[0,0,0,0,0,0,0],return_sxyz=False):
+                          des='', clones=0, sb=[0,0,0,0,0,0,0],sb_cov=[],mean=[],return_sxyz=False):
     """
     inputs:
         planets (optional): string list, list of planet names - defaults to all
@@ -292,6 +300,9 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     sbvy = np.zeros(ntp)
     sbvz = np.zeros(ntp)
 
+    dts = 24*60*60
+    yts = dts*365
+
     # get the small body's position and velocity
     flag, epoch, sbx[:], sby[:], sbz[:], sbvx[:], sbvy[:], sbvz[:] = 1,sb[0],sb[1],sb[2],sb[3],sb[4],sb[5],sb[6]
     
@@ -314,17 +325,32 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
     
     maxpos = np.sqrt(sb[1]**2+sb[2]**2+sb[3]**2)
     maxvel = np.sqrt(sb[4]**2+sb[5]**2+sb[6]**2)
+
+    GM_SS = SS_GM[0]
+    AU = 1.496e8
+    GM_new = GM_SS/AU**3*yts**2 #GM in units of AU^3, 1/kg, 1/yr^2
     
-    if(clones > 0):    
-        for i in range(1,ntp):
-            sbx[i] += np.random.normal(0,maxpos*0.0001);
-            sby[i] += np.random.normal(0,maxpos*0.0001);
-            sbz[i] += np.random.normal(0,maxpos*0.0001);
-            sbvx[i] += np.random.normal(0,maxvel*0.001);
-            sbvy[i] += np.random.normal(0,maxvel*0.001);
-            sbvz[i] += np.random.normal(0,maxvel*0.001);
+    if (clones > 0) and (len(sb_cov) > 0):   
+        #'''
+        a_c, ecc_c, inc_c, node_c, argperi_c, T_c = \
+            np.random.multivariate_normal(mean, sb_cov, clones).T
+        
+        # convert clones into standarcd elements then cartesian coordinates
+        for j in range(clones):
+            mm = gm/((a_c[j]*AU)**3)  # mean motion
+            mm = np.sqrt(mm)
+            ma = (mm*(epoch*dts-T_c[j]*yts))%(2*np.pi) 
             
-            
+            flag, sbx[j+1], sby[j+1], sbz[j+1], sbvx[j+1], sbvy[j+1], sbvz[j+1] = \
+                        tools.aei_to_xv(GM=GM_new, a=a_c[j], e=ecc_c[j], inc=inc_c[j],
+                                node=node_c[j], argperi=argperi_c[j], ma=ma)
+            if(flag < 1):
+                print("horizons_api.query_sb_from_jpl failed")
+                print("failed to convert to cartesian "
+                      + "inside cloning part of query_sb_from_jpl")
+                return 0, 0., 0., 0., 0., 0., 0., 0.
+        #'''
+   
         for i in range(0, ntp):
             if(i == 0):
                 #first clone is always just the best-fit orbit
@@ -344,7 +370,13 @@ def initialize_simulation_from_sv(planets=['mercury', 'venus', 'earth', 'mars',
         #sbhash = str(des) 
         #print(des)
         for j in range(len(sbx)):
-            sbhash = str(des[j]) 
+            if(j == 0):
+                #first clone is always just the best-fit orbit
+                #and the hash is not numbered
+                sbhash = str(des)
+            else:
+                sbhash = str(des) + '_' + str(j)
+                
             sim.add(m=0., x=sbx[j], y=sby[j], z=sbz[j],
                 vx=sbvx[j], vy=sbvy[j], vz=sbvz[j], hash=sbhash)
 

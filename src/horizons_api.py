@@ -105,7 +105,7 @@ def query_horizons_planets(obj='', epoch=2459580.5):
 ###############################################################################
 
 
-def query_sb_from_jpl(des='', clones=0):
+def query_sb_from_jpl(des='', clones=0,query_cov = False):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -151,7 +151,8 @@ def query_sb_from_jpl(des='', clones=0):
         bfnode = np.float64(str(objcov['elements']['om']).split()[0])
         bfargperi = np.float64(str(objcov['elements']['w']).split()[0])
         bftp = np.float64(str(objcov['elements']['tp']).split()[0])
-        print(objcov,bfecc)
+        #if query_cov:
+        #    return 1, epoch, bfecc,bfq,bfinc,bfnode,bfargperi,bftp 
     except:
         # the covariance matrix wasn't there or it didn't have a best
         # fit orbit attached in the expected data structure
@@ -208,10 +209,10 @@ def query_sb_from_jpl(des='', clones=0):
             print(textwrap.fill(warningstring, 80))
             return 0, 0., 0., 0., 0., 0., 0., 0.
     
-    if(bfecc >= 1. or bfecc < 0.):
-        print("horizons_api.query_sb_from_jpl failed")
-        print("orbital eccentricity not between 0 and 1, cannot proceed")
-        return 0, 0., 0., 0., 0., 0., 0., 0.
+    #if(bfecc >= 1. or bfecc < 0.):
+    #    print("horizons_api.query_sb_from_jpl failed")
+    #    print("orbital eccentricity not between 0 and 1, cannot proceed")
+    #    return 0, 0., 0., 0., 0., 0., 0., 0.
     
     # We have to query JPL horizons to find out what exact value of GM
     # was used for the orbit fit above (this should be in the SBDB but
@@ -270,8 +271,10 @@ def query_sb_from_jpl(des='', clones=0):
         print("failed to convert to cartesian inside query_sb_from_jpl")
         return 0, 0., 0., 0., 0., 0., 0., 0.
 
-    if(clones > 0):
+    if(clones > 0) or query_cov:
         covmat = (obj['orbit']['covariance']['data'])
+        if query_cov:
+            return 1, epoch, np.sqrt(covmat[0][0]),np.sqrt(covmat[1][1]),np.sqrt(covmat[2][2]),np.sqrt(covmat[3][3]),np.sqrt(covmat[4][4]),np.sqrt(covmat[5][5])
         mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
         # sample the covariance matrix into temporary arrays
         ecc, q, tp, node, argperi, inc = \

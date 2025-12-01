@@ -2,6 +2,124 @@ import numpy as np
 import re
 import rebound
 
+#define the default file-naming schemes
+def archive_file_name(des=None):
+    '''
+    if the user doesn't provide a simulation archive filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        archivefile, string: filename for the simulation archive
+    '''
+
+    if(des == None):
+        archivefile = 'simarchive.bin'
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+    #make the filename while removing any whitespaces from des
+    archivefile = "".join(pdes.split()) + '-simarchive.bin'
+
+    return archivefile
+
+def ic_file_name(des=None):
+    '''
+    if the user doesn't provide an initial conditions filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        icfile, string: filename for the simulation archive
+                        that stores the initial conditions
+    '''
+
+    if(des == None):
+        icfile = 'ic.bin'
+   
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+    #make the filename while removing any whitespaces from des
+    icfile = "".join(pdes.split()) + '-ic.bin'
+
+    return icfile
+
+def log_file_name(des=None):
+    '''
+    if the user doesn't provide a log filename
+    this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        icfile, string: filename for the log file
+    '''
+
+    if(des == None):
+        logfile = 'log.txt'
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+
+    #make the filename while removing any whitespaces from des
+    logfile = "".join(pdes.split()) + '-log.txt'
+
+    return logfile
+
+def writelog(logfile,logmessage):
+    '''
+    append to the log file
+    inputs:
+        logfile, bool or string
+        logmessage, string
+    '''
+    if(logfile=='screen'):
+        print(logmessage)
+    else:
+        with open(logfile,"a") as f:
+            f.write(logmessage)
+
+def orbit_solution_file(des):
+    '''
+    if the user doesn't provide a filename to save the orbit solution
+    queried from JPL's SBDB, this function will be used to make the default
+    input: 
+        des, string: small body designation
+    output:
+        orbit_file, string: filename for the log file
+    '''
+    
+    # this file will be date stamped to be sure it doesn't overwrite
+    # a pre-existing saved orbit solution
+    today = date.today()
+    datestring = today.strftime("%b-%d-%Y")
+
+    #for the default file names, use the first designation
+    #if this is a list of objects instead of just one
+    if (type(des) is list):
+        pdes = des[0]
+    else:
+        pdes = des
+
+
+    orbit_file = "".join(pdes.split()) + "-" + datestring + '.pkl'
+
+    return orbit_file
+
 
 #################################################################
 #################################################################
@@ -24,9 +142,9 @@ def aei_to_xv(GM=1., a=1, e=0., inc=0., node=0., argperi=0., ma=0.):
     """
 
     # based on M. Duncan's routines in swift
-    if(e >= 1. or e < 0. or a < 0.):
-        print("orbital eccentricity not between 0 and 1, cannot proceed")
-        return 0, 0., 0., 0., 0., 0., 0.
+    #if(e >= 1. or e < 0. or a < 0.):
+    #    print("orbital eccentricity not between 0 and 1, cannot proceed")
+    #    return 0, 0., 0., 0., 0., 0., 0.
 
     sp = np.sin(argperi)
     cp = np.cos(argperi)
@@ -497,6 +615,7 @@ def read_sa_for_sbody(des=None, archivefile=None, datadir='',
         if(ntp > ntp_max):
             print("Warning! the number of clones in the simulation archive is smaller than")
             print("the number of clones specfied by the user! Resetting the number of clones.")
+            print(sa[0].N,len(sa[0].particles))
             clones = ntp_max - 1
             ntp = npt_max
             flag = 2

@@ -33,10 +33,10 @@ def integrate(objname, tmax=None, tout=None, objtype='Single'):
             small_planets_flag = True
             if tmax == None:
                 tmax = -1e7
-                tout = 1e2
+                tout = 2.5e2
         except:
             if tmax == None:
-                tmax = -1e8
+                tmax = -5e9
                 tout = 2.5e3
             small_planets_flag = False
         
@@ -50,7 +50,7 @@ def integrate(objname, tmax=None, tout=None, objtype='Single'):
     # Rest of the integration code
     
     try:
-    	sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive_100.bin", deletefile=True)
+    	sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
     except:
         print('A particle was likely ejected. Continuing to next objects')
 

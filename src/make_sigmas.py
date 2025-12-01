@@ -33,13 +33,12 @@ def make(des,rocky_planets=False,clones=0,filename='Single'):
     print('Adding:',planet_id)
     obj_directory = '../data/'+filename+'/'+str(des)
     os.makedirs(obj_directory, exist_ok=True)
-    flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones)
+    ecc, q, tp, node, argperi, inc = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(des), clones=clones, query_cov=True)
     #flag, epoch, sim = run_reb.initialize_simulation_at_epoch(planets=list(planet_id.values()), des=str(des))
     
     # Save the initial state to an archive file
-    archive_file = os.path.join(obj_directory, "archive_init.bin")
-    sim.save_to_file(archive_file)
-    sim = None
+    a = q/(1-ecc)
+    return a, ecc, inc, node, argperi, tp
 
 
 def make_multi(filename='Single',rockp=False,clones=0):
@@ -64,9 +63,12 @@ def make_multi(filename='Single',rockp=False,clones=0):
     os.makedirs(main_data_directory, exist_ok=True)
     #print(name_list)
       
+    sig_file = '../data/data_files/' + filename + '_sig.csv'
 
-    #for i, objname in enumerate(name_list['Name']):
-    for i,objname in enumerate(name_list['Name'].iloc[0:20]):
+    sig_df = pd.DataFrame(np.zeros((len(name_list),7)),columns=['Objname','a','e','inc','aop','lan','tp'])
+    print('Starting loop')
+    for i, objname in enumerate(name_list['Name']):
+    	#for i,objname in enumerate(name_list['Name'].iloc[0:2000]):
         #if i%100 == 0:
         #    print(i)
         #for i in range(len(name_list)):
@@ -89,7 +91,16 @@ def make_multi(filename='Single',rockp=False,clones=0):
         # Initialize simulation
         
         #print('rockp',rockp)
-        make(str(des),rockp,clones,filename)
+        a, ecc, inc, node, argperi, tp = make(str(des),rockp,clones,filename)
+
+        sig_df.iloc[i] = np.array([objname,a,ecc,inc,node,argperi,tp])
+
+    print('Saving')
+    sig_df.to_csv(sig_file)
+
+
+
+        
     
 if __name__ == "__main__":
     filetype = str(sys.argv[1])
