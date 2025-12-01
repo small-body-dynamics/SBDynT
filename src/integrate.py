@@ -7,7 +7,7 @@ import run_reb
 import horizons_api
 import tools
 
-def integrate(objname, tmax=None, tout=None, objtype='Single'):
+def integrate(objname, tmax=None, tout=None, objtype='Single',direction='back'):
     """
     Integrate the given archive.bin file which has been prepared.
 
@@ -32,16 +32,18 @@ def integrate(objname, tmax=None, tout=None, objtype='Single'):
             earth = sim2.particles['earth']
             small_planets_flag = True
             if tmax == None:
-                tmax = -1e7
+                tmax = 1e7
                 tout = 2.5e2
         except:
             if tmax == None:
-                tmax = -5e9
+                tmax = 5e9
                 tout = 2.5e3
             small_planets_flag = False
         
+        
         # Uncomment if you need to print simulation information
         # print(sim2, sim2.particles)
+    
         
     except Exception as error:
         # Raise a specific exception with an informative error message
@@ -49,8 +51,18 @@ def integrate(objname, tmax=None, tout=None, objtype='Single'):
 
     # Rest of the integration code
     
+    
     try:
-    	sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+        if direction == 'back':
+            tmax = -abs(tmax)
+            sim = run_reb.run_simulation(sim2, tmax=tmax, tout=tout, filename=file + "/archive.bin", deletefile=True)
+        elif direction == 'both':
+            tmax1 = -abs(tmax)/2
+            tmax2 = abs(tmax)/2
+            simb = run_reb.run_simulation(sim2, tmax=tmax1, tout=tout, filename=file + "/archive_back.bin", deletefile=True)
+            simf = run_reb.run_simulation(sim2, tmax=tmax2, tout=tout, filename=file + "/archive_forward.bin", deletefile=True)
+        else:
+            sim = run_reb.run_simulation(sim2, tmax=abs(tmax), tout=tout, filename=file + "/archive.bin", deletefile=True)
     except:
         print('A particle was likely ejected. Continuing to next objects')
 
