@@ -1930,7 +1930,7 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
 
         print(error_message)
         print(e)
-        return list(np.zeros(50))
+        return list(np.zeros(51))
         
 
     dt = abs(archive[1].t-archive[0].t)
@@ -1939,7 +1939,7 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
         equinoct_arrays = get_planet_arrays(archive,small_planets_flag,fullfile)
         g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(equinoct_arrays,small_planets_flag,t_init)
     except:
-        outs = np.zeros(50)
+        outs = np.zeros(51)
         return list(outs)
     if debug == True:
         return compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_dict,small_planets_flag, windows=windows,debug = debug,objname=objname, rms = rms, shortfilt=shortfilt)  
@@ -1948,7 +1948,7 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
 
     ind0 = np.where(t_init == 0)[0][0]
     if flag == False:
-        return list(np.zeros(50))
+        return list(np.zeros(51))
 
     return_data = [objname]
     return_data.append(a_init[ind0])
@@ -1992,6 +1992,7 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
     return_data.append(librate_angle)
     return_data.append(angle_ent)
     return_data.append(phifrac)
+    return_data.append(gs_dict)
     return return_data
 
 def prop_multi(filename):

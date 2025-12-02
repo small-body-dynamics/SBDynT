@@ -106,7 +106,7 @@ class small_body:
             elif planets == 2:
                 planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
             elif planets == 3:
-                planet_id = {1:'merucry', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+                planet_id = {1:'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
         elif isinstance(planets, dict):
             planet_id = planets
         else:
@@ -307,6 +307,9 @@ class small_body:
         self.proper_extras['phi_entropy'] = outputs[15 + self.windows*3 + 18]
         self.proper_extras['phi_frac'] = outputs[15 + self.windows*3 + 19]
         self.prop_finish = True
+
+        for i in outputs[-1]:
+            self.planet_freqs[i] = outputs[-1][i]*3600*360
         print('Proper Elements:',self.proper_elements)
 
     def compute_chaos(self):
