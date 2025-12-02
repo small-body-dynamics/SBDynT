@@ -34,7 +34,6 @@ warnings.filterwarnings("ignore", message="File in use for Simulationarchive alr
 # Globally disable a syntaxwarning that has to do with generating latex-friendly plot labele
 #warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-
 class small_body:
     # class that is returned by the main sbdynt function
     # it contains all of the calculated dynamical parameters and 

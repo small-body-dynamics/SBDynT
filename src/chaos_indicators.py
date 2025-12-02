@@ -1,15 +1,26 @@
 import numpy as np
 import pandas as pd
 import rebound
-import integrate_multi as im
+#import integrate_multi as im
 import sys
 import os
 import functools
-import schwimmbad
+#import schwimmbad
 import run_reb
 import json
 import prop_elem
-    
+
+from sbdynt import *
+
+
+class chaos_indicators:
+
+    def __init__(self, sb = small_body()):
+
+        self.small_body = sb
+        self.chaos_indicators = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
+        self.chaos_clones = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
+
 def autocorr(x):
     result = numpy.correlate(x, x, mode='full')
     return result[result.size//2:]    

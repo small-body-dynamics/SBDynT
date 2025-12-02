@@ -17,6 +17,8 @@ import run_reb
 import tools
 from scipy.stats import circmean
 
+
+
 av_init = 0;ev_init = 0;incv_init = 0;lanv_init = 0;aopv_init = 0;Mv_init = 0
 ae_init = 0;ee_init = 0;ince_init = 0;lane_init = 0;aope_init = 0;Me_init = 0
 am_init = 0;e_init = 0;incm_init = 0;lanm_init = 0;aopm_init = 0;Mm_init = 0
@@ -31,6 +33,30 @@ s2 = 0;s3 = 0;s4 = 0;s6 = 0;s7 = 0;s8 = 0
 g_arr = []
 s_arr=[]
 #small_planets_flag=False
+
+class proper_elements:
+    def __init__(self, sb = small_body()):
+
+        self.small_body = sb
+        self.savefile = savefile
+        self.filename = filename
+        self.init_file = ''
+        self.out_file1 = ''
+        self.out_file2 = ''
+        
+        self.sim_init = None
+        self.planets = {}
+        self.planet_freqs = {}
+        self.tmax = 0
+        self.tout = 0
+        self.osculating_elements = {}
+        self.proper_elements = {}
+        self.mean_elements = {}
+        self.proper_errors = {}
+        self.proper_windows = []
+        self.proper_extras = {}
+        self.prop_finish = False
+
 
 def pe_vals(t,a,p,q,h,k,g_arr,s_arr,small_planets_flag,debug=False):
     
