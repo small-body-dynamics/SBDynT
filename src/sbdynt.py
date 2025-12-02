@@ -39,7 +39,7 @@ class small_body:
     # class that is returned by the main sbdynt function
     # it contains all of the calculated dynamical parameters and 
     # other pertinent information about the simulations
-    def __init__(self, designation, object_type=None, clones=0, savefile=False, filetype='Single'):
+    def __init__(self, designation, object_type=None, clones=0, savefile=False, filename='Single'):
         self.designation = designation
         self.object_type = object_type
         self.clones = clones
@@ -55,7 +55,7 @@ class small_body:
 
         #DS added variables for proper_element branch
         self.savefile = savefile
-        self.filetype = filetype
+        self.filename = filename
         self.init_file = ''
         self.out_file1 = ''
         self.out_file2 = ''
@@ -82,11 +82,15 @@ class small_body:
         
         self.chaos_indicators = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
         self.chaos_clones = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
-        
 
+    def run_pe(self, planets = None, filename=None, tmax=None, tout=None, direction='both', deletefile=True, windows=5, time_run = 0, rms = True, debug = False):
+        self.init_pe(planets = planets, filename= filename)
+        self.integrate(tmax=tmax, tout=tout, direction=direction, deletefile=deletefile)
+        self.compute_proper(windows=windows, time_run = time_run, rms = rms, debug = debug)
+        
     def init_pe(self, planets = None, filename=None):
         if filename != None:
-            self.filetype = filename
+            self.filename = filename
         
         if planets == None:
             if self.object_type == 'asteroid':
@@ -115,13 +119,13 @@ class small_body:
 
         print('Adding: ',planet_id)
         if self.savefile:
-            obj_directory = '../data/'+self.filetype+'/'+str(self.designation)
+            obj_directory = '../data/'+self.filename+'/'+str(self.designation)
             os.makedirs(obj_directory, exist_ok=True)
         
         flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(self.designation), clones=self.clones)
         
         if self.savefile:
-            self.init_file = '../data/'+str(self.filetype)+'/'+str(self.designation) + '/archive_init.bin'
+            self.init_file = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_init.bin'
             sim.save_to_file(self.init_file)
 
         self.sim_init = sim
@@ -149,24 +153,25 @@ class small_body:
         else:
             sim2 = self.sim_init
 
-        obj_directory = '../data/'+str(self.filetype)+'/'+str(self.designation)
+        obj_directory = '../data/'+str(self.filename)+'/'+str(self.designation)
         os.makedirs(obj_directory, exist_ok=True)
 
         self.direction = direction
         try:
             if direction == 'backwards':
                 self.tmax = -abs(self.tmax)
-                self.out_file1 = 'data/'+str(self.filetype)+'/'+str(self.designation) + '/archive.bin'
+                self.out_file1 = 'data/'+str(self.filename)+'/'+str(self.designation) + '/archive.bin'
                 sim = run_reb.run_simulation(sim2, tmax=self.tmax, tout=self.tout, filename=self.out_file1, deletefile=deletefile)
                 
             elif direction == 'both':
                 tmax1 = -abs(self.tmax)/2
                 tmax2 = abs(self.tmax)/2
                 
-                self.out_file1 = '../data/'+str(self.filetype)+'/'+str(self.designation) + '/archive_back.bin'
-                self.out_file2 = '../data/'+str(self.filetype)+'/'+str(self.designation) + '/archive_forward.bin'
+                self.out_file1 = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_back.bin'
+                self.out_file2 = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_forward.bin'
                 
                 simb = run_reb.run_simulation(sim2, tmax=tmax1, tout=self.tout, filename=self.out_file1, deletefile=deletefile)
+                sim2 = self.sim_init
                 simf = run_reb.run_simulation(sim2, tmax=tmax2, tout=self.tout, filename=self.out_file2, deletefile=deletefile)
             else:
                 sim = run_reb.run_simulation(sim2, tmax=abs(self.tmax), tout=self.tout, filename=self.out_file1, deletefile=deletefile)
@@ -260,7 +265,7 @@ class small_body:
         self.windows = windows
         self.time_run = time_run
         
-        outputs = prop_calc(self.designation, filename=self.filetype, windows=windows, direction = self.direction, time_run = time_run, rms = rms, debug=debug)
+        outputs = prop_calc(self.designation, filename=self.filename, windows=windows, direction = self.direction, time_run = time_run, rms = rms, debug=debug)
 
         #
             

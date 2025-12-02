@@ -48,6 +48,8 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
     planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars',
                  5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
 
+    minor_id = {9: 'ceres', 10: 'vesta', 11: 'pluto'}
+
     # import the following hard-coded constants:
     # Planet physical parameters
     # SS_GM[0:9] in km^3 s^–2
@@ -80,6 +82,7 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
     # position and velocities to zero
     sx = 0.; sy = 0.; sz = 0.; svx = 0; svy = 0.; svz = 0.
 
+    #print('notplanets:',notplanets)
     # calculate the correction
     if(len(notplanets) > 0):
         # create a temporary simulation to calculate the barycenter of
@@ -106,9 +109,12 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
 
     # add each included planet to the simulation and correct for the
     # missing planets
+    
+    print('planets:',planets)
     for pl in planets:
         flag, mass, radius, [x, y, z], [vx, vy, vz] = \
             horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
+        #print(pl, flag)
         if(flag < 1):
             print("run_reb.add_planets failed failed at \
                   horizons_api.query_horizons_planets for ", pl)
@@ -116,11 +122,17 @@ def add_planets(sim, planets=['mercury', 'venus', 'earth', 'mars',
         # correct for the missing planets
         x += sx; y += sy; z += sz
         vx += svx; vy += svy; vz += svz
+        #print('adding', pl)
+        #print(x,y,z)
+        #print(vx,vy,vz)
         sim.add(m=mass, r=radius, x=x, y=y, z=z,
                 vx=vx, vy=vy, vz=vz, hash=pl)
 
     sim.N_active = npl
-    
+    #print('num_p:',len(sim.particles))
+    #print(sim.particles['ceres'])
+    #print(sim.particles['vesta'])
+    #print(sim.particles['neptune'])
     return 1, sim, sx, sy, sz, svx, svy, svz
 
 
@@ -170,7 +182,6 @@ def initialize_simulation(planets=['mercury', 'venus', 'earth', 'mars',
     
     # add the planets and return the position/velocity corrections for
     # missing planets
-    #planets = ['jupiter', 'saturn', 'uranus', 'neptune']
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
     if(apflag < 1):

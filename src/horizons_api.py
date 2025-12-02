@@ -31,8 +31,10 @@ def query_horizons_planets(obj='', epoch=2459580.5):
     obj = obj.lower()
     # define the planet-id numbers used by Horizons for the barycenter
     # of each major planet in the solar system
+    #planet_id = {'sun': 0, 'mercury': 1, 'venus': 2, 'earth': 3, 'mars': 4,
+    #             'jupiter': 5, 'saturn': 6, 'uranus': 7, 'neptune': 8}
     planet_id = {'sun': 0, 'mercury': 1, 'venus': 2, 'earth': 3, 'mars': 4,
-                 'jupiter': 5, 'saturn': 6, 'uranus': 7, 'neptune': 8}
+                 'jupiter': 5, 'saturn': 6, 'uranus': 7, 'neptune': 8, 'ceres': 9, 'vesta': 10, 'pluto': 11}
     # initialize the x and v return variables to zero.
     x = np.zeros(3)
     v = np.zeros(3)
@@ -87,6 +89,7 @@ def query_horizons_planets(obj='', epoch=2459580.5):
 
     try:
         # heliocentric positions:
+        #print('xvline',xvline)
         x[0] = float(xvline[0].split()[0])
         x[1] = float(xvline[0].split("Y =")[1].split()[0])
         x[2] = float(xvline[0].split("Z =")[1].split()[0])
