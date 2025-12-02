@@ -167,17 +167,13 @@ def pearsonr2(x, y):
     p = 2*(1-betainc(ab, ab, x))
     return rho, p
 
-def ACFI_calc(a,x,y):
-    if x%5 == 0:
-        if y%41 == 0:
-            print('a:',x, '/', 81,'inc:',y, '/', 41)
+def ACFI_calc(a):
     atenth = int(len(a)/10)
     num = atenth
     if num > 250:
         num = 250
     Rs = np.zeros(num)
     for i in range(num):
-        #Rs[i] = stats.pearsonr(a[0:num], a[atenth*7+i:atenth*7+num+i])[0]
         Rs[i] = pearsonr2(a[0:num], a[atenth*7+i:atenth*7+num+i])[0]
     ACFI = np.sum(abs(Rs)>0.05)/num
     return ACFI
