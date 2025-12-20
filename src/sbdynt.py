@@ -17,6 +17,7 @@ from machine_learning import *
 from tno_classifier import *
 #from proper_elements import *
 from tno import *
+from asteroid import *
 from prop_elem import *
 from chaos_indicators import *
 
@@ -34,11 +35,12 @@ warnings.filterwarnings("ignore", message="File in use for Simulationarchive alr
 # Globally disable a syntaxwarning that has to do with generating latex-friendly plot labele
 #warnings.filterwarnings("ignore", category=SyntaxWarning)
 
+
 class small_body:
     # class that is returned by the main sbdynt function
     # it contains all of the calculated dynamical parameters and 
     # other pertinent information about the simulations
-    def __init__(self, designation, object_type=None, clones=0, savefile=False, filename='Single'):
+    def __init__(self, designation, object_type=None, clones=0):
         self.designation = designation
         self.object_type = object_type
         self.clones = clones
@@ -50,309 +52,263 @@ class small_body:
         self.logfile = None
         if(object_type == 'tno'):
             self.tno_ml_outputs = None
-        self.proper_elements = None
+
+        self.tmax = 0
+        self.tout = 0
+        self.int_direction = ''
+        self.run_properties = self.analysis_vars()
+            
+        self.proper_elements = proper_element_class()
+        self.chaos_indicators = chaos_indicators()
 
         #DS added variables for proper_element branch
-        self.savefile = savefile
-        self.filename = filename
-        self.init_file = ''
-        self.out_file1 = ''
-        self.out_file2 = ''
-        
         self.a_arr = []
         self.e_arr = []
         self.I_arr = []
         self.o_arr = []
         self.O_arr = []
         self.t_arr = []
-        
-        self.sim_init = None
-        self.planets = {}
-        self.planet_freqs = {}
-        self.tmax = 0
-        self.tout = 0
-        self.osculating_elements = {}
-        self.proper_elements = {}
-        self.mean_elements = {}
-        self.proper_errors = {}
-        self.proper_windows = []
-        self.proper_extras = {}
-        self.prop_finish = False
-        
-        self.chaos_indicators = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
-        self.chaos_clones = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
 
-    def run_pe(self, planets = None, filename=None, tmax=None, tout=None, direction='both', deletefile=True, windows=5, time_run = 0, rms = True, debug = False):
-        self.init_pe(planets = planets, filename= filename)
-        self.integrate(tmax=tmax, tout=tout, direction=direction, deletefile=deletefile)
-        self.compute_proper(windows=windows, time_run = time_run, rms = rms, debug = debug)
+
+    def analysis_vars(self, tmax = None, tout = None, int_direction = None, planets=None):
         
-    def init_pe(self, planets = None, filename=None):
-        if filename != None:
-            self.filename = filename
-        
-        if planets == None:
-            if self.object_type == 'asteroid':
-                planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-            elif self.object_type == 'tno':
-                planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+        allowed_d = ['backwards','forwards','bf']
+        if(tmax == None):
+            if(self.object_type == 'asteroid'):
+                self.tmax = 10e6
+            elif(self.object_type == 'tno'):
+                self.tmax = 150e6
             else:
-                print('This small_body has not been assigned an ``asteroid`` or ``tno`` designation.')
-                print('Please either give this particle a valid ``object_type``, or define the ``planets`` variable in the ``init_pe`` function call to be one of the 3 presets [1,2,3], or some self-defined dictionary of planets, e.g. {8: " neptune"}')
-                return
+                print('object_type is neither asteroid or tno. Setting default tmax = 50 Myr.')
+                self.tmax = 50e6
                 
-                #planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-                
-        elif isinstance(planets, int):
-            if planets == 1:
-                planet_id = {2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-            elif planets == 2:
-                planet_id = {5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-            elif planets == 3:
-                planet_id = {1:'mercury', 2: 'venus', 3: 'earth', 4: 'mars', 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
-        elif isinstance(planets, dict):
-            planet_id = planets
-        else:
-            print('Error: variable ``planets`` is neither None, an integer of type [1,2,3], or a dictionary of planets. Please correct the variable.')
-            return 
-
-        print('Adding: ',planet_id)
-        if self.savefile:
-            obj_directory = '../data/'+self.filename+'/'+str(self.designation)
-            os.makedirs(obj_directory, exist_ok=True)
-        
-        flag, epoch, sim = run_reb.initialize_simulation(planets=list(planet_id.values()), des=str(self.designation), clones=self.clones)
-        
-        if self.savefile:
-            self.init_file = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_init.bin'
-            sim.save_to_file(self.init_file)
-
-        self.sim_init = sim
-
-    def integrate(self, tmax=None, tout=None, direction='both', deletefile=True): 
-        begin = datetime.now()
-        if tmax == None:
-            if self.object_type == 'asteroid':
-                self.tmax = 1e7
-            elif self.object_type == 'tno':
-                self.tmax = 1.5e8
-        else:
-            self.tmax = tmax
-            
-        if tout == None:
-            if self.object_type == 'asteroid':
-                self.tout = 5e2
-            elif self.object_type == 'tno':
-                self.tout = 5e3
-        else:
-            self.tout = tout               
-        
-        if self.savefile == True:
-            sim2 = rebound.Simulation(self.init_file)
-        else:
-            sim2 = self.sim_init
-
-        obj_directory = '../data/'+str(self.filename)+'/'+str(self.designation)
-        os.makedirs(obj_directory, exist_ok=True)
-
-        self.direction = direction
-        try:
-            if direction == 'backwards':
-                self.tmax = -abs(self.tmax)
-                self.out_file1 = 'data/'+str(self.filename)+'/'+str(self.designation) + '/archive.bin'
-                sim = run_reb.run_simulation(sim2, tmax=self.tmax, tout=self.tout, filename=self.out_file1, deletefile=deletefile)
-                
-            elif direction == 'both':
-                tmax1 = -abs(self.tmax)/2
-                tmax2 = abs(self.tmax)/2
-                
-                self.out_file1 = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_back.bin'
-                self.out_file2 = '../data/'+str(self.filename)+'/'+str(self.designation) + '/archive_forward.bin'
-                
-                simb = run_reb.run_simulation(sim2, tmax=tmax1, tout=self.tout, filename=self.out_file1, deletefile=deletefile)
-                sim2 = self.sim_init
-                simf = run_reb.run_simulation(sim2, tmax=tmax2, tout=self.tout, filename=self.out_file2, deletefile=deletefile)
+        if(tout == None):
+            if(self.object_type == 'asteroid'):
+                self.tout = 500
+            elif(self.object_type == 'tno'):
+                self.tout = 5000
             else:
-                sim = run_reb.run_simulation(sim2, tmax=abs(self.tmax), tout=self.tout, filename=self.out_file1, deletefile=deletefile)
-        except:
-            print('The particle was likely ejected, or some other break point occurred within the Rebound integration. Simulation ended.')
-        print('Integration Completed; run took ', datetime.now() - begin, ' seconds.')
-        
-        self.read_orbel_to_small_body()
-        #print('Now reading in orbital element time arrays to small_body object')
-        
+                print('object_type is neither asteroid or tno. Setting default tout = 2000 yr.')
+                self.tout = 2000
+                
+        if(int_direction == None):
+            self.int_direction = 'bf'
+        elif(int_direction not in allowed_d):
+            print('The given direction variable=', int_direction, ' is not one of the 4 allowed inputs ("backwards","forwards","b+f", None). Setting direction to "bf". Call this function again with a valid direction is you do not want a forwards + backwards integration.')  
+            self.int_direction = 'bf'
 
-    def read_orbel_to_small_body(self):
-        fullfile = self.out_file1        
-        archive = rebound.Simulationarchive(fullfile)
-
-        if self.direction == 'both':
-            fullfile_b = self.out_file1
-            fullfile_f = self.out_file2
-
-            archive_b = rebound.Simulationarchive(fullfile_b)
-            archive_f = rebound.Simulationarchive(fullfile_f)
-
-            flagb, a_initb, e_initb, inc_initb, lan_initb, aop_initb, M_initb, t_initb = read_sa_for_sbody(des = str(self.designation), archivefile=fullfile_b,clones=self.clones,tmax=0,tmin=-abs(self.tmax/2),center='helio',s=archive_b)
-            flagf, a_initf, e_initf, inc_initf, lan_initf, aop_initf, M_initf, t_initf = read_sa_for_sbody(des = str(self.designation), archivefile=fullfile_f,clones=self.clones,tmin=0.,tmax=abs(self.tmax/2),center='helio',s=archive_f)
-
-            if self.clones > 0:
-                self.a_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.e_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.I_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.o_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.O_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.M_arr = np.zeros((self.clones + 1, int(len(a_initb[0])*2-1)))
-                self.t_arr = np.zeros(int(len(a_initb[0])*2-1))
-                
-                self.a_arr[:,:len(a_initb[0])] = a_initb[:,::-1]
-                self.a_arr[:,len(a_initb[0]):] =  a_initf[:,1:]
-                
-                self.e_arr[:,:len(a_initb[0])] = e_initb[:,::-1]
-                self.e_arr[:,len(a_initb[0]):] =  e_initf[:,1:]
-                
-                self.I_arr[:,:len(a_initb[0])] = inc_initb[:,::-1]
-                self.I_arr[:,len(a_initb[0]):] =  inc_initf[:,1:]
-                
-                self.o_arr[:,:len(a_initb[0])] = aop_initb[:,::-1]
-                self.o_arr[:,len(a_initb[0]):] =  aop_initf[:,1:]
-                
-                self.O_arr[:,:len(a_initb[0])] = lan_initb[:,::-1]
-                self.O_arr[:,len(a_initb[0]):] =  lan_initf[:,1:]
-                
-                self.M_arr[:,:len(a_initb[0])] = M_initb[:,::-1]
-                self.M_arr[:,len(a_initb[0]):] =  M_initf[:,1:]
-                
-                self.t_arr[:len(a_initb[0])] = t_initb[::-1]
-                self.t_arr[len(a_initb[0]):] =  t_initf[1:]
-                
+        if(planets==None):
+            if(self.object_type == 'asteroid'):
+                self.planets = ['inner']
+            elif(self.object_type == 'tno'):
+                self.planets = ['outer']
             else:
-                self.a_arr = np.concatenate((a_initb[::-1], a_initf[1:]))
-                self.e_arr = np.concatenate((e_initb[::-1], e_initf[1:]))
-                self.I_arr = np.concatenate((inc_initb[::-1], inc_initf[1:]))
-                self.O_arr = np.concatenate((lan_initb[::-1], lan_initf[1:]))
-                self.o_arr = np.concatenate((aop_initb[::-1], aop_initf[1:]))
-                self.t_arr = np.concatenate((t_initb[::-1], t_initf[1:]))
-                self.M_arr = np.concatenate((M_initb[::-1], M_initf[1:]))
-                
+                print('object_type is neither asteroid or tno. Setting default planets = ["outer"]')
+                self.planets = ['outer']
             
-        elif self.direction == 'forwards':
-            flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(des = str(self.designation), archivefile=fullfile,clones=self.clones,tmin=0.,tmax=abs(self.tmax),center='helio',s=archive)
-
-            self.a_arr = a_init
-            self.e_arr = e_init
-            self.I_arr = I_init
-            self.o_arr = aop_init
-            self.O_arr = lan_init
-            self.M_arr = M_init
-            self.t_arr = t_init
-            
-        elif self.direction == 'backwards':
-            flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(des = str(objname), archivefile=fullfile,clones=self.clones,tmax=0.,tmin=-abs(self.tmax),center='helio',s=archive)
-
-            self.a_arr = a_init
-            self.e_arr = e_init
-            self.I_arr = I_init
-            self.o_arr = aop_init
-            self.O_arr = lan_init
-            self.M_arr = M_init
-            self.t_arr = t_init
         
+def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save_sbdb=False,
+                                  saveic=False,archivefile=None,logfile=False):
+    '''
+
+    '''
+    flag = 0
+    if(des == None):
+        print("The designation of a Small Body must be provided")
+        print("failed at sbdynt.setup_default_sb_integration()")
+        return flag, None, None, None, None, None
+    
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    if(clones==None):
+        #default to the Gladman approach of best fit + 3-sigma clones
+        clones = 2
+        cloning_method = 'find_3_sigma'
+        if(logf):
+            logmessage = "Clones were not specified, so the default behavior is to return\n"
+            logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
+            tools.writelog(logf,logmessage)  
+        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=sb_results.planets,
+                          des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
+                          logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
+    else:
+        cloning_method = 'Gaussian'
+        iflag, epoch, sim = run_reb.initialize_simulation(planets=sb_results.planets,
+                          des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
+                          logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
+        weights = np.ones(clones+1)
+
+
+    if(iflag < 1):
+        print("failed at tno.setup_default_tno_integration()")
+        return flag, None, None, None, None, None
+
+
+    flag = 1
+    return flag, sim, epoch, clones, cloning_method, weights            
+    
+#function to do a standard Asteroid analysis run using all default choices
+def run_ast(des=None, clones=None, datadir='',archivefile=None,
+            logfile=False,deletefile=False):
+    '''
+    documentation here...
+    '''
+    if(des == None):
+        print("The designation of an asteroid must be provided")
+        return None
+
+    if(logfile==True):
+        logf = log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    if(logf):
+        logmessage = "Initializing an Asteroid simulation instance by querying JPL"
+        writelog(logf,logmessage)  
+
+    iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_default_ast_integration(des=des, clones=clones, datadir=datadir,
+                                              save_sbdb=False,saveic=True,
+                                              archivefile=archivefile,
+                                              logfile=logfile)
     
 
-    def compute_proper(self, windows=5, time_run = 0, rms = True, debug = False):
-        self.windows = windows
-        self.time_run = time_run
+    if(iflag < 1):
+        print("Failed at initialization stage")
+        return None
+
+    object_type = 'asteroid'
+    #initialize the results class
+    ast_results = small_body(des,object_type,clones)
+    ast_results.planets = ['inner']
+    ast_results.cloning_method = cloning_method
+    ast_results.clone_weights = weights
+
+    icfile = ic_file_name(des=des)
+    if(datadir):
+        icfile = datadir + '/' + icfile
+
+    
+    if(archivefile==None):
+        file = archive_file_name(des=des)
+    else:
+        file = archivefile
+    if(datadir):
+        file = datadir + '/' + file
+    ast_results.archivefile = file
+    ast_results.icfile = icfile
+    ast_results.logfile = logf
+
+
+    if(logf):
+        logmessage = "Running additional forward integrations for the synthetic\n"
+        logmessage+= "proper elements calculation\n"
+        writelog(logf,logmessage)  
+
         
-        outputs = prop_calc(self.designation, filename=self.filename, windows=windows, direction = self.direction, time_run = time_run, rms = rms, debug=debug)
-
-        #
-            
-        self.proper_elements['a'] = outputs[10]    
-        self.proper_elements['e'] = outputs[11]    
-        self.proper_elements['sinI'] = outputs[12] 
-        self.proper_elements['omega'] = outputs[13]    
-        self.proper_elements['Omega'] = outputs[14]
+    rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=5e6,tout=500.)
+    if(rflag < 1):
+        print("Failed at forward integration stage")
+        return ast_results
         
-        self.osculating_elements['a'] = outputs[1]    
-        self.osculating_elements['e'] = outputs[2]    
-        self.osculating_elements['sinI'] = outputs[3] 
-        self.osculating_elements['omega'] = outputs[4]    
-        self.osculating_elements['Omega'] = outputs[5]    
-        self.osculating_elements['M'] = outputs[6]
+    if(logf):
+        logmessage = "Running additional backward integrations for the synthetic\n"
+        logmessage+= "proper elements calculation\n"
+        writelog(logf,logmessage)  
 
-        self.mean_elements['a'] = outputs[7]    
-        self.mean_elements['e'] = outputs[8]    
-        self.mean_elements['sinI'] = outputs[9] 
+    try:        
+        sa = rebound.Simulationarchive(icfile)
+        sim2 = sa[0]
+    except:
+        print("failed to read in the saved initial conditions file to restart from t=0")
+        return ast_results
 
-        self.proper_errors['RMS_a'] = outputs[15 + self.windows*3]
-        self.proper_errors['RMS_e'] = outputs[15 + self.windows*3 + 1]
-        self.proper_errors['RMS_sinI'] = outputs[15 + self.windows*3 + 2]
-        
-        self.proper_elements['g'] = outputs[15 + self.windows*3 + 6]    
-        self.proper_elements['s'] = outputs[15 + self.windows*3 + 7]
+    rflag, sim2 = run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
+                                         logfile=logfile,tmax=-5e6,tout=500.)
+    if(rflag < 1):
+        print("Failed at backward integration stage")
+        return ast_results
 
-        self.proper_windows = outputs[15:15 + self.windows*3]
+    if(logf):
+        logmessage = "Running the synthetic proper elements calculation\n"
+        writelog(logf,logmessage)  
 
-        self.proper_extras['res_e'] = outputs[15 + self.windows*3 + 8]
-        self.proper_extras['res_I'] = outputs[15 + self.windows*3 + 9]
-        
-        self.proper_extras['sec_res_e'] = outputs[15 + self.windows*3 + 10]
-        self.proper_extras['sec_res_I'] = outputs[15 + self.windows*3 + 11]
-        
-        self.proper_extras['e_osc_amp'] = outputs[15 + self.windows*3 + 12]
-        self.proper_extras['I_osc_amp'] = outputs[15 + self.windows*3 + 13]
-        
-        self.proper_extras['e_filt_amp'] = outputs[15 + self.windows*3 + 14]
-        self.proper_extras['I_filt_amp'] = outputs[15 + self.windows*3 + 15]
-        
-        self.proper_extras['angle_sec_res'] = outputs[15 + self.windows*3 + 16]
-        self.proper_extras['librating_angle'] = outputs[15 + self.windows*3 + 17]
-        self.proper_extras['phi_entropy'] = outputs[15 + self.windows*3 + 18]
-        self.proper_extras['phi_frac'] = outputs[15 + self.windows*3 + 19]
-        self.prop_finish = True
+    pflag, pe, sb_elems = calc_proper_elements(ast_results.proper_elements, des=des,datadir=datadir,archivefile=archivefile,
+                                        clones=clones,return_timeseries=True,logfile=logfile)
 
-        for i in outputs[-1]:
-            self.planet_freqs[i] = outputs[-1][i]*3600*360
-        print('Proper Elements:',self.proper_elements)
+    if(pflag < 1):
+        print("Failed at proper elements calculation stage")
+        return ast_results
 
-    def compute_chaos(self):
+    ast_results.proper_elements = pe
 
-        if len(self.a_arr) > 0:
-            if self.clones == 0:
-                self.chaos_indicators['ACFI'] = ACFI_calc(self.a_arr)
-                self.chaos_indicators['Entropy'] = entropy_calc(self.a_arr, self.e_arr, self.I_arr)
-                self.chaos_indicators['Power'] = power_calc(self.e_arr, self.I_arr, self.o_arr, self.O_arr, size=5)
-            else:
-                self.chaos_indicators['ACFI'] = ACFI_calc(self.a_arr[0])
-                self.chaos_indicators['Entropy'] = entropy_calc(self.a_arr[0], self.e_arr[0], self.I_arr[0])
-                self.chaos_indicators['Power'] = power_calc(self.e_arr[0], self.I_arr[0], self.o_arr[0], self.O_arr[0], size=5)
+    ast_results.chaos_indicators = compute_chaos(sb_results.chaos_indicators, a_arr = sb_elems[1], e_arr = sb_elems[2], I_arr = sb_elems[3], o_arr = sb_elems[4], O_arr = sb_elems[5], clones=clones, pe_obj = pe)
 
-        if self.prop_finish:
-            self.chaos_indicators['Distance Metric'] = hcm_calc(self.proper_elements['a'],
-                                                                self.proper_errors['RMS_a'],self.proper_errors['RMS_e'],self.proper_errors['RMS_sinI'])
 
-        if len(self.a_arr) > 0 and self.clones > 0:
-            for i in range(1,self.clones+1):
-                diff_a = ((self.a_arr[0] - self.a_arr[i])/np.mean(self.a_arr[0]))**2
-                diff_e = (self.e_arr[0] - self.e_arr[i])**2
-                diff_I = (np.sin(self.I_arr[0]) - np.sin(self.I_arr[i]))**2
-                
-            self.chaos_indicators['Clone_RMS_a'] = np.sqrt(np.nanmean(diff_a))
-            self.chaos_indicators['Clone_RMS_e'] = np.sqrt(np.nanmean(diff_e))
-            self.chaos_indicators['Clone_RMS_sinI'] = np.sqrt(np.nanmean(diff_I))
-
+    return ast_results
         
         
 
+def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
+                                       logfile=None,tmax=10e6,tout=500., direction='bf'):
+
+    icfile = ic_file_name(des=des)
+    if(datadir):
+        icfile = datadir + '/' + icfile
         
+    if direction == 'bf':
+        
+        rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=(tmax/2),tout=tout)
+        try:        
+            sa = rebound.Simulationarchive(icfile)
+            sim2 = sa[0]
+        except:
+            print("failed to read in the saved initial conditions file to restart from t=0")
+            return 0, sim
+
+        return run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
+                                         logfile=logfile,tmax=-(tmax/2),tout=tout)
+
+
+    elif direction == 'forwards':
+        
+        return run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=tmax,tout=tout)
+
+    elif direction == 'backwards':
+        try:        
+            sa = rebound.Simulationarchive(icfile)
+            sim2 = sa[0]
+        except:
+            print("failed to read in the saved initial conditions file to restart from t=0")
+            return 0, sim
+        return  run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=-tmax,tout=tout)
+
+    else:
+        print('direction given not backwards, forwards, or bf. Call this function again with a valid direction')
+        return 0,sim
+
+    
 
         
-        
-
+    
 #function to do a standard TNO analysis run using all default choices
 def run_tno(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False):
+            logfile=False,deletefile=False, run_proper = False, run_chaos = False):
     '''
     documentation here...
     '''
@@ -364,6 +320,10 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         logf = log_file_name(des=des)
     else:
         logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
 
@@ -371,6 +331,7 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         logmessage = "Initializing a TNO simulation instance by querying JPL"
         writelog(logf,logmessage)  
 
+    print('Initializing TNO')
     iflag, sim, epoch, clones, cloning_method, weights = \
                 setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
                                               save_sbdb=False,saveic=True,
@@ -393,14 +354,19 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
     if(datadir):
         icfile = datadir + '/' + icfile
 
+    
     if(archivefile==None):
         file = archive_file_name(des=des)
+    else:
+        file = archivefile
     if(datadir):
         file = datadir + '/' + file
     tno_results.archivefile = file
     tno_results.icfile = icfile
     tno_results.logfile = logf
 
+    #'''
+    print('Running TNO ML')
     cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
                                     archivefile=archivefile,datadir=datadir,
                                     deletefile=deletefile,logfile=logfile)
@@ -413,29 +379,212 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         tno_class.print_results()
 
     tno_results.tno_ml_outputs = tno_class
+    #'''
+    #tno_class = TNO_ML_outputs()
+    if run_proper:
+        if(tno_class.most_common_class == 'scattering'):
+            if(logf):
+                logmessage = "This is most likely a scattering TNO.\n"
+                logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
+                logmessage += "No further integration needed."
+                writelog(logf,logmessage)  
+            
+            tno_results.proper_elements.a = tno_class.features.a_mean
+            tno_results.proper_elements.e = tno_class.features.e_mean
+            tno_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+        
+            return tno_results
+        else:
+            if(logf):
+                logmessage = "Running additional forward integrations for the synthetic\n"
+                logmessage+= "proper elements calculation\n"
+                writelog(logf,logmessage)  
 
-    if(tno_class.most_common_class == 'scattering'):
-        if(logf):
-            logmessage = "This is most likely a scattering TNO.\n"
-            logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
-            logmessage += "No further integration needed."
-            writelog(logf,logmessage)  
-        tno_results.proper_elements = proper_elements(clones)
-        tno_results.proper_elements.a = tno_class.features.a_mean
-        tno_results.proper_elements.e = tno_class.features.e_mean
-        tno_results.proper_elements.sini = np.sin(tno_class.features.a_mean)
-        return tno_results
+        
+            print('Running TNO integration for PE')
+            rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=75e6,tout=5000.)
+            if(rflag < 1):
+                print("Failed at additional forward integration stage")
+                return tno_results
+        
+            if(logf):
+                logmessage = "Running additional backward integrations for the synthetic\n"
+                logmessage+= "proper elements calculation\n"
+                writelog(logf,logmessage)  
+
+            try:        
+                sa = rebound.Simulationarchive(icfile)
+                sim2 = sa[0]
+            except:
+                print("failed to read in the saved initial conditions file to restart from t=0")
+                return tno_results
+
+            rflag, sim2 = run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
+                                         logfile=logfile,tmax=-75e6,tout=5000.)
+            if(rflag < 1):
+                print("Failed at backward integration stage")
+                return tno_results
+
+            if(logf):
+                logmessage = "Running the synthetic proper elements calculation\n"
+                writelog(logf,logmessage)  
+
+            print('Reading TNO integration')
+            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
+
+            if(reflag < 1):
+                print("Failed when reading in integrated simulation for proper elements")
+                return tno_results
+                
+            print('Running TNO PE')
+            pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag)
+            #pflag, pe, sb_elems = calc_proper_elements(tno_results.proper_elements, des=des,datadir=datadir,archivefile=archivefile,
+            #                            clones=clones, logfile=logfile, int_data=int_data)
+
+            if(pflag < 1):
+                print("Failed at proper elements calculation stage")
+                return tno_results
+
+            tno_results.proper_elements = pe
+            
+    elif run_chaos:
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
+    if run_chaos:
+        tno_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
+        
+
+    return tno_results
+
+
+#function to do a standard small body analysis run using given or default choices
+def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
+            logfile=False,deletefile=False):
+    '''
+    documentation here...
+    '''
+    if(des == None):
+        print("The designation of a solar system small body must be provided")
+        return None
+    if(object_type == None):
+        print("The object_type of a solar system small body must be provided ('asteroid' or 'tno'")
+        return None
+
+    if(logfile==True):
+        logf = log_file_name(des=des)
     else:
-        if(logf):
-            logmessage = "Running additional forward integrations for the synthetic\n"
-            logmessage+= "proper elements calculation\n"
-            writelog(logf,logmessage)  
+        logf = logfile
 
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    if(logf):
+        logmessage = "Initializing a small body simulation instance by querying JPL"
+        writelog(logf,logmessage)  
+
+    print('Initializing Small Body')
+    
+    sb_results = small_body(des,object_type,clones)
+    iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_default_sb_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
+                                              save_sbdb=False,saveic=True,
+                                              archivefile=archivefile,
+                                              logfile=logfile)
+    
+
+    if(iflag < 1):
+        print("Failed at initialization stage")
+        return None
+
+    
+    #initialize the results class
+    sb_results.cloning_method = cloning_method
+    sb_results.clone_weights = weights
+
+    icfile = ic_file_name(des=des)
+    if(datadir):
+        icfile = datadir + '/' + icfile
+
+    
+    if(archivefile==None):
+        file = archive_file_name(des=des)
+    else:
+        file = archivefile
+    if(datadir):
+        file = datadir + '/' + file
+    sb_results.archivefile = file
+    sb_results.icfile = icfile
+    sb_results.logfile = logf
+
+
+    if(sb_results.object_type == 'tno'):
+        print('Running SB ML')
+        cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
+                                    archivefile=archivefile,datadir=datadir,
+                                    deletefile=deletefile,logfile=logfile)
+
+        if(cflag < 1):
+            print("Failed at the machine learning stage")
+            return sb_results
+
+        if(logf=='screen'):
+            sb_class.print_results()
+
+        sb_results.tno_ml_outputs = tno_class
+
+        if(tno_class.most_common_class == 'scattering'):
+            if(logf):
+                logmessage = "This is most likely a scattering TNO.\n"
+                logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
+                logmessage += "No further integration needed.\n"
+                logmessage += "Chaos indicators will not be computed."
+                writelog(logf,logmessage)  
+            
+            sb_results.proper_elements.a = tno_class.features.a_mean
+            sb_results.proper_elements.e = tno_class.features.e_mean
+            sb_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+        
+            return sb_results
+
+    if(logf):
+        logmessage = "Running additional forward integrations for the synthetic\n"
+        logmessage+= "proper elements calculation\n"
+        writelog(logf,logmessage)  
+
+        
+    print('Running Small body integration for PE')
+
+    
+    if(sb_results.int_direction == 'forward'):
         rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
-                                       logfile=logfile,tmax=50e6,tout=1000.)
+                                       logfile=logfile,tmax=sb_results.tmax,tout=sb_results.tout)
         if(rflag < 1):
             print("Failed at additional forward integration stage")
-            return tno_results
+            return sb_results
+    elif(sb_results.int_direction == 'backward'):
+        try:        
+            sa = rebound.Simulationarchive(icfile)
+            sim2 = sa[0]
+        except:
+            print("failed to read in the saved initial conditions file to restart from t=0")
+            return sb_results
+        rflag, sim2 = run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=-sb_results.tmax,tout=sb_results.tout)
+        if(rflag < 1):
+            print("Failed at backward integration stage")
+            return sb_results
+    elif(sb_results.int_direction == 'bf'):
+        rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=int(sb_results.tmax/2),tout=sb_results.tout)
+        if(rflag < 1):
+            print("Failed at additional forward integration stage")
+            return sb_results
         
         if(logf):
             logmessage = "Running additional backward integrations for the synthetic\n"
@@ -447,26 +596,136 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
             sim2 = sa[0]
         except:
             print("failed to read in the saved initial conditions file to restart from t=0")
-            return tno_results
+            return sb_results
 
         rflag, sim2 = run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
-                                         logfile=logfile,tmax=-50e6,tout=1000.)
+                                         logfile=logfile,tmax=-int(sb_results.tmax/2),tout=sb_results.tout)
         if(rflag < 1):
             print("Failed at backward integration stage")
-            return tno_results
+            return sb_results
 
-        if(logf):
-            logmessage = "Running the synthetic proper elements calculation\n"
-            writelog(logf,logmessage)  
-            
-        pflag, pe = calc_proper_elements(des=des,datadir=datadir,archivefile=archivefile,
+    if(logf):
+        logmessage = "Running the synthetic proper elements calculation\n"
+        writelog(logf,logmessage)  
+
+    print('Running TNO PE')
+    pflag, pe, sb_elems = calc_proper_elements(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,return_timeseries=True,logfile=logfile)
 
-        if(pflag < 1):
-            print("Failed at proper elements calculation stage")
+    if(pflag < 1):
+        print("Failed at proper elements calculation stage")
+        return sb_results
+
+    sb_results.proper_elements = pe
+
+    sb_results.chaos_indicators = compute_chaos(sb_results.chaos_indicators, a_arr = sb_elems[1], e_arr = sb_elems[2], I_arr = sb_elems[3], o_arr = sb_elems[4], O_arr = sb_elems[5], clones=clones, pe_obj = pe)
+
+
+    return sb_results
+
+
+def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
+            logfile=False,deletefile=False, run_proper=False, run_chaos=False):
+    '''
+    documentation here...
+    '''
+    if(des == None):
+        print("The designation of a TNO must be provided")
+        return None
+
+    if(logfile==True):
+        logf = log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+    
+
+    iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
+                                              save_sbdb=False,saveic=True,
+                                              archivefile=archivefile,
+                                              logfile=logfile)
+    object_type = 'tno'
+    #initialize the results class
+    tno_results = small_body(des,object_type,clones)
+    tno_results.planets = ['outer']
+    tno_results.cloning_method = 'Covariance Matrix'
+    tno_results.clone_weights = None
+
+    icfile = ic_file_name(des=des)
+    if(datadir):
+        icfile = datadir + '/' + icfile
+
+    
+    if(archivefile==None):
+        file = archive_file_name(des=des)
+    else:
+        file = archivefile
+    if(datadir):
+        file = datadir + '/' + file
+    tno_results.archivefile = file
+    tno_results.icfile = icfile
+    tno_results.logfile = logf
+
+    #'''
+    print('Running TNO ML')
+    cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
+                                    archivefile=archivefile,datadir=datadir,
+                                    deletefile=deletefile,logfile=logfile, classify_only=True)
+
+    if(cflag < 1):
+        print("Failed at the machine learning stage")
+        return tno_results
+
+    if(logf=='screen'):
+        tno_class.print_results()
+
+    tno_results.tno_ml_outputs = tno_class
+    #'''
+    #tno_class = TNO_ML_outputs()
+    
+    if run_proper:
+        if(tno_class.most_common_class == 'scattering'):
+            if(logf):
+                logmessage = "This is most likely a scattering TNO.\n"
+                logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
+                logmessage += "No further integration needed."
+                writelog(logf,logmessage)  
+            
+            tno_results.proper_elements.a = tno_class.features.a_mean
+            tno_results.proper_elements.e = tno_class.features.e_mean
+            tno_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+        
             return tno_results
+        else:
+            print('Reading TNO integration')
+            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_Flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
 
-        tno_results.proper_elements = pe
+            if(reflag < 1):
+                print("Failed when reading in integrated simulation for proper elements")
+                return tno_results
+                
+            print('Running TNO PE')
+            pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag)
 
+            if(pflag < 1):
+                print("Failed at proper elements calculation stage")
+                return tno_results
+
+            tno_results.proper_elements = pe
+            
+    elif run_chaos:
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_Flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
+    if run_chaos:
+        tno_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
+        
 
     return tno_results

@@ -102,3 +102,99 @@ def initialize_from_heliocentric_Find_Orb_orbit(sim, des = '',
 
     return 1, sim
 
+def initialize_from_heliocentric_destnosim(sim, des = '',
+                                                a=1.,e=0.,inc=0.,
+                                                node=0.,aperi=0.,ma=0.,
+                                                planets=['mercury', 'venus', 
+                                                'earth', 'mars','jupiter', 'saturn', 
+                                                'uranus', 'neptune'],
+                                                epoch=0., sb_cov=[], clones=0):
+    """
+    inputs:
+        sim: empty rebound simulation instance
+        des (string): designation/name for object 
+        a (float): heliocentric semimajor axis (au)
+        e (float): heliocentric eccentricity
+        inc (float): heliocentric ecliptic inclination (rad)
+        node (float): heliocentric longitude of ascending node (rad)
+        aperi (float): heliocentric argument of perihelion (rad)
+        ma (float): heliocentric mean anomaly (rad)
+        planets (optional): string list, list of planet names - defaults to all
+        epoch: float, epoch of the orbit fit in JD        
+    outputs:
+        flag: integer, 0 if failed, 1 if successful
+        sim: rebound simulation instance with the sun and planets added and
+             a test particle with the desired heliocentric orbit added
+             (all are adjusted for missing major perturbers)
+    """
+    #check to see if the sim already has particles in it
+    if(sim.N > 0):
+        print("add_orbits.initialize_from_heliocentric_destnosim failed")
+        print("This rebound simulation instance already has particles in it!")
+        print("This can only accept an empty rebound simulation instance")
+        return 0, sim
+
+    if(des==''):
+        print("add_orbits.initialize_from_heliocentric_destnosim failed")
+        print("you must provide a designation (used to label the particle)")
+        return 0, sim
+
+    # make all planet names lowercase
+    planets = [pl.lower() for pl in planets]
+    # create an array of planets not included in the simulation
+    # will be used to correct the simulation's barycenter for their absence
+    notplanets = []
+    
+    # set up massive body variables
+    npl = len(planets) + 1  # for the sun    
+
+    # define the planet-id numbers used by Horizons for the barycenters of each
+    # major planet in the solar system
+    planet_id = {1: 'mercury', 2: 'venus', 3: 'earth', 4: 'mars',
+                 5: 'jupiter', 6: 'saturn', 7: 'uranus', 8: 'neptune'}
+
+    # import the following hard-coded constants:
+    # The value of GM for the sun assumed in Find_orb (not the same as JPL!):
+    # find_orb_sunGM
+    # Planet physical parameters
+    # SS_GM[0:9] in km^3 s^–2
+    # SS_r[0:9] all in au
+    # reasonable integration timesteps for each planet:
+    # dt[0:9]
+    import hard_coded_constants as const
+
+    # First, we need to convert the DESTNOSIM orbit to heliocentric
+    # cartesian variables using DESTNOSIM's assumed solar GM
+    # which is in km^3/s^2, so have to convert a to km first
+    i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.destnosim_GM[0], 
+                    a=a, e=e, inc=inc, node=node, argperi=aperi, ma=ma)
+
+    # now we can set up the rebound simulation, adding the planets first
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim, planets=planets,
+                epoch=epoch)
+    if(apflag < 1):
+        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets")
+        return 0, sim
+
+    #now we can apply the corrections from add_planets to the particle
+    x+=sx; y+=sy; z+=sz;
+    vx+=svx; vy+=svy; vz+=svz;
+    
+    #add a test particle to sim with that corrected orbit:
+    sbhash = des
+    sim.add(m=0., x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=des)
+
+    mean = np.array([a,e,inc,node,aperi,ma])
+
+    a_c, e_c, inc_c, node_c, argperi_c, M_c = np.random.multivariate_normal(mean, sb_cov, clones).T
+
+    for i in range(clones):
+        flag, xc, yc, zc, vxc, vyc, vzc = tools.aei_to_xv(GM=const.destnosim_GM[0], 
+                    a=a_c[i], e=e_c[i], inc=inc_c[i], node=node_c[i], argperi=argperi_c[i], ma=M_c[i])
+        sim.add(m=0, x=xc, y=yc, z=zc, vx = vxc, vy=vyc, vz=vzc, hash = str(des)+'_'+str(i))
+    
+    sim.move_to_com()
+
+    return 1, sim

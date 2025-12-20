@@ -3,15 +3,15 @@ import run_reb
 import numpy as np
 
 
-def setup_default_tno_integration(des=None, clones=None, datadir='',save_sbdb=False,
+def setup_default_ast_integration(des=None, clones=None, datadir='',save_sbdb=False,
                                   saveic=False,archivefile=None,logfile=False):
     '''
 
     '''
     flag = 0
     if(des == None):
-        print("The designation of a TNO must be provided")
-        print("failed at tno.setup_default_tno_integration()")
+        print("The designation of an Asteroid must be provided")
+        print("failed at asteroid.setup_default_ast_integration()")
         return flag, None, None, None, None, None
     
     if(logfile==True):
@@ -29,19 +29,19 @@ def setup_default_tno_integration(des=None, clones=None, datadir='',save_sbdb=Fa
             logmessage = "Clones were not specified, so the default behavior is to return\n"
             logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
             tools.writelog(logf,logmessage)  
-        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=['outer'],
+        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=['inner'],
                           des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
                           logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
     else:
         cloning_method = 'Gaussian'
-        iflag, epoch, sim = run_reb.initialize_simulation(planets=['outer'],
+        iflag, epoch, sim = run_reb.initialize_simulation(planets=['inner'],
                           des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
                           logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
         weights = np.ones(clones+1)
 
 
     if(iflag < 1):
-        print("failed at tno.setup_default_tno_integration()")
+        print("failed at asteroid.setup_default_ast_integration()")
         return flag, None, None, None, None, None
 
 

@@ -57,3 +57,17 @@ SS_r[11] = 1188.*kmtoau  # Pluto system
 find_orb_sunGM = 1.3271243994E+11
 stoyear = 1./(365.25*24.*60.*60.)
 
+
+#DESTNOSIM planet GM's as of 12/09/2025. 
+# Values can be found in https://github.com/bernardinelli/DESTNOSIM/blob/master/destnosim/tno/transformation.py
+# Values given in units of Sollar Masses, AU, yr
+destnosim_GM = np.zeros(9)
+destnosim_GM[0] = 4.*np.pi*np.pi/1.000037773533
+destnosim_GM[1] = 6.55371264e-06
+destnosim_GM[2] = 9.66331433e-05
+destnosim_GM[3] = 1.20026937e-04
+destnosim_GM[4] = 1.27397978e-05
+destnosim_GM[5] = 3.76844407e-02 + 7.80e-6
+destnosim_GM[6] = 1.12830982e-02 + 2.79e-6
+destnosim_GM[7] = 1.72348553e-03 + 0.18e-6
+destnosim_GM[8] = 2.03318556e-03 + 0.43e-6

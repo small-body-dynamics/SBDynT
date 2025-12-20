@@ -1,0 +1,129 @@
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 7500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 14:37:51.230823
+finishing at 2025-12-18 14:38:56.273835
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 14:41:32.599456
+finishing at 2025-12-18 14:41:39.375356
+Running Albion from 0.0 to -750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 14:41:39.399357
+finishing at 2025-12-18 14:41:45.858821
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:21:53.171433
+finishing at 2025-12-18 15:21:59.825599
+Running Albion from 0.0 to -750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:21:59.846210
+finishing at 2025-12-18 15:22:06.400361
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:23:07.766107
+finishing at 2025-12-18 15:23:08.426847
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:23:08.442380
+finishing at 2025-12-18 15:23:09.062826
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:27:43.261245
+finishing at 2025-12-18 15:27:43.956843
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:27:43.984070
+finishing at 2025-12-18 15:27:44.686180
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:29:37.823374
+finishing at 2025-12-18 15:29:38.514938
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:29:38.536943
+finishing at 2025-12-18 15:29:39.202735
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:30:38.517317
+finishing at 2025-12-18 15:30:39.259079
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:30:39.283046
+finishing at 2025-12-18 15:30:40.002111
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:31:59.998196
+finishing at 2025-12-18 15:32:00.667553
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:32:00.690561
+finishing at 2025-12-18 15:32:01.372512
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:40:49.491129
+finishing at 2025-12-18 15:40:50.180723
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:40:50.203719
+finishing at 2025-12-18 15:40:50.880253
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:44:00.735904
+finishing at 2025-12-18 15:44:01.452981
+Running Albion from 0.0 to -75000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:44:01.480689
+finishing at 2025-12-18 15:44:02.162321
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:53:11.176805
+finishing at 2025-12-18 15:53:18.058558
+Running Albion from 0.0 to -750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 15:53:18.073573
+finishing at 2025-12-18 15:53:24.778527
+SBDB query results saved to ../example-notebooks/example_sims/Albion-Dec-18-2025.pkl
+Running Albion from 0.0 to 750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 20:49:31.837756
+finishing at 2025-12-18 20:49:39.892348
+Running Albion from 0.0 to -750000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/example_sims/Albion-simarchive.bin
+starting at 2025-12-18 20:49:39.923668
+finishing at 2025-12-18 20:49:48.126968

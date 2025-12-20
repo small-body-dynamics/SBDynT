@@ -15,11 +15,66 @@ from sbdynt import *
 
 class chaos_indicators:
 
-    def __init__(self, sb = small_body()):
+    def __init__(self):
 
-        self.small_body = sb
-        self.chaos_indicators = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
-        self.chaos_clones = {'ACFI': None, 'Entropy': None, 'Power': None, 'Distance Metric': None, 'Clone_RMS_a': None, 'Clone_RMS_e': None, 'Clone_RMS_sinI': None}
+        self.ACFI = None
+        self.Entropy = None
+        self.Power = None
+        self.Distance_metric = None
+        self.Clone_RMS_a = None
+        self.Clone_RMS_e = None
+        self.Clone_RMS_sinI = None
+
+
+    
+def compute_chaos(sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
+    ci = chaos_indicators()
+    try:
+        if len(sb_elem) > 0:
+            a_arr = sb_elem[0,:]
+            e_arr = sb_elem[1,:]
+            I_arr = sb_elem[2,:]
+            o_arr = sb_elem[3,:]
+            O_arr = sb_elem[4,:]
+                 
+            ci.ACFI = ACFI_calc(a_arr)
+            ci.Entropy = entropy_calc(a_arr, e_arr, I_arr)
+            ci.Power = power_calc(e_arr, I_arr, o_arr, O_arr, size=5)
+
+            if clones > 0:
+                if len(clone_elems) == 0:
+                    print('clones > 0, but clone_elems is not provided. Please supply the clone_elems to copute the RMS indicators')
+
+                else:
+                    for i in range(clones):
+                        diff_a = ((a_arr - clone_elems[i,0])/np.mean(a_arr))**2
+                        diff_e = (e_arr - clone_elems[i,1])**2
+                        diff_I = (np.sin(I_arr) - np.sin(clone_elems[i,2]))**2
+                
+                    ci.Clone_RMS_a = np.sqrt(np.nanmean(diff_a))
+                    ci.Clone_RMS_e = np.sqrt(np.nanmean(diff_e))
+                    ci.Clone_RMS_sinI = np.sqrt(np.nanmean(diff_I))
+
+        if pe_obj != None:
+            ci.Distance_metric = hcm_calc(pe_obj.proper_elements['a'], pe_obj.proper_errors['RMS_a'], 
+                                          pe_obj.proper_errors['RMS_e'], pe_obj.proper_errors['RMS_sinI'])
+
+            
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        line_number = exc_tb.tb_lineno
+
+        error_message = "An error occurred in at line "+str(line_number)
+
+        print(error_message)
+        print(e)
+        
+    return ci
+        
+
+#def rms_diff_calc(a_arr, e_arr, I_arr, clones=0):
+    
 
 def autocorr(x):
     result = numpy.correlate(x, x, mode='full')
@@ -406,14 +461,15 @@ def entropy_calc(a,e,inc):
 
     try:
         hs = np.sqrt(a*(1-e**2))
-        Lz = np.cos(inc)*hs
-        Lz_hat = np.cos(inc)*np.sqrt(1-e**2)
+        #Lz = np.cos(inc)*hs
+        #Lz_hat = np.cos(inc)*np.sqrt(1-e**2)
         #hs[np.isnan(hs)] = 0
         #inc[np.isnan(inc)] = np.pi/2
         #Lz[np.isnan(Lz)] = 0
         #'''
         bins = int(len(a)/10)
-        hist,edges = np.histogram(hs,bins=bins)
+        hs_nonan = hs[~np.isnan(hs)]
+        hist,edges = np.histogram(hs_nonan,bins=bins)
         hist = hist / hist.sum()
         baseline = np.log10(bins)
         entropy = -np.sum(hist * np.log10(hist+1e-12))

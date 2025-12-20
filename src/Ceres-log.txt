@@ -1,0 +1,16 @@
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin
+simulation epoch: 2458849.5
+Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Ceres-ic.bin

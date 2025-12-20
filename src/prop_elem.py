@@ -14,7 +14,8 @@ import scipy.signal as signal
 
 from scipy import signal
 import run_reb
-import tools
+#import tools
+from tools import *
 from scipy.stats import circmean
 
 
@@ -34,17 +35,9 @@ g_arr = []
 s_arr=[]
 #small_planets_flag=False
 
-class proper_elements:
-    def __init__(self, sb = small_body()):
+class proper_element_class:
+    def __init__(self):
 
-        self.small_body = sb
-        self.savefile = savefile
-        self.filename = filename
-        self.init_file = ''
-        self.out_file1 = ''
-        self.out_file2 = ''
-        
-        self.sim_init = None
         self.planets = {}
         self.planet_freqs = {}
         self.tmax = 0
@@ -53,9 +46,66 @@ class proper_elements:
         self.proper_elements = {}
         self.mean_elements = {}
         self.proper_errors = {}
-        self.proper_windows = []
         self.proper_extras = {}
         self.prop_finish = False
+
+
+    #Function that calls the proper element computation
+    def compute_proper(self, windows=5, time_run = 0, rms = True, debug = False):
+        self.windows = windows
+        self.time_run = time_run
+        
+        outputs = prop_calc(self.designation, filename=self.filename, windows=windows, direction = self.direction, time_run = time_run, rms = rms, debug=debug)
+
+        #
+            
+        self.proper_elements['a'] = outputs[10]    
+        self.proper_elements['e'] = outputs[11]    
+        self.proper_elements['sinI'] = outputs[12] 
+        self.proper_elements['omega'] = outputs[13]    
+        self.proper_elements['Omega'] = outputs[14]
+        
+        self.osculating_elements['a'] = outputs[1]    
+        self.osculating_elements['e'] = outputs[2]    
+        self.osculating_elements['sinI'] = outputs[3] 
+        self.osculating_elements['omega'] = outputs[4]    
+        self.osculating_elements['Omega'] = outputs[5]    
+        self.osculating_elements['M'] = outputs[6]
+
+        self.mean_elements['a'] = outputs[7]    
+        self.mean_elements['e'] = outputs[8]    
+        self.mean_elements['sinI'] = outputs[9] 
+
+        self.proper_errors['RMS_a'] = outputs[15 + self.windows*3]
+        self.proper_errors['RMS_e'] = outputs[15 + self.windows*3 + 1]
+        self.proper_errors['RMS_sinI'] = outputs[15 + self.windows*3 + 2]
+        
+        self.proper_elements['g'] = outputs[15 + self.windows*3 + 6]    
+        self.proper_elements['s'] = outputs[15 + self.windows*3 + 7]
+
+        self.proper_windows = outputs[15:15 + self.windows*3]
+
+        self.proper_extras['res_e'] = outputs[15 + self.windows*3 + 8]
+        self.proper_extras['res_I'] = outputs[15 + self.windows*3 + 9]
+        
+        self.proper_extras['sec_res_e'] = outputs[15 + self.windows*3 + 10]
+        self.proper_extras['sec_res_I'] = outputs[15 + self.windows*3 + 11]
+        
+        self.proper_extras['e_osc_amp'] = outputs[15 + self.windows*3 + 12]
+        self.proper_extras['I_osc_amp'] = outputs[15 + self.windows*3 + 13]
+        
+        self.proper_extras['e_filt_amp'] = outputs[15 + self.windows*3 + 14]
+        self.proper_extras['I_filt_amp'] = outputs[15 + self.windows*3 + 15]
+        
+        self.proper_extras['angle_sec_res'] = outputs[15 + self.windows*3 + 16]
+        self.proper_extras['librating_angle'] = outputs[15 + self.windows*3 + 17]
+        self.proper_extras['phi_entropy'] = outputs[15 + self.windows*3 + 18]
+        self.proper_extras['phi_frac'] = outputs[15 + self.windows*3 + 19]
+        self.prop_finish = True
+
+        for i in outputs[-1]:
+            self.planet_freqs[i] = outputs[-1][i]*3600*360
+        print('Proper Elements:',self.proper_elements)
 
 
 def pe_vals(t,a,p,q,h,k,g_arr,s_arr,small_planets_flag,debug=False):
@@ -951,9 +1001,78 @@ def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect
         proper_signal = signal
 
     
-        
-
     return proper_signal, proper_freq, protect_bins, filt_signal
+
+def handle_gs8_resonance(proper_signal, gs, gs8, freqs):
+    
+    obj_temp = proper_signal.copy()
+    elem_temp = np.abs(obj_temp)
+    ang_temp = np.angle(obj_temp)
+    
+    Ytemp = np.fft.rfft(elem_temp)
+    prop_freq = np.argmin(abs(freqs - gs))
+
+    indres = np.argmin(abs(freqs - (gs - gs8)))
+        
+    indmax = np.argmax(proper_signal[indres-1:indres+2]) + indres - 1
+    if abs(indmax - prop_freq) < 2:
+        print(indmax, prop_freq)
+        return proper_signal
+        
+    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
+    Ytemp[indmax] = Ytemp[indmax]*scale
+
+    indres = np.argmin(abs( - freqs - (gs - gs8)))
+        
+    indmax = np.argmax(proper_signal[indres-1:indres+2]) + indres - 1
+    if abs(indmax - prop_freq) < 2:
+        
+        print(indmax, prop_freq)
+        return proper_signal
+        
+    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
+    Ytemp[indmax] = Ytemp[indmax]*scale
+
+    obj_temp = np.fft.irfft(Ytemp)
+    proper_signal = obj_temp*np.exp(1j*ang_temp)
+    print('modified sig for gs-gs8', indmax, scale, 1/freqs[indmax])
+    return proper_signal
+
+def handle_gs_gs8_resonance(proper_signal, prop, g, s, g8, s8, freqs):
+    
+    obj_temp = proper_signal.copy()
+    elem_temp = np.abs(obj_temp)
+    ang_temp = np.angle(obj_temp)
+    
+    Ytemp = np.fft.rfft(elem_temp)
+    prop_freq = np.argmin(abs(freqs - prop))
+
+    indres = np.argmin(abs(freqs - (g + s - g8 - s8)))
+        
+    indmax = np.argmax(proper_signal[indres-1:indres+2])  + indres - 1
+    if(abs(indmax - prop_freq) < 2):
+        print(indmax, prop_freq)
+        return proper_signal
+        
+    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
+    Ytemp[indmax] = Ytemp[indmax]*scale
+        
+    #proper_signal = obj_temp*np.exp(1j*ang_temp)
+    
+    indres = np.argmin(abs(- freqs - (g + s - g8 - s8)))
+        
+    indmax = np.argmax(proper_signal[indres-1:indres+2])  + indres - 1
+    if(abs(indmax - prop_freq) < 2):
+        print(indmax, prop_freq)
+        return proper_signal
+        
+    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
+    Ytemp[indmax] = Ytemp[indmax]*scale
+
+    obj_temp = np.fft.irfft(Ytemp)
+    proper_signal = obj_temp*np.exp(1j*ang_temp)
+    print('modified sig for g+s-g8-s8', indmax, scale, 1/freqs[indmax])
+    return proper_signal
 
 def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_dex=0.1):
     """
@@ -1093,13 +1212,13 @@ def get_planet_arrays(archive,small_planets_flag,fullfile):
             
             if isinstance(av_init, int):
                 if archive[-1].t > 0:
-                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = tools.read_sa_for_sbody(des = str('venus'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = tools.read_sa_for_sbody(des = str('earth'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = tools.read_sa_for_sbody(des = str('mars'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = read_sa_for_sbody(des = str('venus'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = read_sa_for_sbody(des = str('earth'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = read_sa_for_sbody(des = str('mars'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
                 else:
-                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = tools.read_sa_for_sbody(des = str('venus'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = tools.read_sa_for_sbody(des = str('earth'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = tools.read_sa_for_sbody(des = str('mars'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = read_sa_for_sbody(des = str('venus'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = read_sa_for_sbody(des = str('earth'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = read_sa_for_sbody(des = str('mars'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
             
                 hv = ev_init*np.sin(lanv_init+aopv_init); he = ee_init*np.sin(lane_init+aope_init); hm = em_init*np.sin(lanm_init+aopm_init)
                 kv = ev_init*np.cos(lanv_init+aopv_init); ke = ee_init*np.cos(lane_init+aope_init); km = em_init*np.cos(lanm_init+aopm_init)                
@@ -1115,15 +1234,15 @@ def get_planet_arrays(archive,small_planets_flag,fullfile):
         
         if isinstance(aj_init, int):
             if archive[-1].t > 0 :
-                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = tools.read_sa_for_sbody(des = str('jupiter'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = tools.read_sa_for_sbody(des = str('saturn'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = tools.read_sa_for_sbody(des = str('uranus'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = tools.read_sa_for_sbody(des = str('neptune'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = read_sa_for_sbody(des = str('jupiter'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = read_sa_for_sbody(des = str('saturn'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = read_sa_for_sbody(des = str('uranus'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
+                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = read_sa_for_sbody(des = str('neptune'), archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
             else:
-                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = tools.read_sa_for_sbody(des = str('jupiter'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = tools.read_sa_for_sbody(des = str('saturn'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = tools.read_sa_for_sbody(des = str('uranus'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = tools.read_sa_for_sbody(des = str('neptune'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = read_sa_for_sbody(des = str('jupiter'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = read_sa_for_sbody(des = str('saturn'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = read_sa_for_sbody(des = str('uranus'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
+                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = read_sa_for_sbody(des = str('neptune'), archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
             
             hj = ej_init*np.sin(lanj_init+aopj_init); hs = es_init*np.sin(lans_init+aops_init); hu = eu_init*np.sin(lanu_init+aopu_init); hn = en_init*np.sin(lann_init+aopn_init)
             kj = ej_init*np.cos(lanj_init+aopj_init); ks = es_init*np.cos(lans_init+aops_init); ku = eu_init*np.cos(lanu_init+aopu_init); kn = en_init*np.cos(lann_init+aopn_init)
@@ -1135,6 +1254,11 @@ def get_planet_arrays(archive,small_planets_flag,fullfile):
             pj = np.append(pj,np.zeros(goal_p-N_og)); ps = np.append(ps,np.zeros(goal_p-N_og)); pu = np.append(pu,np.zeros(goal_p-N_og)); pn = np.append(pn,np.zeros(goal_p-N_og))
             qj = np.append(qj,np.zeros(goal_p-N_og)); qs = np.append(qs,np.zeros(goal_p-N_og)); qu = np.append(qu,np.zeros(goal_p-N_og)); qn = np.append(qn,np.zeros(goal_p-N_og))
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        line_number = exc_tb.tb_lineno
+
+        error_message = "An error occurred in at line "+str(line_number)
         print(e)
         return 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
@@ -1160,13 +1284,26 @@ def ind_filt(ind_list,powers,freq,dexl,div_num):
         powers[ind_low:ind_high] = powers[ind_low:ind_high]/div_num
     return powers
     
-
-def get_planet_freqs(equinoct_arrays,small_planets_flag,t_init):
-    try:
-        if small_planets_flag:
-            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn,hv,he,hm,kv,ke,km,pv,pe,pm,qv,qe,qm = equinoct_arrays
-        else:
-            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn = equinoct_arrays
+def hkpq(p_elems):
+    h = p_elems[1]*np.sin(p_elems[3]+p_elems[4])
+    k = p_elems[1]*np.cos(p_elems[3]+p_elems[4])
+    p = np.sin(p_elems[2])*np.sin(p_elems[4])
+    q = np.sin(p_elems[2])*np.cos(p_elems[4])
+    return h,k,p,q
+    
+def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
+    
+    try:     
+        hj,kj,pj,qj = hkpq(planet_elems['jupiter'])
+        hs,ks,ps,qs = hkpq(planet_elems['saturn'])
+        hu,ku,pu,qu = hkpq(planet_elems['uranus'])
+        hn,kn,pn,qn = hkpq(planet_elems['neptune'])
+        
+        if small_planets_flag:    
+            hv,kv,pv,qv = hkpq(planet_elems['venus'])
+            he,ke,pe,qe = hkpq(planet_elems['earth'])
+            hm,km,pm,qm = hkpq(planet_elems['mars'])
+            
             
         Yhkj = np.fft.fft(kj+1j*hj); Yhks = np.fft.fft(ks+1j*hs); Yhku = np.fft.fft(ku+1j*hu); Yhkn = np.fft.fft(kn+1j*hn)
         Ypqj = np.fft.fft(qj+1j*pj); Ypqs = np.fft.fft(qs+1j*ps); Ypqu = np.fft.fft(qu+1j*pu); Ypqn = np.fft.fft(qn+1j*pn)
@@ -1333,15 +1470,16 @@ def get_planet_freqs(equinoct_arrays,small_planets_flag,t_init):
         s_ex = np.array([s6-s7,s6-s8,s7-s8],dtype=np.float64)
 
             
-    except Exception as e:
+    except Exception as err:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         line_number = exc_tb.tb_lineno
 
         error_message = "An error occurred in at line "+str(line_number)
-        print(e)
-        print('Gathering planetary frequencies failed')
         print(error_message)
+        print(err)
+        print('Gathering planetary frequencies failed')
+
         return 0,0,0,0,0
     return g_arr,g_inds,s_arr,s_inds, gs_dict
 
@@ -1567,7 +1705,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         # Print the error message
             print(error_message)
             print(error)
-            return [False,objname,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+            return [False] + list(np.zeros(20))
 
             #for i in protect_gs:
             #    protect_g.append(i)
@@ -1593,7 +1731,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         # Print the error message
         print(error_message)
         print(error)
-        return [False,objname,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        return [False] + list(np.zeros(20))
 
     protect_hk=0
     protect_pq=0
@@ -1649,8 +1787,11 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         #pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel_s, proper_freq=protect_s, protect_bins = protect_s_bins, inc_filt = True)
         pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel_s, proper_freq=protect_s, protect_bins = protect_s_bins, shortfilt=shortfilt)
 
-        e_temp = np.abs(hk_new)
-        inc_temp = np.abs(pq_new)
+        
+        hk_new = handle_gs8_resonance(hk_new, g, gs_dict['g8'], freqs)
+        pq_new = handle_gs8_resonance(pq_new, s, gs_dict['s8'], freqs)
+        hk_new = handle_gs_gs8_resonance(hk_new, g, g, s, gs_dict['g8'], gs_dict['s8'], freqs)
+        pq_new = handle_gs_gs8_resonance(pq_new, s, g, s, gs_dict['g8'], gs_dict['s8'], freqs)
 
         pomega_n = np.angle(hk_new)
         Omega_n = np.angle(pq_new)
@@ -1675,7 +1816,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         pe_i = np.nansum(inc_win)/np.sum(np.kaiser(len(pq_news),6))
         #pes = np.array([np.nanmean(a_init),np.nanmean(np.abs(hk_new)[int(per_shave*N):int((1-per_shave)*N)]),np.nanmean(np.abs(pq_new)[int(per_shave*N):int((1-per_shave)*N)])])
 
-        #Ya = np.fft.rfft(a_init)
+        #Ya = np.fft.rfft(a_init)a_filt
         #short_inds = np.where(abs(1/freqs_a) <= dt*3)[0]
         #Ya[short_inds] = 0
         #a_new = np.fft.irfft(Ya)
@@ -1693,7 +1834,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         print(error_message)
         print(error)
         pes = np.array([10,10,10],dtype=np.float64)
-        return [False] + list(np.zeros(17))
+        return [False] + list(np.zeros(20))
 
     error_list = np.zeros((windows,3))
     ds = int(len(t_init)/(windows+1))
@@ -1871,8 +2012,289 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
     phifrac = (g+s)/(gs_dict['g8'] + gs_dict['s8'])
     return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac
 
+
+def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=None, object_type= None):
+    if(archivefile==None):
+        file = archive_file_name(des=des)
+    else:
+        file = archivefile
+    if(datadir):
+        file = datadir + '/' + file
+
+    try:
+        sim = rebound.Simulationarchive(file)
+    except:
+        print(file)
+        print('failed to read archviefile')
+    if object_type == None:
+        try:
+            testval = sim[0].particles['venus']
+            testval = sim[0].particles['earth']
+            testval = sim[0].particles['mars']
+            vem = True
+        except:
+            vem = False
+    else:
+        if object_type == 'tno':
+            vem = False
+        elif object_type == 'asteroid':
+            vem = True
+        else:
+            print('small_body object does not have a valid object_type. Checking planets contained in simulation by hash.')
+            try:
+                testval = sim[0].particles['venus']
+                testval = sim[0].particles['earth']
+                testval = sim[0].particles['mars']
+                print('simulation includes venus, earth, and mars. Will filter out these inner planets')
+                vem = True
+            except:
+                print('simulation does not include one or all of venus, earth, and mars. Will only consider the outer planets in proper element filtering.')
+                vem = False
+
+
+    j_elems = np.zeros((5, len(sim)))
+    s_elems = np.zeros((5, len(sim)))
+    u_elems = np.zeros((5, len(sim)))
+    n_elems = np.zeros((5, len(sim)))
+
+    if vem:
+        v_elems = np.zeros((5, len(sim)))
+        e_elems = np.zeros((5, len(sim)))
+        m_elems = np.zeros((5, len(sim)))
+    
+    sb_elems = np.zeros((6, len(sim)))
+
+    clone_elems = np.zeros((clones, 5, len(sim)))
+
+    #for i in range(0,len(sim),10):
+    for i in range(len(sim)):
+        #if i%20000 == 0:
+        #    print('Reading snapshot:', i, sim[i].t)
+
+        #if int(sim[i].t) % 20000 != 0:
+        #    continue
+        sb = sim[i].particles[str(des)].orbit(primary=sim[i].particles['sun'])
+
+        #print(sim[i].particles)
+        
+        #print(sim[i].particles[0])
+        #print(sim[i].particles[1])
+        #print(sim[i].particles[2])
+        #print(sim[i].particles[3])
+        #print(sim[i].particles[4])
+
+        sb_elems[0,i] = sim[i].t
+        sb_elems[1,i] = sb.a
+        sb_elems[2,i] = sb.e
+        sb_elems[3,i] = sb.inc
+        sb_elems[4,i] = sb.omega
+        sb_elems[5,i] = sb.Omega
+
+        for j in range(clones):
+            c_name = str(des)+'_'+str(j+1)
+            #print(c_name)
+            clone = sim[i].particles[c_name].orbit(primary=sim[i].particles['sun'])
+            clone_elems[j,0,i] = clone.a
+            clone_elems[j,1,i] = clone.e
+            clone_elems[j,2,i] = clone.inc
+            clone_elems[j,3,i] = clone.omega
+            clone_elems[j,4,i] = clone.Omega
+        #sb_elems[6,i] = sb.M
+
+        j_elems[0,i] = sim[i].particles['jupiter'].a
+        j_elems[1,i] = sim[i].particles['jupiter'].e
+        j_elems[2,i] = sim[i].particles['jupiter'].inc
+        j_elems[3,i] = sim[i].particles['jupiter'].omega
+        j_elems[4,i] = sim[i].particles['jupiter'].Omega
+        
+        s_elems[0,i] = sim[i].particles['saturn'].a
+        s_elems[1,i] = sim[i].particles['saturn'].e
+        s_elems[2,i] = sim[i].particles['saturn'].inc
+        s_elems[3,i] = sim[i].particles['saturn'].omega
+        s_elems[4,i] = sim[i].particles['saturn'].Omega
+        
+        u_elems[0,i] = sim[i].particles['uranus'].a
+        u_elems[1,i] = sim[i].particles['uranus'].e
+        u_elems[2,i] = sim[i].particles['uranus'].inc
+        u_elems[3,i] = sim[i].particles['uranus'].omega
+        u_elems[4,i] = sim[i].particles['uranus'].Omega
+        
+        n_elems[0,i] = sim[i].particles['neptune'].a
+        n_elems[1,i] = sim[i].particles['neptune'].e
+        n_elems[2,i] = sim[i].particles['neptune'].inc
+        n_elems[3,i] = sim[i].particles['neptune'].omega
+        n_elems[4,i] = sim[i].particles['neptune'].Omega
+
+        if vem:
+            v_elems[0,i] = sim[i].particles['venus'].a
+            v_elems[1,i] = sim[i].particles['venus'].e
+            v_elems[2,i] = sim[i].particles['venus'].inc
+            v_elems[3,i] = sim[i].particles['venus'].omega
+            v_elems[4,i] = sim[i].particles['venus'].Omega
+            
+            e_elems[0,i] = sim[i].particles['earth'].a
+            e_elems[1,i] = sim[i].particles['earth'].e
+            e_elems[2,i] = sim[i].particles['earth'].inc
+            e_elems[3,i] = sim[i].particles['earth'].omega
+            e_elems[4,i] = sim[i].particles['earth'].Omega
+        
+            m_elems[0,i] = sim[i].particles['mars'].a
+            m_elems[1,i] = sim[i].particles['mars'].e
+            m_elems[2,i] = sim[i].particles['mars'].inc
+            m_elems[3,i] = sim[i].particles['mars'].omega
+            m_elems[4,i] = sim[i].particles['mars'].Omega
+
+
+    #First sort and remove values from the time array that aren't consistent with the higher resolution data. 
+    t_arr = sb_elems[0]
+    sortt = np.sort(t_arr)
+
+    dt = round(abs(sortt[-1] - sortt[-2])) 
+
+    test_arr = t_arr 
+    skip_short_res = np.where(test_arr.astype(int) % dt == 0)[0]
+    
+    #t_arr = np.sort(t_arr[skip_short_res])
+    
+    # archive may have backwards integration as well, sort and remove the second 0-time point where the array starts    
+    sort_t, sort_inds = np.unique(t_arr[skip_short_res], return_index=True)
+
+    sb_elems = sb_elems[:,sort_inds]
+    clone_elems = clone_elems[:,:, sort_inds]
+    
+    j_elems = j_elems[:,sort_inds]
+    s_elems = s_elems[:,sort_inds]
+    u_elems = u_elems[:,sort_inds]
+    n_elems = n_elems[:,sort_inds]
+
+    if vem:
+        v_elems = v_elems[:,sort_inds]
+        e_elems = e_elems[:,sort_inds]
+        m_elems = m_elems[:,sort_inds]
+
+    if vem:
+        planet_elems = {'venus': v_elems, 'earth': e_elems, 'mars': m_elems, 'jupiter': j_elems, 'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
+    else:
+        planet_elems = {'jupiter': j_elems, 'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
+
+    '''
+    if small_planets_flag:
+            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn,hv,he,hm,kv,ke,km,pv,pe,pm,qv,qe,qm = equinoct_arrays
+        else:
+            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn = equinoct_arrays
+
+    p_elems = [a,e,I,o,O]
+    '''
+    
+    if vem:
+        p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems),*hkpq(v_elems),*hkpq(e_elems),*hkpq(m_elems)]    
+    else:
+        p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems)]    
+
+    time = sb_elems[0]
+    return 1, time, sb_elems, planet_elems, clone_elems, vem
+
     
 
+def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], small_planets_flag = False):
+
+    #t_init, sb_elems, planet_elems, clone_elems, p_equinoct_arr, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+    #                                    clones=clones,return_timeseries=return_timeseries,logfile=logfile, tno_results = tno_results)
+    proper_object = proper_element_class()
+    #if len(int_data) < 1:
+    #    return 0, proper_object, []
+        
+    #times, sb_elems, planet_elems, clone_elems, small_planets_flag = int_data
+
+
+    osc_elem = {}
+    mean_elem = {}
+    prop_elem = {}
+    ind0 = np.where(times == 0.0)[0]
+
+    dt = abs(times[-1]-times[-2])
+
+    a_init = sb_elems[1]
+    e_init = sb_elems[2]
+    I_init = sb_elems[3]
+    o_init = sb_elems[4]
+    O_init = sb_elems[5]
+        
+    osc_elem['a'] = a_init[ind0]
+    osc_elem['e'] = e_init[ind0]
+    osc_elem['I'] = I_init[ind0]
+    osc_elem['o'] = o_init[ind0]
+    osc_elem['O'] = O_init[ind0]
+
+    mean_elem['a'] = np.mean(a_init)
+    mean_elem['e'] = np.mean(e_init)
+    mean_elem['sinI'] = np.sin(np.mean(I_init))
+        
+    diffg = np.gradient((o_init+O_init)%(2*np.pi))
+    diffs = np.gradient((O_init)%(2*np.pi))
+    
+    mean_elem['g(rev/yr)'] = np.median(diffg)/dt/2/np.pi
+    mean_elem['s(rev/yr)'] = np.median(diffs)/dt/2/np.pi
+    
+    mean_elem['g("/yr)'] = np.median(diffg)/dt*3600*360/2/np.pi
+    mean_elem['s("/yr)'] = np.median(diffs)/dt*3600*360/2/np.pi
+
+    g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(times, planet_elems, small_planets_flag = small_planets_flag)
+    
+    flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True)
+
+    prop_elem = {}
+    prop_elem['a'] = pes[0]
+    prop_elem['e'] = pes[1]
+    prop_elem['sinI'] = pes[2]
+    prop_elem['g(rev/yr)'] = g
+    prop_elem['s(rev/yr)'] = s
+    prop_elem['g("/yr)'] = g*3600*360
+    prop_elem['s("/yr)'] = s*3600*360
+    
+    prop_errs = {}
+    prop_errs['RMS_a'] = rms_val[0]
+    prop_errs['RMS_e'] = rms_val[1]
+    prop_errs['RMS_sinI'] = rms_val[2]
+
+    if small_planets_flag:
+        proper_object.planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
+    else:
+        proper_object.planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+
+    proper_object.planet_freqs = gs_dict
+    proper_object.osculating_elements = osc_elem
+    proper_object.mean_elements = mean_elem
+    proper_object.proper_elements = prop_elem
+
+    proper_object.proper_errors = prop_errs
+
+    #rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac
+    proper_object.proper_extras['E Resonant Metric'] = rese
+    proper_object.proper_extras['sinI Resonant Metric'] = resI
+    proper_object.proper_extras['E Resonant Flag'] = sec_res_e
+    proper_object.proper_extras['sinI Resonant Flag'] = sec_res_I
+    
+    proper_object.proper_extras['E Osculating Amplitude'] = e_osc_amp
+    proper_object.proper_extras['sinI Osculating Amplitude'] = I_osc_amp
+    proper_object.proper_extras['E Filtered Amplitude'] = e_amp
+    proper_object.proper_extras['sinI Filtered Amplitude'] = I_amp
+
+    proper_object.proper_extras['Secular Resonant Angle'] = angle_sec_res
+    proper_object.proper_extras['Librating Angle'] = librate_angle
+    proper_object.proper_extras['Angle Entropy'] = angle_ent
+    proper_object.proper_extras['Phi Entropy'] = phifrac
+
+    #if clones > 0:
+    #    sb_elems = np.concatenate((np.array([sb_elems[1:]]),clone_elems), axis = 0)
+
+    return 1, proper_object
+    
+
+        
+
+        
+    
 
 
 def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run = 0, rms = True, shortfilt=True, debug=False):
@@ -1930,8 +2352,8 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
             archive_b = rebound.Simulationarchive(fullfile_b)
             archive_f = rebound.Simulationarchive(fullfile_f)
 
-            flagb, a_initb, e_initb, inc_initb, lan_initb, aop_initb, M_initb, t_initb = tools.read_sa_for_sbody(des = str(objname), archivefile=fullfile_b,clones=0,tmax=0.,tmin=-abs(time_run),center='helio',s=archive_b)
-            flagf, a_initf, e_initf, inc_initf, lan_initf, aop_initf, M_initf, t_initf = tools.read_sa_for_sbody(des = str(objname), archivefile=fullfile_f,clones=0,tmin=0.,tmax=abs(time_run),center='helio',s=archive_f)
+            flagb, a_initb, e_initb, inc_initb, lan_initb, aop_initb, M_initb, t_initb = read_sa_for_sbody(des = str(objname), archivefile=fullfile_b,clones=0,tmax=0.,tmin=-abs(time_run),center='helio',s=archive_b)
+            flagf, a_initf, e_initf, inc_initf, lan_initf, aop_initf, M_initf, t_initf = read_sa_for_sbody(des = str(objname), archivefile=fullfile_f,clones=0,tmin=0.,tmax=abs(time_run),center='helio',s=archive_f)
 
             a_init = np.concatenate((a_initb[::-1], a_initf[1:]))
             e_init = np.concatenate((e_initb[::-1], e_initf[1:]))
@@ -1943,9 +2365,9 @@ def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run
             
         else:
             if archive[-1].t > 0:
-                flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(des = str(objname), archivefile=fullfile,clones=0,tmin=0.,tmax=time_run,center='helio',s=archive)
+                flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = read_sa_for_sbody(des = str(objname), archivefile=fullfile,clones=0,tmin=0.,tmax=time_run,center='helio',s=archive)
             else:
-                flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = tools.read_sa_for_sbody(des = str(objname), archivefile=fullfile,clones=0,tmax=0.,tmin=time_run,center='helio',s=archive)
+                flag, a_init, e_init, inc_init, lan_init, aop_init, M_init, t_init = read_sa_for_sbody(des = str(objname), archivefile=fullfile,clones=0,tmax=0.,tmin=time_run,center='helio',s=archive)
         
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
