@@ -859,7 +859,56 @@ def argmedian(x):
     """
     return np.argpartition(x, len(x) // 2)[len(x) // 2]
 
-def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect_bins=None,kernel=60, proper_freq = None, inc_filt = False, win=False, shortfilt = True):
+def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_init=3, kernel_size=15, method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, shortfilt = True):
+    """
+    Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
+    """
+    fft_signal = np.asarray(fft_signal)
+    log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
+
+
+    log_power[np.isnan(log_power)] = 1e-10
+
+    phase = np.angle(fft_signal)
+
+    N = len(fft_signal)
+
+    # Setting mask values to False causes them to be protected/preserved to original amplitudes
+    
+    
+    masked_log_power = log_power.copy()
+
+    if method == "gaussian":
+        smoothed_log_power = gaussian_filter1d(masked_log_power, sigma=kernel_size, mode="mirror")
+
+    else:  # fallback to uniform boxcar
+        kernel = np.ones(kernel_size) / kernel_size
+        smoothed_log_power = convolve1d(masked_log_power, kernel, mode="nearest")
+    '''
+    # Normalize result: divide smoothed signal by smoothed mask
+    with np.errstate(invalid='ignore', divide='ignore'):
+        #normalized_log_power = np.where(smoothed_mask_filt < 1e-6 , smoothed_log_power / smoothed_mask_filt, log_power)
+        normalized_log_power = np.where(smoothed_mask > 1e-6 , smoothed_log_power, log_power)
+
+    # Restore original log_power in protected regions
+    #normalized_log_power = smoothed_log_power.copy()
+    norm_og = normalized_log_power.copy()
+    '''    
+
+    smoothed_log_power[smoothed_log_power > masked_log_power] = masked_log_power[smoothed_log_power > masked_log_power]
+    # Back to magnitude
+    magnitude = 10 ** (0.5 * smoothed_log_power / 10) 
+
+    # Normalize power to match original
+    orig_power = np.nansum(np.abs(fft_signal)**2)
+    new_power = np.nansum(np.abs(magnitude)**2)
+    scale = np.sqrt(orig_power / new_power)
+
+    smoothed_fft = magnitude * np.exp(1j * phase) 
+
+    return smoothed_fft
+
+def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect_bins=None,kernel=60, proper_freq = None, inc_filt = False, win=False, shortfilt = True, afilt=False, filt_time = False):
     """
     Extract the 'free' (proper) frequency from an asteroid signal by:
     1. Identifying frequencies not associated with planetary forcing.
@@ -953,8 +1002,14 @@ def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect
         plt.yscale('log')
         plt.show()
         '''
-       
-        filt_signal = smooth_fft_convolution(spectrum, freqs, proper_freq, 
+        if filt_time:
+            filt_signal = smooth_fft_time(spectrum, freqs, proper_freq, 
+                                         time, protect_radius_bins_init=protect_bins, 
+                                         kernel_size=kernel, method="gaussian", inc_filt=inc_filt,
+                                         known_planet_freqs = known_planet_freqs, freq_tol=freq_tol,
+                                         win=win, shortfilt = shortfilt)
+        else:
+            filt_signal = smooth_fft_convolution(spectrum, freqs, proper_freq, 
                                          time, protect_radius_bins_init=protect_bins, 
                                          kernel_size=kernel, method="gaussian", inc_filt=inc_filt,
                                          known_planet_freqs = known_planet_freqs, freq_tol=freq_tol,
@@ -974,6 +1029,9 @@ def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect
             filt_signal[shortperiod] = ref_spec[shortperiod]
             
         ind_0 = np.where(freqs == 0)[0][0]
+        
+        if afilt:
+            filt_signal[ind_0] = spectrum[ind_0]
         #if inc_filt:
             #filt_signal[ind_0] = np.nanmean(np.array([filt_signal[ind_0-1],filt_signal[ind_0+1]]))
         #    filt_signal[ind_0] = 0
@@ -1176,7 +1234,7 @@ def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_
     dominant_freq = np.sum(freqs[ind_low:ind_high]*(powers[ind_low:ind_high])**2)/np.sum((powers[ind_low:ind_high])**2)
     #print(dominant_freq,dominant_freq*2*np.pi*206265)
     max_idx = np.argmin(np.abs(freqs-dominant_freq))
-    dominant_freq = freqs[max_idx]
+    #dominant_freq = freqs[max_idx]
 
     #if powers[0] > powers[max_idx]:
     #    max_idx = 0
@@ -1483,14 +1541,60 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         return 0,0,0,0,0
     return g_arr,g_inds,s_arr,s_inds, gs_dict
 
+def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_I = True):
+    j=0
+            
+    if small_planets_flag:
+        num_p = 8
+    else:
+        num_p = 5
 
-def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname='', rms = True, shortfilt=True):
+    if e_or_I:
+        for i in p_arr[:num_p]:
+            ind = np.argmin(abs(freq_s-i))
+            if j==0 or j==1:
+                mult = 10
+            else:
+                mult = 2
+            if small_planets_flag == False and j == 3:
+                mult = 2
+                    
+            power[ind-dist:ind+dist+1] = power[ind-dist:ind+dist+1]/mult
+            j += 1
+    else:
+        j=0
+        for i in s_arr[:num_p-1]:
+            if j==0 or j==1:
+                mult = 100
+            else:
+                    #mult = 20
+                mult = 20
+            if small_planets_flag == False and j == 2:
+                mult = 100
+            ind = np.argmin(abs(freq_s-i))
+            power[ind-dist:ind+dist+1] = power[ind-dist:ind+dist+1]/mult
+            j += 1
+
+    short_period = (1/abs(np.array(p_arr[1]*4)))
+    short_ind = np.where(1/abs(freq_s) < short_period/4)[0]
+    power[short_ind] = power[short_ind]/5
+
+    return power
+
+
+def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname='', rms = True, shortfilt=True, output_arrays = False):
     try:
         p_init = np.sin(inc_init)*np.sin(lan_init)
         q_init = np.sin(inc_init)*np.cos(lan_init)
         h_init = (e_init)*np.sin(lan_init+aop_init)
         k_init = (e_init)*np.cos(lan_init+aop_init)
 
+        if output_arrays:
+            hk_wins = []
+            pq_wins = []
+            t_wins = []
+            
+        
         hk_arr = k_init+1j*h_init
         pq_arr = q_init+1j*p_init
 
@@ -1523,14 +1627,15 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             hk_arr_s = hk_arr
             pq_arr_s = pq_arr
             
-        Yhk = np.fft.fft(hk_arr)
-        Ypq = np.fft.fft(pq_arr)
+        Yhk = np.fft.fft(hk_arr_s)
+        Ypq = np.fft.fft(pq_arr_s)
             #freqn = np.fft.rfftfreq(len(aj_init),d=dt)
 
         half = int(len(freq)/2)
 
-        good_freq_inds = np.where(abs(1/freq) <= abs(t_init[-1]))[0]
-        bad_freq_inds = np.where(abs(1/freq) > abs(t_init[-1]))[0]
+        time_mag = abs(max(t_init) - min(t_init))
+        good_freq_inds = np.where(abs(1/freq) <= time_mag)[0]
+        bad_freq_inds = np.where(abs(1/freq) > time_mag)[0]
 
         try:
             n_s = len(hk_arr_s)
@@ -1546,48 +1651,15 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             power = np.abs(Yhk_s)**2
 
             dist = round(tol_bins*2)
-            #dist = int(tol_bins*5)
-            
-            j=0
-            
-            if small_planets_flag:
-                num_p = 8
-            else:
-                num_p = 5
-                
-            for i in g_arr[:num_p]:
-                ind = np.argmin(abs(freq_s-i))
-                if j==0 or j==1:
-                    mult = 100
-                else:
-                    mult = 20
-                if small_planets_flag == False and j == 3:
-                    mult = 20
-                    
-                power[ind-dist:ind+dist+1] = power[ind-dist:ind+dist+1]/mult
-                j += 1
-
-            short_period_g = (1/abs(np.array(g_arr[1]*4)))
-            short_period_s = (1/abs(np.array(s_arr[0]*4)))
-            short_period = 1/abs(2*g_arr[1]-2*s_arr[0])
-            short_period = min(short_period,short_period_g)
-            short_period = min(short_period,short_period_s)
-            short_ind = np.where(1/abs(freq_s) < short_period/4)[0]
-            power[short_ind] = power[short_ind]/5
 
             window_dex = 0.15  
-            n_bins = len(freq_s)
-
-            #windows = round(n_bins/100*window_dex)
-            
+            n_bins = len(power)
             local_power = np.zeros(n_bins)
             
             window_half_dex = window_dex / 2
-
-            #Ypq = np.fft.fft(pq_zp)
-            #power = np.abs(Ypq_zp)**2
             n_bins = len(power)
 
+            power = power_filt(power, g_arr, freq_s, small_planets_flag, dist)
             
             g_idx, g, local_power_all, protect_g_bins = find_local_max_windowed(freq_s, power, window_half_dex=0.05, window_protect_dex=0.15)
             #print('running Yhk dom search')
@@ -1600,26 +1672,9 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
            
             Ypq_s = np.fft.fft(pq_arr_s)
             power = np.abs(Ypq_s)**2
-            power[abs(1/freq_s) > abs(t_init[-1])/2] = 0
+            power[abs(1/freq_s) > time_mag/2] = 0
 
-            j=0
-            for i in s_arr[:num_p-1]:
-                if j==0 or j==1:
-                    mult = 100
-                else:
-                    mult = 20
-                if small_planets_flag == False and j == 2:
-                    mult = 100
-                ind = np.argmin(abs(freq_s-i))
-                power[ind-dist:ind+dist+1] = power[ind-dist:ind+dist+1]/mult
-                j += 1
-
-
-            window_dex = 0.12  
-            n_bins = len(freq_s)
-
-            
-            power[short_ind] = power[short_ind]/10
+            power = power_filt(power, s_arr, freq_s, small_planets_flag, dist)
             
             s_idx, s, local_power_all, protect_s_bins = find_local_max_windowed(freq_s, power, window_half_dex=0.02, window_protect_dex=0.15)
             if abs(1/s) > 5e5:
@@ -1680,6 +1735,8 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
                 g_arr.append(i)
                 s_arr.append(i)
 
+            g_arr.append(gs_dict['g8']+gs_dict['s8'])
+            s_arr.append(gs_dict['g8']+gs_dict['s8'])
             #protect_gs = np.array([g-s,2*g-s,g-2*s,3*g-s,g-3*s,2*g-2*s,3*g-3*s,2*g-3*s,3*g-2*s,
             #      g+s,2*g+s,g+2*s,3*g+s,g+3*s,2*g+2*s,3*g+3*s,2*g+3*s,3*g+2*s])
             
@@ -1692,9 +1749,9 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             
             #protect_g = np.append([g,2*g,3*g],protect_gs)
             #protect_s = np.append([s,2*s,3*s,g,2*g],protect_gs)
-            protect_g = np.append([g,2*g],protect_gs)
+            protect_g = np.append([g,2*g, 3*g],protect_gs)
             #protect_g = np.array([g,2*g])
-            protect_s = np.append([s,2*s],protect_gs)
+            protect_s = np.append([s,2*s,3*s],protect_gs)
         except Exception as error:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1783,15 +1840,38 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
     
         #hk_new, hk_freq, protect_hk, hk_signal = extract_proper_mode(hk_arr, t_init, g_arr, freq_tol=tol, kernel=kernel, proper_freq=g)
         #pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel, proper_freq=s, inc_filt = True)
-        hk_new, hk_freq, protect_hk, hk_signal = extract_proper_mode(hk_arr, t_init, g_arr, freq_tol=tol, kernel=kernel_g, protect_bins = protect_g_bins, proper_freq=protect_g, shortfilt=shortfilt)
-        #pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel_s, proper_freq=protect_s, protect_bins = protect_s_bins, inc_filt = True)
-        pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel_s, proper_freq=protect_s, protect_bins = protect_s_bins, shortfilt=shortfilt)
+        hk_old, hk_freq, protect_hk, hk_signal = extract_proper_mode(hk_arr, t_init, g_arr, freq_tol=tol, kernel=kernel_g, protect_bins = protect_g_bins, proper_freq=protect_g, shortfilt=shortfilt)
+        pq_old, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel_s, proper_freq=protect_s, protect_bins = protect_s_bins, shortfilt=shortfilt)
 
         
-        hk_new = handle_gs8_resonance(hk_new, g, gs_dict['g8'], freqs)
-        pq_new = handle_gs8_resonance(pq_new, s, gs_dict['s8'], freqs)
-        hk_new = handle_gs_gs8_resonance(hk_new, g, g, s, gs_dict['g8'], gs_dict['s8'], freqs)
-        pq_new = handle_gs_gs8_resonance(pq_new, s, g, s, gs_dict['g8'], gs_dict['s8'], freqs)
+        ee_old = np.abs(hk_old)
+        II_old = np.abs(pq_old)
+
+        ee0 = np.fft.fft(ee_old)[0]
+        II0 = np.fft.fft(II_old)[0]
+        
+        ee_ang = np.angle(hk_old)
+        II_ang = np.angle(pq_old)
+        
+        ee_new, ee_freq, protect_ee, ee_signal = extract_proper_mode(ee_old, t_init, g_arr, freq_tol=tol, kernel=kernel_g*2, protect_bins = 0, proper_freq=np.append(protect_g[0],[0]), shortfilt=False, filt_time=True)
+        II_new, II_freq, protect_II, II_signal = extract_proper_mode(II_old, t_init, s_arr, freq_tol=tol, kernel=kernel_s*2, proper_freq=np.append(protect_s[0],[0]), protect_bins = 0, shortfilt=False, filt_time=True)
+        #ee_new, ee_freq, protect_ee, ee_signal = extract_proper_mode(ee_old, t_init, g_arr[:4], freq_tol=tol, kernel=kernel_g*10, protect_bins = max(1,int(protect_g_bins/2)), proper_freq=[0,1/abs(np.max(t_init))], shortfilt=False)
+        #II_new, II_freq, protect_II, II_signal = extract_proper_mode(II_old, t_init, s_arr[:3], freq_tol=tol, kernel=kernel_s*10, proper_freq=[0,1/abs(np.max(t_init))], protect_bins = max(1,int(protect_s_bins/2)), shortfilt=False)
+
+        Yee = np.fft.fft(ee_new)
+        YII = np.fft.fft(II_new)
+        Yee[0] = ee0
+        YII[0] = II0
+        ee_new = np.fft.ifft(Yee)
+        II_new = np.fft.ifft(YII)
+
+
+        #hk_new = ee_new*np.exp(1j*ee_ang)
+        #pq_new = II_new*np.exp(1j*II_ang)
+        
+        hk_new = ee_new*np.cos(ee_ang) + 1j*ee_new*np.sin(ee_ang)
+        pq_new = II_new*np.cos(II_ang) + 1j*II_new*np.sin(II_ang)
+
 
         pomega_n = np.angle(hk_new)
         Omega_n = np.angle(pq_new)
@@ -1821,8 +1901,10 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         #Ya[short_inds] = 0
         #a_new = np.fft.irfft(Ya)
         
+        a_filt, a_freq, protect_a, a_signal = extract_proper_mode(a_init, t_init, g_arr, freq_tol=tol, kernel=40, protect_bins = 10, proper_freq=[np.max(abs(t_init))], shortfilt=shortfilt, afilt=True)
+        
         #pes = np.array([np.nanmean(a_new[int(per_shave*N):int((1-per_shave)*N)]),pe_e,pe_i])
-        pes = np.array([np.nanmean(a_init),pe_e,pe_i],dtype=np.float64)
+        pes = np.array([np.nanmean(a_filt),pe_e,pe_i, g, s],dtype=np.float64)
     except Exception as error:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1836,7 +1918,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         pes = np.array([10,10,10],dtype=np.float64)
         return [False] + list(np.zeros(20))
 
-    error_list = np.zeros((windows,3))
+    error_list = np.zeros((windows,5))
     ds = int(len(t_init)/(windows+1))
     ds = int(len(t_init)/(windows+3))
     #=========================================================================================================================
@@ -1854,62 +1936,80 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         pq_in = pq_arr[j*ds:(j+4)*ds]
         
         mult = round(len(t_init)/(4*ds))
-        #p_input = p_init[j*ds:(j+2)*ds]
-        #q_input = q_init[j*ds:(j+2)*ds]
-        #h_input = h_init[j*ds:(j+2)*ds]
-        #k_input = k_init[j*ds:(j+2)*ds]
 
-        #freqs_a = np.fft.rfftfreq(len(t_input),dt)
-        #Ya_in = np.fft.rfft(a_input)
-        #short_inds_win = np.where(abs(1/freqs_a) <= dt*3)[0]
-        #Ya_in[short_inds_win] = 0
-        #a_win = np.fft.irfft(Ya_in)
-        
-
-        #N_window = len(hk_in)
         N_window = Nn
         
-        #j = 10
-        #while N_window < goal:
-        #    goal = 2**j
-        #    j += 1
-        #try:    
         goal = len(hk_arr)
-        #hk_in = np.append(hk_in,np.zeros(goal-N_window))
-        #pq_in = np.append(pq_in,np.zeros(goal-N_window))
-        #except:
-        
-        #    do = None
 
         
         protecte_hk = max(round(protect_hk/mult),3)
         protecte_pq = max(round(protect_pq/mult),3)
-        #protecte_hk = round(protect_hk)
-        #protecte_pq = round(protect_pq)
-        #kernele_g = max(round(kernel_g/mult),3)
-        #kernele_s = max(round(kernel_s/mult),3)
+
         kernele_g = kernel_g
         kernele_s = kernel_s
         tole = tol/mult
         #tole = tol
         try:        
-            hk_newe, hk_freqe, protect_hk_waste, hk_waste = extract_proper_mode(hk_in, t_input, g_arr, freq_tol=tol, protect_bins = protecte_hk, kernel=kernele_g, proper_freq=hk_freq, win=True)
-            pq_newe, pq_freqe, protect_pq_waste, hk_waste = extract_proper_mode(pq_in, t_input, s_arr, freq_tol=tol, protect_bins = protecte_pq, kernel=kernele_s, proper_freq=pq_freq,  win=True)  
+            freqe = np.fft.fftfreq(len(hk_in), dt)
+            Yhk_e = np.fft.fft(hk_in)
+            power_e = np.abs(Yhk_e)**2
+            power_e[abs(1/freqe) > max(abs(t_init))/2] = 0
+            
+            Ypq_I = np.fft.fft(pq_in)
+            power_I = np.abs(Ypq_I)**2
+            power_I[abs(1/freqe) > max(abs(t_init))/2] = 0
+
+            power_e = power_filt(power_e, g_arr, freqe, small_planets_flag, dist, e_or_I = True)
+            power_I = power_filt(power_I, s_arr, freqe, small_planets_flag, dist, e_or_I = False)
+
+            g_idx_e, g_e, local_power_all_e, protect_g_bins_e = find_local_max_windowed(freqe, power_e, window_half_dex=0.05, window_protect_dex=0.15)
+            s_idx_e, s_e, local_power_all_e, protect_s_bins_e = find_local_max_windowed(freqe, power_I, window_half_dex=0.05, window_protect_dex=0.15)
+
+            hk_freqe = np.array([g_e, 2*g_e, 3*g_e])
+            pq_freqe = np.array([s_e, 2*s_e, 3*s_e])
+            
+            hk_newe, hk_freqe, protect_hk_waste, hk_waste = extract_proper_mode(hk_in, t_input, g_arr, freq_tol=tol, protect_bins = protecte_hk, kernel=kernele_g, proper_freq=hk_freqe, win=True)
+            pq_newe, pq_freqe, protect_pq_waste, hk_waste = extract_proper_mode(pq_in, t_input, s_arr, freq_tol=tol, protect_bins = protecte_pq, kernel=kernele_s, proper_freq=pq_freqe,  win=True)  
             #pq_newe, pq_freqe, protect_pq_waste, hk_waste = extract_proper_mode(pq_in, t_input, s_arr, freq_tol=tol, protect_bins = protecte_pq, kernel=kernele_s, proper_freq=pq_freq,  inc_filt = True, win=True)  
         except Exception as e:
-            print('line 975', e)
             error_list[j][0] = 10
             error_list[j][1] = 10
             error_list[j][2] = 10
             continue
-          
-        #error_list[j][0] = np.nanmean(a_win[int(per_shave*Nn):int((1-per_shave)*Nn)])
-        error_list[j][0] = np.nanmean(a_input)
-        #error_list[j][1] = np.nanmean(np.abs(hk_newe)[int(per_shave*Nn):int((1-per_shave)*Nn)])
-        #error_list[j][2] = np.nanmean(np.abs(pq_newe)[int(per_shave*Nn):int((1-per_shave)*Nn)])
+
+
+        ee_olde = np.abs(hk_newe)
+        II_olde = np.abs(pq_newe)
+
+        ee0 = np.fft.fft(ee_olde)[0]
+        II0 = np.fft.fft(II_olde)[0]
         
-        #pe_en = np.nanmean(np.array([np.nanmean(np.abs(hk_newe)[int(0.05*Nn):int((1-0.05)*Nn)]),np.nanmean(np.abs(hk_newe)[int(0.1*Nn):int((1-0.1)*Nn)]),np.nanmean(np.abs(hk_newe)[int(0.2*Nn):int((1-0.2)*Nn)]),np.nanmean(np.abs(hk_newe)[int(0.3*Nn):int((1-0.3)*Nn)])]))
-        #pe_in = np.nanmean(np.array([np.nanmean(np.abs(pq_newe)[int(0.05*Nn):int((1-0.05)*Nn)]),np.nanmean(np.abs(pq_newe)[int(0.1*Nn):int((1-0.1)*Nn)]),np.nanmean(np.abs(pq_newe)[int(0.2*Nn):int((1-0.2)*Nn)]),np.nanmean(np.abs(pq_newe)[int(0.3*Nn):int((1-0.3)*Nn)])]))
+        ee_ange = np.angle(hk_newe)
+        II_ange = np.angle(pq_newe)
+        ee_newe, ee_freqe, protect_eee, ee_signale = extract_proper_mode(ee_olde, t_input, g_arr, freq_tol=tol, kernel=kernele_g*2, protect_bins = 0, shortfilt=shortfilt, proper_freq=np.append(hk_freq[0],[0]), filt_time=True)
+        II_newe, II_freqe, protect_IIe, II_signale = extract_proper_mode(II_olde, t_input, s_arr, freq_tol=tol, kernel=kernele_s*2, protect_bins = 0, shortfilt=shortfilt, proper_freq=np.append(pq_freq[0],[0]), filt_time=True)
+        #ee_newe, ee_freqe, protect_eee, ee_signale = extract_proper_mode(ee_olde, t_input, g_arr, freq_tol=tol, kernel=kernele_g*10, protect_bins = max(1,int(protecte_hk/2)), shortfilt=False, proper_freq=[0,1/abs(np.max(t_input))])
+        #II_newe, II_freqe, protect_IIe, II_signale = extract_proper_mode(II_olde, t_input, s_arr, freq_tol=tol, kernel=kernele_s*10, protect_bins = max(1,int(protecte_pq/2)), shortfilt=False, proper_freq=[0,1/abs(np.max(t_input))])
+
+        
+        Yeee = np.fft.fft(ee_newe)
+        YIIe = np.fft.fft(II_newe)
+        Yeee[0] = ee0
+        YIIe[0] = II0
+        ee_newe = np.fft.ifft(Yeee)
+        II_newe = np.fft.ifft(YIIe)
+
+        #hk_newe = ee_newe*np.exp(1j*ee_ange)
+        #pq_newe = II_newe*np.exp(1j*II_ange)
+
+        hk_newe = ee_newe*np.cos(ee_ange) + 1j*ee_newe*np.sin(ee_ange)
+        pq_newe = II_newe*np.cos(II_ange) + 1j*II_newe*np.sin(II_ange)
+
+        a_filtn, a_freqn, protect_an, a_signaln = extract_proper_mode(a_input, t_input, g_arr, freq_tol=tol, kernel=40, protect_bins = 10, proper_freq=[np.max(abs(t_init))], shortfilt=shortfilt, afilt=True)
+        
+        #error_list[j][0] = np.nanmean(a_win[int(per_shave*Nn):int((1-per_shave)*Nn)])
+        error_list[j][0] = np.nanmean(a_filtn)
+
 
         pe_en = np.nanmean(np.abs(hk_newe[int(per_shave*Nn):int((1-per_shave)*Nn)]))
         pe_in = np.nanmean(np.abs(pq_newe[int(per_shave*Nn):int((1-per_shave)*Nn)]))
@@ -1926,6 +2026,13 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         
         error_list[j][1] = pe_en
         error_list[j][2] = pe_in
+        error_list[j][3] = g_e
+        error_list[j][4] = s_e
+
+        if output_arrays:
+            hk_wins.append(hk_newe)
+            pq_wins.append(pq_newe)
+            t_wins.append(t_input)
 
     if rms:
         rms_val = np.sqrt(np.nanmean((np.array(error_list,dtype=np.float64)-np.array(pes,dtype=np.float64))**2,axis=0))
@@ -1962,12 +2069,18 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
     sec_res_e = eP[0]/np.sum(eP)
     sec_res_I = sinIP[0]/np.sum(sinIP)
 
+    sec_res_e = np.sqrt(np.sum(eP[1:]))/len(e_new)
+    sec_res_I = np.sqrt(np.sum(sinIP[1:]))/len(e_new)
+    e0 = np.sqrt(eP[0])/len(e_new)
+    I0 = np.sqrt(sinIP[0])/len(e_new)
+
+
     rese = False
     resI = False
 
-    if sec_res_e < 0.99:
+    if sec_res_e > 0.01 or sec_res_e/e0 > 0.1:
         rese = True
-    elif sec_res_I < 0.99:
+    if sec_res_I > 0.01  or sec_res_I/I0 > 0.1:
         resI = True
 
     angle_sec_res = 'No angle'
@@ -2010,6 +2123,10 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         return pes,error_list,rms_val,g_arr,s_arr, hk_arr[:N_og], pq_arr[:N_og], hk_new[:N_og], pq_new[:N_og], hk_freq, pq_freq, hk_signal, pq_signal, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle
 
     phifrac = (g+s)/(gs_dict['g8'] + gs_dict['s8'])
+
+    if output_arrays:
+        return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_new, pq_new, hk_wins, pq_wins, t_wins
+    
     return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac
 
 
@@ -2025,7 +2142,7 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
         sim = rebound.Simulationarchive(file)
     except:
         print(file)
-        print('failed to read archviefile')
+        print('failed to read archivefile')
     if object_type == None:
         try:
             testval = sim[0].particles['venus']
@@ -2073,8 +2190,14 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
 
         #if int(sim[i].t) % 20000 != 0:
         #    continue
-        sb = sim[i].particles[str(des)].orbit(primary=sim[i].particles['sun'])
-
+        com = sim[i].com()
+        p = sim[i].particles[str(des)]
+        o = p.orbit(com)
+        
+        #if des == 'Albion':
+        #    sb = sim[i].particles[str(15760)]
+        #else:
+        #sb = sim[i].particles[str(des)]
         #print(sim[i].particles)
         
         #print(sim[i].particles[0])
@@ -2084,16 +2207,23 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
         #print(sim[i].particles[4])
 
         sb_elems[0,i] = sim[i].t
-        sb_elems[1,i] = sb.a
-        sb_elems[2,i] = sb.e
-        sb_elems[3,i] = sb.inc
-        sb_elems[4,i] = sb.omega
-        sb_elems[5,i] = sb.Omega
+        sb_elems[1,i] = o.a
+        sb_elems[2,i] = o.e
+        sb_elems[3,i] = o.inc
+        sb_elems[4,i] = o.omega
+        sb_elems[5,i] = o.Omega
 
         for j in range(clones):
+            #if des == 'Albion':
+            #    c_name = str(15760)+'_'+str(j+1)
+            #else:
             c_name = str(des)+'_'+str(j+1)
             #print(c_name)
-            clone = sim[i].particles[c_name].orbit(primary=sim[i].particles['sun'])
+            #clone = sim[i].particles[c_name]
+            
+            pc = sim[i].particles[c_name]
+            clone = pc.orbit(com)
+            #clone = sim[i].particles[c_name].orbit(primary=sim[i].particles['sun'])
             clone_elems[j,0,i] = clone.a
             clone_elems[j,1,i] = clone.e
             clone_elems[j,2,i] = clone.inc
@@ -2146,21 +2276,30 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
 
 
     #First sort and remove values from the time array that aren't consistent with the higher resolution data. 
-    t_arr = sb_elems[0]
+    t_arr = sb_elems[0].copy()
     sortt = np.sort(t_arr)
 
     dt = round(abs(sortt[-1] - sortt[-2])) 
 
-    test_arr = t_arr 
+    test_arr = t_arr.copy()
     skip_short_res = np.where(test_arr.astype(int) % dt == 0)[0]
     
     #t_arr = np.sort(t_arr[skip_short_res])
     
-    # archive may have backwards integration as well, sort and remove the second 0-time point where the array starts    
-    sort_t, sort_inds = np.unique(t_arr[skip_short_res], return_index=True)
+    # archive may have backwards integration as well, sort and remove the second 0-time point where the array restarts    
+    filt_t_arr = t_arr[skip_short_res]
+    sort_t, sort_inds = np.unique(filt_t_arr, return_index=True)
 
+    sb_elems = sb_elems[:,skip_short_res]
+    clone_elems = clone_elems[:,:,skip_short_res]
+    
     sb_elems = sb_elems[:,sort_inds]
     clone_elems = clone_elems[:,:, sort_inds]
+    
+    j_elems = j_elems[:,skip_short_res]
+    s_elems = s_elems[:,skip_short_res]
+    u_elems = u_elems[:,skip_short_res]
+    n_elems = n_elems[:,skip_short_res]
     
     j_elems = j_elems[:,sort_inds]
     s_elems = s_elems[:,sort_inds]
@@ -2168,6 +2307,10 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
     n_elems = n_elems[:,sort_inds]
 
     if vem:
+        v_elems = v_elems[:,skip_short_res]
+        e_elems = e_elems[:,skip_short_res]
+        m_elems = m_elems[:,skip_short_res]
+        
         v_elems = v_elems[:,sort_inds]
         e_elems = e_elems[:,sort_inds]
         m_elems = m_elems[:,sort_inds]
@@ -2190,13 +2333,21 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
         p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems),*hkpq(v_elems),*hkpq(e_elems),*hkpq(m_elems)]    
     else:
         p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems)]    
-
-    time = sb_elems[0]
-    return 1, time, sb_elems, planet_elems, clone_elems, vem
+    '''
+    print('dt')
+    
+    print('sorted t_arr')
+    plt.plot(sb_elems[0])
+    plt.show()
+    print('sort_t')
+    plt.plot(sort_t)
+    plt.show()
+    '''
+    return 1, sb_elems[0], sb_elems[1:], planet_elems, clone_elems, vem
 
     
 
-def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], small_planets_flag = False):
+def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = None, small_planets_flag = False, output_arrays = False, gs_dict = None):
 
     #t_init, sb_elems, planet_elems, clone_elems, p_equinoct_arr, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
     #                                    clones=clones,return_timeseries=return_timeseries,logfile=logfile, tno_results = tno_results)
@@ -2214,11 +2365,11 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
 
     dt = abs(times[-1]-times[-2])
 
-    a_init = sb_elems[1]
-    e_init = sb_elems[2]
-    I_init = sb_elems[3]
-    o_init = sb_elems[4]
-    O_init = sb_elems[5]
+    a_init = sb_elems[0]
+    e_init = sb_elems[1]
+    I_init = sb_elems[2]
+    o_init = sb_elems[3]
+    O_init = sb_elems[4]
         
     osc_elem['a'] = a_init[ind0]
     osc_elem['e'] = e_init[ind0]
@@ -2239,9 +2390,27 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     mean_elem['g("/yr)'] = np.median(diffg)/dt*3600*360/2/np.pi
     mean_elem['s("/yr)'] = np.median(diffs)/dt*3600*360/2/np.pi
 
-    g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(times, planet_elems, small_planets_flag = small_planets_flag)
-    
-    flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True)
+    if planet_elems == None:
+        g_arr = []
+        s_arr = []
+        if gs_dict == None:
+            if small_planet_flag:
+                gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7, 'g2': 7.34474/1296000, 'g3': 17.32832/1296000, 'g4': 18.00233/1296000, 's2': -6.57080/1296000, 's3': -18.74359/1296000, 's4': -17.63331/1296000}
+            else:
+                gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7}
+        
+        for key, value in gs_dict.items():
+            if 'g' in key:
+                g_arr.append(value)
+            elif 's' in key:
+                s_arr.append(value)
+    else:        
+        g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(times, planet_elems, small_planets_flag = small_planets_flag)
+
+    if output_arrays:
+        flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_arr, pq_arr, hk_wins, pq_wins, t_wins = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True, output_arrays = output_arrays)
+    else:
+        flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True)
 
     prop_elem = {}
     prop_elem['a'] = pes[0]
@@ -2256,6 +2425,17 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     prop_errs['RMS_a'] = rms_val[0]
     prop_errs['RMS_e'] = rms_val[1]
     prop_errs['RMS_sinI'] = rms_val[2]
+    prop_errs['RMS_g(rev/yr)'] = rms_val[3]
+    prop_errs['RMS_s(rev/yr)'] = rms_val[4]
+    prop_errs['RMS_g("/yr)'] = rms_val[3]*3600*360
+    prop_errs['RMS_s("/yr)'] = rms_val[4]*3600*360
+
+    prop_win_list = {}
+    prop_win_list['a_win'] = error_list[:,0]
+    prop_win_list['e_win'] = error_list[:,1]
+    prop_win_list['sinI_win'] = error_list[:,2]
+    prop_win_list['g_win'] = error_list[:,3]
+    prop_win_list['s_win'] = error_list[:,4]
 
     if small_planets_flag:
         proper_object.planets = ['venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']
@@ -2266,6 +2446,7 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     proper_object.osculating_elements = osc_elem
     proper_object.mean_elements = mean_elem
     proper_object.proper_elements = prop_elem
+    proper_object.proper_windows = prop_win_list
 
     proper_object.proper_errors = prop_errs
 
@@ -2288,6 +2469,8 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     #if clones > 0:
     #    sb_elems = np.concatenate((np.array([sb_elems[1:]]),clone_elems), axis = 0)
 
+    if output_arrays:
+        return 1, proper_object, hk_arr, pq_arr, hk_wins, pq_wins, t_wins
     return 1, proper_object
     
 

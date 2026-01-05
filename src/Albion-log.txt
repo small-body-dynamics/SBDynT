@@ -14,3 +14,5 @@ simulation epoch: 2456220.5
 Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Albion-ic.bin
 simulation epoch: 2456220.5
 Rebound simulation initial conditions saved to ../example-notebooks/example_sims/Albion-ic.bin
+simulation epoch: 2456220.5
+Rebound simulation initial conditions saved to ../example-notebooks/advanced_example_sims/Albion-ic.bin

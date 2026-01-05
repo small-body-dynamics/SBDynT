@@ -47,6 +47,7 @@ def compute_chaos(sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
 
                 else:
                     for i in range(clones):
+                        #print(a_arr, clone_elems[i,0])
                         diff_a = ((a_arr - clone_elems[i,0])/np.mean(a_arr))**2
                         diff_e = (e_arr - clone_elems[i,1])**2
                         diff_I = (np.sin(I_arr) - np.sin(clone_elems[i,2]))**2

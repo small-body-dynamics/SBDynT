@@ -1,0 +1,11 @@
+SBDB query results saved to ../example-notebooks/advanced_example_sims/Ceres-Jan-05-2026.pkl
+Running Ceres from 0.0 to 500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-01-05 10:38:03.613029
+finishing at 2026-01-05 10:42:00.289474
+Running Ceres from 0.0 to -500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-01-05 10:42:00.304114
+finishing at 2026-01-05 10:45:29.387270
