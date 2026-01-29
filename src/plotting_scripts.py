@@ -305,3 +305,523 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
 
     flag = 1
     return flag, fig
+
+
+
+
+###########################################################################################################################
+# Proper Element Plotting Scripts
+###########################################################################################################################
+
+def plot_osc_and_prop(prop_elem):
+    objname = prop_elem.des
+
+    a = prop_elem.a_original
+    an = prop_elem.a_filtered
+    
+    hk = prop_elem.hk_original
+    pq = prop_elem.pq_original
+
+    hkn = prop_elem.hk_filtered
+    pqn = prop_elem.pq_filtered
+
+
+    Ypq = np.fft.fft(pq)
+    Ypqn = np.fft.fft(pqn)
+
+    #Ypqn[0] = np.mean((Ypq[1],Ypq[-1]))
+
+    #pqn = np.fft.ifft(Ypqn)
+    #pq_new = pqn
+
+    t = prop_elem.time/1e6
+    
+
+    fig,ax=plt.subplots(1,3,figsize=(12,4),sharex=True)
+    fig.subplots_adjust(hspace=0,wspace=0.025)
+
+    
+    
+    ax[0].plot(t[::1],a,alpha=0.55, label='Unfiltered Array')
+    ax[0].plot(t[::1],an,alpha=0.55, label='Filtered Array')
+    y0,y1 = ax[0].get_ylim()
+
+
+    
+    ax[1].plot(t[::1],np.abs(hk)[::1],alpha=0.55)
+    ax[1].plot(t[::1],np.abs(hkn)[::1],alpha=0.55)
+    y0,y1 = ax[1].get_ylim()
+
+    c1 = 'darkgreen'
+    c2 = 'darkgreen'
+    c1 = 'darkred'
+    c2 = 'darkred'
+
+    ax[1].set_ylim(y0,y1)
+    
+    fig.supxlabel('Time (Myr)',y=0.025,fontsize=14)
+
+
+    ax[2].plot(t,np.arcsin(np.abs(pq))*180/np.pi%90,alpha=0.55)
+    ax[2].plot(t,np.arcsin(np.abs(pqn))*180/np.pi%90,alpha=0.55)
+
+
+    y0,y1 = ax[1].get_ylim()
+    y2,y3 = ax[2].get_ylim()
+
+    
+    ax[0].hlines(np.mean(an),xmin=t[0],xmax=t[-1],colors='k',ls='--')
+    ax[1].hlines(np.mean(np.abs(hkn)),xmin=t[0],xmax=t[-1],colors='k',label='Proper Element',ls='--')
+    ax[2].hlines(np.mean(np.arcsin(np.abs(pqn)))*180/np.pi,xmin=t[0],xmax=t[-1],colors='k',ls='--')
+    
+    ax[0].hlines(np.mean(a),xmin=t[0],xmax=t[-1],colors='r',ls='--',alpha=0.75)
+    ax[1].hlines(np.mean(np.abs(hk)),xmin=t[0],xmax=t[-1],colors='r',label='Mean Element',ls='--',alpha=0.75)
+    ax[2].hlines(np.mean(np.arcsin(np.abs(pq)))*180/np.pi,xmin=t[0],xmax=t[-1],colors='r',ls='--',alpha=0.75)
+
+    
+    
+
+
+    #ax[0].legend(loc = 'lower right')
+    ax[0].legend(loc = 'upper right')
+    ax[1].legend(loc = 'upper left')
+
+    y2,y3 = ax[2].get_ylim()
+    ax[2].set_ylim(y2,y3)
+    
+    ax[2].set_ylabel(r'Inc ($^{\circ}$)',fontsize=14)
+
+    ax[1].set_ylabel('Ecc',fontsize=14)
+    ax[0].set_ylabel('SMA',fontsize=14)
+    fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
+    import matplotlib.ticker as mticker
+    formatter = mticker.StrMethodFormatter('{x:.3f}')
+    ax[0].yaxis.set_major_formatter(formatter)
+    ax[1].yaxis.set_major_formatter(formatter)
+    ax[2].yaxis.set_major_formatter(formatter)
+    ax[1].tick_params(axis='x', labelsize=11)
+    ax[0].tick_params(axis='y', labelsize=11)
+    ax[1].tick_params(axis='y', labelsize=11)
+    ax[2].tick_params(axis='y', labelsize=11)
+
+    fig.tight_layout()
+    #plt.savefig('../data/results/'+str(objname)+'_eccinc_bf.pdf',transparent=True,bbox_inches='tight')
+    plt.show()
+
+    return 0
+
+def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
+    objname = prop_elem.des
+
+    a = prop_elem.a_original
+    an = prop_elem.a_filtered
+    
+    hk = prop_elem.hk_original
+    pq = prop_elem.pq_original
+
+    hkn = prop_elem.hk_filtered
+    pqn = prop_elem.pq_filtered
+
+
+    Ypq = np.fft.fft(pq)
+    Ypqn = np.fft.fft(pqn)
+
+    t = prop_elem.time  
+    dt = abs(t[1]-t[0])
+
+    fig,ax=plt.subplots(2,2,figsize=(8,7))
+    ax = ax.flatten()
+    fig.subplots_adjust(hspace=0,wspace=0.025)
+
+    varpi = np.angle(hk) % (2*np.pi)
+    Omega = np.angle(pq) % (2*np.pi)
+    omega = (varpi - Omega)%(2*np.pi)
+    phi = (varpi + Omega)%(2*np.pi)
+    
+    varpin = np.angle(hkn) % (2*np.pi)
+    Omegan = np.angle(pqn) % (2*np.pi)
+    omegan = (varpin - Omegan)%(2*np.pi)
+    phin = (varpin + Omegan)%(2*np.pi)
+
+    g = prop_elem.proper_elements['g(rev/yr)']
+    s = prop_elem.proper_elements['s(rev/yr)']
+    
+    g_s = prop_elem.proper_elements['g(rev/yr)'] - prop_elem.proper_elements['s(rev/yr)']
+    gps = prop_elem.proper_elements['g(rev/yr)'] + prop_elem.proper_elements['s(rev/yr)']
+
+    ind0 = np.argmin(abs(t))
+    gt = g*t*2*np.pi + varpin[ind0]
+    st = s*t*2*np.pi + Omegan[ind0]
+    g_st = g_s*t*2*np.pi + omegan[ind0]
+    gpst = gps*t*2*np.pi + phin[ind0]
+
+    
+
+    if plot_cos:
+        ax[3].plot(t,np.cos(phi),alpha=0.55)
+        ax[3].plot(t,np.cos(phin),alpha=0.55)
+        ax[3].plot(t,np.cos(gpst % (2*np.pi)),alpha=0.35,ls='--')
+    
+        ax[2].plot(t,np.cos(omega),alpha=0.55)
+        ax[2].plot(t,np.cos(omegan),alpha=0.55)
+        ax[2].plot(t,np.cos(g_st % (2*np.pi)),alpha=0.35,ls='--')
+    
+        ax[1].plot(t,np.cos(Omega),alpha=0.55)
+        ax[1].plot(t,np.cos(Omegan),alpha=0.55)
+        ax[1].plot(t,np.cos(st % (2*np.pi)),alpha=0.35,ls='--')
+
+        ax[0].plot(t,np.cos(varpi),alpha=0.55, label='Unfiltered Array')
+        ax[0].plot(t,np.cos(varpin),alpha=0.55, label='Filtered Array')
+        ax[0].plot(t,np.cos(gt % (2*np.pi)),alpha=0.35,ls='--', label='Reported precession rate')
+
+        ax[3].set_title(r'$\cos(\phi) = \cos(\varpi + \Omega)$',fontsize=14)
+        ax[2].set_title(r'$\cos(\omega)$',fontsize=14)
+
+        ax[1].set_title(r'$\cos(\Omega)$',fontsize=14)
+        ax[0].set_title(r'$\cos(\varpi)$',fontsize=14)
+
+        for num, vals in ifreqs.items():
+            freq = vals[0]
+            label = vals[1]
+            if num == 0:
+                line = 2*np.pi*freq*t + varpin[ind0]
+                ax[0].plot(t, np.cos(line), alpha=0.35,ls='--', label=label)
+            if num == 1:
+                line = 2*np.pi*freq*t + Omegan[ind0]
+                ax[1].plot(t, np.cos(line), alpha=0.35,ls='--', label=label)
+                ax[1].legend()
+            if num == 2:
+                line = 2*np.pi*freq*t + omegan[ind0]
+                ax[2].plot(t, np.cos(line), alpha=0.35,ls='--', label=label)
+                ax[2].legend()
+            if num == 3:
+                line = 2*np.pi*freq*t + phin[ind0]
+                ax[3].plot(t, np.cos(line), alpha=0.35,ls='--', label=label)
+                ax[3].legend()
+                
+                
+    else:
+        ax[3].plot(t,(phi),alpha=0.55)
+        ax[3].plot(t,(phin),alpha=0.55)
+        ax[3].plot(t,(gpst % (2*np.pi)),alpha=0.35,ls='--')
+    
+        ax[2].plot(t,(omega),alpha=0.55)
+        ax[2].plot(t,(omegan),alpha=0.55)
+        ax[2].plot(t,(g_st % (2*np.pi)),alpha=0.35,ls='--')
+    
+        ax[1].plot(t,(Omega),alpha=0.55)
+        ax[1].plot(t,(Omegan),alpha=0.55)
+        ax[1].plot(t,(st % (2*np.pi)),alpha=0.35,ls='--')
+
+        ax[0].plot(t,(varpi),alpha=0.55, label='Unfiltered Array')
+        ax[0].plot(t,(varpin),alpha=0.55, label='Filtered Array')
+        ax[0].plot(t,(gt % (2*np.pi)),alpha=0.35,ls='--', label='Reported precession rate')
+
+        ax[3].set_title(r'$\phi = \varpi + \Omega$',fontsize=14)
+        ax[2].set_title(r'$\omega$',fontsize=14)
+
+        ax[1].set_title(r'$\Omega$',fontsize=14)
+        ax[0].set_title(r'$\varpi$',fontsize=14)
+        
+        for num, vals in ifreqs.items():
+            freq = vals[0]
+            label = vals[1]
+            if num == 0:
+                line = 2*np.pi*freq*t + varpin[ind0]
+                ax[0].plot(t, line % (2*np.pi), alpha=0.35,ls='--', label=label)
+            if num == 1:
+                line = 2*np.pi*freq*t + Omegan[ind0]
+                ax[1].plot(t, line % (2*np.pi), alpha=0.35,ls='--', label=label)
+                ax[1].legend()
+            if num == 2:
+                line = 2*np.pi*freq*t + omegan[ind0]
+                ax[2].plot(t, line % (2*np.pi), alpha=0.35,ls='--', label=label)
+                ax[2].legend()
+            if num == 3:
+                line = 2*np.pi*freq*t + phin[ind0]
+                ax[3].plot(t, line % (2*np.pi), alpha=0.35,ls='--', label=label)
+                ax[3].legend()
+        
+
+    if abs(1/g) < len(t)*dt/10:
+        glim1, glim2 = ax[0].get_xlim()
+        if abs(1/g) < len(t)*dt/100:
+            glim1 = glim1/20
+            glim2 = glim2/20
+        else:
+            glim1 = glim1/2
+            glim2 = glim2/2
+        ax[0].set_xlim(glim1, glim2)
+        
+    if abs(1/s) < len(t)*dt/10:
+        slim1, slim2 = ax[1].get_xlim()
+        if abs(1/s) < len(t)*dt/100:
+            slim1 = slim1/20
+            slim2 = slim2/20
+        else:
+            slim1 = slim1/2
+            slim2 = slim2/2
+        ax[1].set_xlim(slim1, slim2)
+
+    g_slim11, g_slim21 = ax[0].get_xlim()
+    g_slim12, g_slim22 = ax[1].get_xlim()
+
+    g_slim1 = np.mean((g_slim11, g_slim12))
+    g_slim2 = np.mean((g_slim21, g_slim22))
+
+    ax[2].set_xlim(g_slim1, g_slim2)
+    
+    fig.supxlabel('Time (yr)',y=0.025,fontsize=14)
+
+    ax[0].legend(loc = 'upper right')
+    #ax[1].legend(loc = 'upper left')
+
+    fig.suptitle('Small Body: '+str(objname),fontsize=16)
+    import matplotlib.ticker as mticker
+    formatter = mticker.StrMethodFormatter('{x:.3f}')
+    ax[0].yaxis.set_major_formatter(formatter)
+    ax[1].yaxis.set_major_formatter(formatter)
+    ax[2].yaxis.set_major_formatter(formatter)
+    ax[1].tick_params(axis='x', labelsize=11)
+    ax[0].tick_params(axis='y', labelsize=11)
+    ax[1].tick_params(axis='y', labelsize=11)
+    ax[2].tick_params(axis='y', labelsize=11)
+
+    fig.tight_layout()
+    #plt.savefig('../data/results/'+str(objname)+'_eccinc_bf.pdf',transparent=True,bbox_inches='tight')
+    plt.show()
+
+    return 0
+
+
+def plot_freq_space(prop_elem):
+    
+    objname = prop_elem.des
+    
+    hk = prop_elem.hk_original
+    pq = prop_elem.pq_original
+
+    hkn = prop_elem.hk_filtered
+    pqn = prop_elem.pq_filtered
+
+    t = prop_elem.time
+
+    freq = np.fft.fftfreq(len(t), t[1]-t[0])
+    freqr = np.fft.rfftfreq(len(t), t[1]-t[0])
+
+    Yhk = np.abs(np.fft.fft(hk))**2
+    Ypq = np.abs(np.fft.fft(pq))**2
+    Ye = np.abs(np.fft.rfft(np.abs(hk)))**2
+    YI = np.abs(np.fft.rfft(np.abs(pq)))**2
+    Yv = np.abs(np.fft.rfft(np.cos(np.angle(hk))))**2
+    YO = np.abs(np.fft.rfft(np.cos(np.angle(pq))))**2
+
+    
+    Yhkn = np.abs(np.fft.fft(hkn))**2
+    Ypqn = np.abs(np.fft.fft(pqn))**2
+    Yen = np.abs(np.fft.rfft(np.abs(hkn)))**2
+    YIn = np.abs(np.fft.rfft(np.abs(pqn)))**2
+    Yvn = np.abs(np.fft.rfft(np.cos(np.angle(hkn))))**2
+    YOn = np.abs(np.fft.rfft(np.cos(np.angle(pqn))))**2
+
+    pf = prop_elem.planet_freqs
+    
+    alp = 0.3
+    if prop_elem.p_hkpq:
+
+        fig,ax = plt.subplots(1,2,figsize=(9,4), sharex = True)
+
+        ax[0].scatter(1/freq, Yhk, s=1, label='Unfiltered')
+        ax[0].scatter(1/freq, Yhkn, s=1, label='Filtered')
+    
+        ax[1].scatter(1/freq, Ypq, s=1)
+        ax[1].scatter(1/freq, Ypqn, s=1)
+
+        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'], c='blue', ls='--', alpha=alp, label='g')
+        ax[0].axvline(1/pf['g5'], c='r', ls='--', alpha=alp, label='g5')
+        ax[0].axvline(1/pf['g6'], c='goldenrod', ls='--', alpha=alp, label='g6')
+        ax[0].axvline(1/pf['g7'], c='g', ls='--', alpha=alp, label='g7')
+        ax[0].axvline(1/pf['g8'], c='purple', ls='--', alpha=alp, label='g8')
+        
+        ax[1].axvline(1/prop_elem.proper_elements['s(rev/yr)'], c='blue', ls='--', alpha=alp, label='s')
+        ax[1].axvline(1/pf['s6'], c='goldenrod', ls='--', alpha=alp, label='s6')
+        ax[1].axvline(1/pf['s7'], c='g', ls='--', alpha=alp, label='s7')
+        ax[1].axvline(1/pf['s8'], c='purple', ls='--', alpha=alp, label='s8')
+
+        dt = abs(t[1]-t[0])
+        ax[0].set_xscale('symlog', linthresh=dt, linscale=1e-2)
+        ax[0].set_yscale('log')
+        ax[1].set_yscale('log')
+
+        
+        ax[0].axhline(Yhk[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[0].axhline(Yhkn[0], ls='--', alpha=0.2,c='tab:orange')
+        ax[1].axhline(Ypq[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='tab:orange')
+        #ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='k')
+    
+        import matplotlib.ticker as ticker
+        import math
+
+        tsort = np.sort(np.abs(t))
+        xmax = round(np.log10(dt*len(t)))+1
+        xmin = round(np.log10(dt))
+
+        xrange = 10**np.arange(xmin, xmax)
+        #xticks = np.concatenate((-xrange[::-1], np.array([0])))
+        #xticks = np.concatenate((xticks, xrange))
+
+        xticks = np.concatenate((-xrange[::-1], xrange))
+        
+        #print(xticks)
+        
+        #thresh = 10**(math.ceil(np.log10(dt)))
+        #locmin = ticker.SymmetricalLogLocator(linthresh=thresh, base=10)
+        ax[0].set_xticks(xticks)
+
+        fig.supxlabel('Period (yrs)')
+
+        ax[0].set_ylabel('Power')
+
+        ax[0].set_title('HK Power')
+        ax[1].set_title('PQ Power')
+
+        ax[0].legend()
+        ax[1].legend()
+        fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
+        fig.tight_layout()
+
+        plt.show()
+
+    
+    if prop_elem.p_eI:
+        fig,ax = plt.subplots(1,2,figsize=(9,4), sharex = True)
+        ax = ax.flatten()
+
+        ax[0].scatter(1/freqr, Ye, s=1, label='Unfiltered')
+        ax[0].scatter(1/freqr, Yen, s=1, label='Filtered')
+    
+        ax[1].scatter(1/freqr, YI, s=1, label='Unfiltered')
+        ax[1].scatter(1/freqr, YIn, s=1, label='Filtered')
+
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g5'])), c='r', ls='--', alpha=alp, label='g-g5')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g6'])), c='goldenrod', ls='--', alpha=alp, label='g-g6')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g7'])), c='g', ls='--', alpha=alp, label='g-g7')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g8'])), c='purple', ls='--', alpha=alp, label='g-g8')
+        
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s6'])), c='goldenrod', ls='--', alpha=alp, label='s-s6')
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s7'])), c='g', ls='--', alpha=alp, label='s-s7')
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s8'])), c='purple', ls='--', alpha=alp, label='s-s8')
+        
+        ax[0].axhline(Ye[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[0].axhline(Yen[0], ls='--', alpha=0.2,c='tab:orange')
+        ax[1].axhline(YI[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[1].axhline(YIn[0], ls='--', alpha=0.2,c='tab:orange')
+        
+        ax[0].set_xscale('log')
+        ax[0].set_yscale('log')
+        ax[1].set_yscale('log')
+        fig.supxlabel('Period (yrs)')
+        fig.supylabel('Power')
+        ax[0].set_title('Ecc Power')
+        ax[1].set_title('Inc Power')
+        ax[0].legend()
+        ax[1].legend()
+        fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
+        fig.tight_layout()
+        plt.show()
+
+    
+    if prop_elem.p_vO:
+        
+        fig,ax = plt.subplots(1,2,figsize=(9,4), sharex = True)
+        ax[0].scatter(1/freqr, Yv, s=1, label='Unfiltered')
+        ax[0].scatter(1/freqr, Yvn, s=1, label='Filtered')
+    
+        ax[1].scatter(1/freqr, YO, s=1, label='Unfiltered')
+        ax[1].scatter(1/freqr, YOn, s=1, label='Filtered')
+
+        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'], c='blue', ls='--', alpha=alp, label='g')
+        ax[0].axvline(1/pf['g5'], c='r', ls='--', alpha=alp, label='g5')
+        ax[0].axvline(1/pf['g6'], c='goldenrod', ls='--', alpha=alp, label='g6')
+        ax[0].axvline(1/pf['g7'], c='g', ls='--', alpha=alp, label='g7')
+        ax[0].axvline(1/pf['g8'], c='purple', ls='--', alpha=alp, label='g8')
+        
+        ax[1].axvline(abs(1/prop_elem.proper_elements['s(rev/yr)']), c='blue', ls='--', alpha=alp, label='s')
+        ax[1].axvline(abs(1/pf['s6']), c='goldenrod', ls='--', alpha=alp, label='s6')
+        ax[1].axvline(abs(1/pf['s7']), c='g', ls='--', alpha=alp, label='s7')
+        ax[1].axvline(abs(1/pf['s8']), c='purple', ls='--', alpha=alp, label='s8')
+        
+        
+        ax[0].axhline(Yv[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[0].axhline(Yvn[0], ls='--', alpha=0.2,c='tab:orange')
+        ax[1].axhline(YO[0], ls='--', alpha=0.2,c='tab:blue')
+        ax[1].axhline(YOn[0], ls='--', alpha=0.2,c='tab:orange')
+
+        ax[0].set_xscale('log')
+        ax[0].set_yscale('log')
+        ax[1].set_yscale('log')
+
+        fig.supxlabel('Period (yrs)')
+        fig.supylabel('Power')
+
+        ax[0].set_title(r'$\varpi$ Power')
+        ax[1].set_title(r'$\Omega$ Power')
+        ax[0].legend()
+        ax[1].legend()
+        fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
+        fig.tight_layout()
+
+        plt.show()
+    
+    return 0
+
+
+
+
+def plot_hkpq(prop_elem):
+
+    objname = prop_elem.des
+
+    hk = prop_elem.hk_original
+    pq = prop_elem.pq_original
+
+    hkn = prop_elem.hk_filtered
+    pqn = prop_elem.pq_filtered
+
+    t = prop_elem.time
+
+    fig,ax = plt.subplots(1,2, figsize=(10,4))
+
+    ax[0].scatter(np.imag(hk), np.real(hk), s=1, alpha=0.2, label='Unfiltered')
+    ax[0].scatter(np.imag(hkn), np.real(hkn), s=1, alpha=0.2, label='Filtered')
+    
+    ax[1].scatter(np.imag(pq), np.real(pq), s=1, alpha=0.2, label='Unfiltered')
+    ax[1].scatter(np.imag(pqn), np.real(pqn), s=1, alpha=0.2, label='Filtered')
+
+    ax[0].set_xlabel('H')
+    ax[0].set_ylabel('K')
+    
+    ax[1].set_xlabel('P')
+    ax[1].set_ylabel('Q')
+
+    ax[0].axvline(0,ls='--', c='grey', alpha=0.35)
+    ax[0].axhline(0,ls='--', c='grey', alpha=0.35)
+    ax[1].axvline(0,ls='--', c='grey', alpha=0.35)
+    ax[1].axhline(0,ls='--', c='grey', alpha=0.35)
+
+
+    per5 = int(len(hk)/20)
+    ax[0].scatter(np.nanmedian(np.imag(hk[per5:-per5])),np.nanmedian(np.real(hk[per5:-per5])), marker='x', c='tab:blue')
+    ax[0].scatter(np.nanmedian(np.imag(hkn[per5:-per5])),np.nanmedian(np.real(hkn[per5:-per5])), marker='x', c='tab:orange')
+    
+    ax[1].scatter(np.nanmedian(np.imag(pq[per5:-per5])),np.nanmedian(np.real(pq[per5:-per5])), marker='x', c='tab:blue')
+    ax[1].scatter(np.nanmedian(np.imag(pqn[per5:-per5])),np.nanmedian(np.real(pqn[per5:-per5])), marker='x', c='tab:orange')
+    fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
+    
+    ax[0].set_aspect('equal', adjustable='box')
+    ax[1].set_aspect('equal', adjustable='box')
+
+    plt.show()
+    
+    return 0

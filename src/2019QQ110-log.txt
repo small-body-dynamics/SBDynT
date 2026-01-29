@@ -1,0 +1,4 @@
+simulation epoch: 2459114.5
+Rebound simulation initial conditions saved to ../example-notebooks/advanced_example_sims/2019QQ110-ic.bin
+simulation epoch: 2459114.5
+Rebound simulation initial conditions saved to ../example-notebooks/advanced_example_sims/2019QQ110-ic.bin

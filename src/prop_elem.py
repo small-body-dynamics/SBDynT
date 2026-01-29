@@ -17,6 +17,7 @@ import run_reb
 #import tools
 from tools import *
 from scipy.stats import circmean
+import plotting_scripts as ps
 
 
 
@@ -36,8 +37,9 @@ s_arr=[]
 #small_planets_flag=False
 
 class proper_element_class:
-    def __init__(self):
-
+    def __init__(self, des=''):
+        
+        self.des = des
         self.planets = {}
         self.planet_freqs = {}
         self.tmax = 0
@@ -47,8 +49,40 @@ class proper_element_class:
         self.mean_elements = {}
         self.proper_errors = {}
         self.proper_extras = {}
+        self.proper_indicators = {}
+        self.proper_internal = {}
         self.prop_finish = False
 
+        #Plotting Flags
+        self.p_hkpq = True
+        self.p_eI = False
+        self.p_vO = False
+
+
+    def plot_time_arrays(self):
+        ps.plot_osc_and_prop(self)
+
+    def plot_freq_space(self, plotflag='1'):
+        if '1' in plotflag:
+            self.p_hkpq = True
+        else:
+            self.p_hkpq = False
+        if '2' in plotflag:
+            self.p_eI = True
+        else:
+            self.p_eI = False
+        if '3' in plotflag:
+            self.p_vO = True
+        else:
+            self.p_vO = False
+            
+        ps.plot_freq_space(self)
+
+    def plot_hkpq(self):
+        ps.plot_hkpq(self)
+
+    def plot_angles(self, plot_cos=False, ifreqs={}):
+        ps.plot_angles(self, plot_cos=plot_cos, ifreqs=ifreqs)
 
     #Function that calls the proper element computation
     def compute_proper(self, windows=5, time_run = 0, rms = True, debug = False):
@@ -436,7 +470,7 @@ from scipy.fft import fft, ifft, fftfreq
 from scipy.ndimage import convolve1d, gaussian_filter1d
 
 
-def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radius_bins_init=3, kernel_size=15, method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, shortfilt = True):
+def smooth_fft_convolution_old(fft_signal, freqs, primary_freqs, time, protect_radius_bins_init=3, kernel_size=15, method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, shortfilt = True):
     """
     Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
     """
@@ -852,6 +886,117 @@ def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radiu
     #smoothed_fft[0] = np.median(smoothed_fft[1:10])
     return smoothed_fft * scaling_factor
 
+
+def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radius_bins_init=3, kernel_size=15, method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, shortfilt = True):
+    """
+    Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
+    """
+    fft_signal = np.asarray(fft_signal)
+    log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
+
+    #print(protect_radius_bins_init)
+    #print(kernel_size)
+    
+    log_power[np.isnan(log_power)] = 1e-10
+
+    #print('has nan',np.any(np.isnan(log_power)))
+    phase = np.angle(fft_signal)
+
+    N = len(fft_signal)
+
+    # Setting mask values to False causes them to be protected/preserved to original amplitudes
+    mask = np.ones(N, dtype=bool)
+    mask_opp = np.ones(N, dtype=bool)
+
+    first = True
+    protect_radius_bins = protect_radius_bins_init
+    
+    dt = time[1]-time[0]
+    
+    for pf in primary_freqs:
+        
+        dex_protect = 0.05
+        #if win:
+        #    dex_protect = 0.015
+
+        idx = np.argmin(np.abs(freqs - pf))
+        if first: 
+            p_idx = idx
+            #if inc_filt == False:
+            #    dex_protect = 0.06
+            #first = False
+            f_pf_idx = np.argmin(abs(pf-freqs))
+            dex_protect = dex_protect
+        else:
+            protect_radius_bins = round(protect_radius_bins_init/2)
+
+        extra = 1
+
+        min_logf = -10**(np.log10(abs(pf)) - dex_protect*extra)
+        max_logf = -10**(np.log10(abs(pf)) + dex_protect)
+        in_window = np.where((freqs >= max_logf) & (freqs <= min_logf))[0]
+        if len(in_window) <= 2 and (len(log_power) - idx) > 1 and idx > 1:
+            in_window = np.array([idx-1,idx,idx+1])
+        min_logf = -10**(np.log10(abs(pf)) - dex_protect*extra)
+        max_logf = -10**(np.log10(abs(pf)) + dex_protect)
+        in_window_opp = np.where((freqs <= -max_logf) & (freqs >= -min_logf))[0]
+        if len(in_window_opp) <= 2 and (len(log_power) - idx) > 1 and idx > 1:
+            in_window_opp = np.array([idx-1,idx,idx+1])
+
+        mask[in_window] = False
+        
+        #idx_opp = np.argmin(np.abs(- pf - freqs))
+        mask[in_window_opp] = False
+
+
+
+
+ 
+    mask_float = mask.astype(float)
+    mask_opp_float = mask_opp.astype(float)
+    #mask_long_float = mask_long.astype(float)
+
+    #rmasked_low_power = log_power.copy()
+    # Convolve both signal and mask to normalize after convolution
+
+    masked_log_power = log_power.copy()
+
+    if method == "gaussian":
+        smoothed_log_power = gaussian_filter1d(masked_log_power, sigma=kernel_size, mode="mirror")
+        smoothed_mask = gaussian_filter1d(mask_float, sigma=kernel_size, mode="mirror")
+        #smoothed_mask_filt = gaussian_filter1d(mask_filt_float, sigma=kernel_size, mode="mirror")
+
+    else:  # fallback to uniform boxcar
+        kernel = np.ones(kernel_size) / kernel_size
+        smoothed_log_power = convolve1d(masked_log_power, kernel, mode="nearest")
+        smoothed_mask = convolve1d(mask_float, kernel, mode="nearest")
+        #smoothed_mask_filt = convolve1d(mask_filt_float, kernel, mode="nearest")
+
+    with np.errstate(invalid='ignore', divide='ignore'):
+        normalized_log_power = np.where(smoothed_mask > 1e-6 , smoothed_log_power, log_power)
+
+    norm_og = normalized_log_power.copy()    
+    
+    normalized_log_power[~mask] = log_power[~mask]
+    normalized_log_power[~mask_opp] = log_power[~mask_opp]
+    if shortfilt == False:
+        print('setting back short period terms', shortfilt)
+        normalized_log_power[shortperiod] = log_power[shortperiod]
+
+    magnitude = 10 ** (0.5 * normalized_log_power / 10) 
+
+    normalized_log_power[normalized_log_power > log_power] = log_power[normalized_log_power > log_power]
+    # Normalize power to match original
+    
+    orig_power = np.nansum(np.abs(fft_signal)**2)
+    new_power = np.nansum(np.abs(magnitude)**2)
+    scale = np.sqrt(orig_power / new_power)
+
+    smoothed_fft = magnitude * np.exp(1j * phase) * scale
+    scaling_factor = np.sqrt(1/((np.abs(smoothed_fft[f_pf_idx])**2) / (np.abs(fft_signal[f_pf_idx])**2)))
+
+    return smoothed_fft * scaling_factor
+    
 def argmedian(x):
     """
     Returns the index of the median element for odd-length arrays,
@@ -877,7 +1022,20 @@ def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_
     
     
     masked_log_power = log_power.copy()
+    ind0 = np.argmin(abs(freqs))
 
+    if masked_log_power[ind0] > np.median(masked_log_power):
+        masked_log_power[ind0] = np.median(masked_log_power)
+    
+
+    for pf in primary_freqs:
+        idx_p = np.argmin(abs(freqs-pf))
+        masked_log_power[idx_p-2:idx_p+3] = masked_log_power[idx_p-2:idx_p+3]/5
+        
+    for pf in known_planet_freqs:
+        idx_p = np.argmin(abs(freqs-pf))
+        masked_log_power[idx_p-2:idx_p+3] = masked_log_power[idx_p-2:idx_p+3]/5
+    
     if method == "gaussian":
         smoothed_log_power = gaussian_filter1d(masked_log_power, sigma=kernel_size, mode="mirror")
 
@@ -893,9 +1051,11 @@ def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_
     # Restore original log_power in protected regions
     #normalized_log_power = smoothed_log_power.copy()
     norm_og = normalized_log_power.copy()
-    '''    
+    #'''    
 
-    smoothed_log_power[smoothed_log_power > masked_log_power] = masked_log_power[smoothed_log_power > masked_log_power]
+    smoothed_log_power[smoothed_log_power > log_power] = log_power[smoothed_log_power > log_power]
+
+    smoothed_log_power[ind0] = log_power[ind0]
     # Back to magnitude
     magnitude = 10 ** (0.5 * smoothed_log_power / 10) 
 
@@ -905,8 +1065,20 @@ def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_
     scale = np.sqrt(orig_power / new_power)
 
     smoothed_fft = magnitude * np.exp(1j * phase) 
+    
+    f_pf_idx = np.argmin(abs(freqs - primary_freqs[0]))
+    #scaling_factor = np.sqrt(1/((np.abs(smoothed_fft[f_pf_idx])**2) / (np.abs(fft_signal[f_pf_idx])**2)))
+    scaling_factor = 1
 
-    return smoothed_fft
+    '''
+    plt.scatter(1/freqs, log_power, s=1)
+    plt.scatter(1/freqs, smoothed_log_power, s=1)
+    plt.xscale('symlog',linthresh=1e4, linscale=1e-2)
+    plt.yscale('log')
+    plt.show()
+    '''
+    
+    return smoothed_fft * scaling_factor
 
 def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect_bins=None,kernel=60, proper_freq = None, inc_filt = False, win=False, shortfilt = True, afilt=False, filt_time = False):
     """
@@ -1234,7 +1406,10 @@ def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_
     dominant_freq = np.sum(freqs[ind_low:ind_high]*(powers[ind_low:ind_high])**2)/np.sum((powers[ind_low:ind_high])**2)
     #print(dominant_freq,dominant_freq*2*np.pi*206265)
     max_idx = np.argmin(np.abs(freqs-dominant_freq))
-    #dominant_freq = freqs[max_idx]
+    #if abs(len(freqs) - max_idx) <= 10:
+    #    dominant_freq = np.sum(freqs[ind_low:ind_high]*(powers[ind_low:ind_high]))/np.sum((powers[ind_low:ind_high]))
+    #if max_idx <= 10:
+    #    dominant_freq = np.sum(freqs[ind_low:ind_high]*(powers[ind_low:ind_high]))/np.sum((powers[ind_low:ind_high]))
 
     #if powers[0] > powers[max_idx]:
     #    max_idx = 0
@@ -1247,6 +1422,15 @@ def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_
     #    in_window = np.where((np.log10(-freqs) >= min_logf) & (np.log10(-freqs) <= max_logf))[0]
     #else:
     #    in_window = np.where((np.log10(freqs) >= min_logf) & (np.log10(freqs) <= max_logf))[0]
+
+    '''
+    plt.scatter(1/freqs, powers, s=1)
+    plt.xscale('symlog', linthresh=1e3, linscale=1e-3)
+    plt.yscale('log')
+    plt.axvline(1/dominant_freq)
+    plt.title('Dominant Freq='+ str(dominant_freq*3600*360) + ' "/yr')
+    plt.show()
+    '''
  
     protect_bins = 10
 
@@ -1590,6 +1774,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         k_init = (e_init)*np.cos(lan_init+aop_init)
 
         if output_arrays:
+            a_wins = []
             hk_wins = []
             pq_wins = []
             t_wins = []
@@ -1752,6 +1937,11 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             protect_g = np.append([g,2*g, 3*g],protect_gs)
             #protect_g = np.array([g,2*g])
             protect_s = np.append([s,2*s,3*s],protect_gs)
+
+    
+            protect_g = np.array([g])
+            #protect_g = np.array([g,2*g])
+            protect_s = np.array([s])
         except Exception as error:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
@@ -1837,6 +2027,12 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         else:
             per_shave = 0
         #print('dt',dt,'tol',tol, 'N', len(hk_arr),'protect_g',protect_g_bins,'protect_s',protect_s_bins,'kernel_g',kernel_g,'kernel_s',kernel_s)
+
+        
+        protect_g_bins = min(int(kernel_g/4), protect_g_bins)
+        protect_s_bins = min(int(kernel_s/4), protect_s_bins)
+        protect_g_bins = max(protect_g_bins, 2)
+        protect_s_bins = max(protect_s_bins, 2)
     
         #hk_new, hk_freq, protect_hk, hk_signal = extract_proper_mode(hk_arr, t_init, g_arr, freq_tol=tol, kernel=kernel, proper_freq=g)
         #pq_new, pq_freq, protect_pq, pq_signal = extract_proper_mode(pq_arr, t_init, s_arr, freq_tol=tol, kernel=kernel, proper_freq=s, inc_filt = True)
@@ -1871,6 +2067,15 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         
         hk_new = ee_new*np.cos(ee_ang) + 1j*ee_new*np.sin(ee_ang)
         pq_new = II_new*np.cos(II_ang) + 1j*II_new*np.sin(II_ang)
+
+        max_idx_g, g_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(np.cos(np.angle(hk_new))))**2, window_half_dex=0.02, window_protect_dex=0.15)
+        max_idx_s, s_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(np.cos(np.angle(pq_new))))**2, window_half_dex=0.02, window_protect_dex=0.15)
+
+        g_arr[0] = g_fin
+        s_arr[0] = s_fin
+
+        g = g_fin
+        s = s_fin
 
 
         pomega_n = np.angle(hk_new)
@@ -1967,6 +2172,11 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
 
             hk_freqe = np.array([g_e, 2*g_e, 3*g_e])
             pq_freqe = np.array([s_e, 2*s_e, 3*s_e])
+
+            protecte_hk = min(int(kernele_g/4), protecte_hk)
+            protecte_pq = min(int(kernele_s/4), protecte_pq)
+            protecte_hk = max(protecte_hk, 1)
+            protecte_pq = max(protecte_pq, 1)
             
             hk_newe, hk_freqe, protect_hk_waste, hk_waste = extract_proper_mode(hk_in, t_input, g_arr, freq_tol=tol, protect_bins = protecte_hk, kernel=kernele_g, proper_freq=hk_freqe, win=True)
             pq_newe, pq_freqe, protect_pq_waste, hk_waste = extract_proper_mode(pq_in, t_input, s_arr, freq_tol=tol, protect_bins = protecte_pq, kernel=kernele_s, proper_freq=pq_freqe,  win=True)  
@@ -2030,6 +2240,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         error_list[j][4] = s_e
 
         if output_arrays:
+            a_wins.append(a_filtn)
             hk_wins.append(hk_newe)
             pq_wins.append(pq_newe)
             t_wins.append(t_input)
@@ -2125,7 +2336,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
     phifrac = (g+s)/(gs_dict['g8'] + gs_dict['s8'])
 
     if output_arrays:
-        return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_new, pq_new, hk_wins, pq_wins, t_wins
+        return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_new, pq_new, a_filt, hk_wins, pq_wins, a_wins, t_wins, hk_arr, pq_arr
     
     return True, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac
 
@@ -2149,13 +2360,17 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
             testval = sim[0].particles['earth']
             testval = sim[0].particles['mars']
             vem = True
+            planets = ['venus','earth','mars','jupiter','saturn','uranus','neptune']
         except:
             vem = False
+            planets = ['jupiter','saturn','uranus','neptune']
     else:
         if object_type == 'tno':
             vem = False
+            planets = ['jupiter','saturn','uranus','neptune']
         elif object_type == 'asteroid':
             vem = True
+            planets = ['venus','earth','mars','jupiter','saturn','uranus','neptune']
         else:
             print('small_body object does not have a valid object_type. Checking planets contained in simulation by hash.')
             try:
@@ -2164,9 +2379,11 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
                 testval = sim[0].particles['mars']
                 print('simulation includes venus, earth, and mars. Will filter out these inner planets')
                 vem = True
+                planets = ['venus','earth','mars','jupiter','saturn','uranus','neptune']
             except:
                 print('simulation does not include one or all of venus, earth, and mars. Will only consider the outer planets in proper element filtering.')
                 vem = False
+                planets = ['jupiter','saturn','uranus','neptune']
 
 
     j_elems = np.zeros((5, len(sim)))
@@ -2184,96 +2401,170 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
     clone_elems = np.zeros((clones, 5, len(sim)))
 
     #for i in range(0,len(sim),10):
+
+
     for i in range(len(sim)):
         #if i%20000 == 0:
         #    print('Reading snapshot:', i, sim[i].t)
 
         #if int(sim[i].t) % 20000 != 0:
         #    continue
-        com = sim[i].com()
-        p = sim[i].particles[str(des)]
-        o = p.orbit(com)
+        s = sim[i]
+        s.move_to_com()
+        particles = s.particles
         
-        #if des == 'Albion':
-        #    sb = sim[i].particles[str(15760)]
-        #else:
-        #sb = sim[i].particles[str(des)]
-        #print(sim[i].particles)
-        
-        #print(sim[i].particles[0])
-        #print(sim[i].particles[1])
-        #print(sim[i].particles[2])
-        #print(sim[i].particles[3])
-        #print(sim[i].particles[4])
+        com = s.com()
+        #orbs = s.orbits()     
+       
+        sb_idx = particles[des].index
 
-        sb_elems[0,i] = sim[i].t
+        #o = orbs[sb_idx]
+        o = particles[des].orbit(com)
+
+        sb_elems[0,i] = s.t
         sb_elems[1,i] = o.a
         sb_elems[2,i] = o.e
         sb_elems[3,i] = o.inc
         sb_elems[4,i] = o.omega
         sb_elems[5,i] = o.Omega
-
+        
         for j in range(clones):
-            #if des == 'Albion':
-            #    c_name = str(15760)+'_'+str(j+1)
-            #else:
-            c_name = str(des)+'_'+str(j+1)
-            #print(c_name)
-            #clone = sim[i].particles[c_name]
+            c_idx = particles[des+'_'+str(j+1)].index
             
-            pc = sim[i].particles[c_name]
-            clone = pc.orbit(com)
-            #clone = sim[i].particles[c_name].orbit(primary=sim[i].particles['sun'])
+            #clone = orbs[c_idx]
+            c_name = des+'_'+str(j+1)
+            clone = sim[i].particles[c_name].orbit(com)
             clone_elems[j,0,i] = clone.a
             clone_elems[j,1,i] = clone.e
             clone_elems[j,2,i] = clone.inc
             clone_elems[j,3,i] = clone.omega
             clone_elems[j,4,i] = clone.Omega
-        #sb_elems[6,i] = sb.M
+            
+            
+        
+        '''
+        for j in range(clones):
 
-        j_elems[0,i] = sim[i].particles['jupiter'].a
-        j_elems[1,i] = sim[i].particles['jupiter'].e
-        j_elems[2,i] = sim[i].particles['jupiter'].inc
-        j_elems[3,i] = sim[i].particles['jupiter'].omega
-        j_elems[4,i] = sim[i].particles['jupiter'].Omega
+            c_name = str(des)+'_'+str(j+1)
+
+            #clone = orbs[j+c_idx1]
+            clone = sim[i].particles[c_name].orbit(primary=sim[i].particles['sun'])
+            clone_elems[j,0,i] = clone.a
+            clone_elems[j,1,i] = clone.e
+            clone_elems[j,2,i] = clone.inc
+            clone_elems[j,3,i] = clone.omega
+            clone_elems[j,4,i] = clone.Omega
+        '''
+
+        #'''
+        jorb = particles['jupiter'].orbit(com)
+        sorb = particles['saturn'].orbit(com)
+        uorb = particles['uranus'].orbit(com)
+        norb = particles['neptune'].orbit(com)
         
-        s_elems[0,i] = sim[i].particles['saturn'].a
-        s_elems[1,i] = sim[i].particles['saturn'].e
-        s_elems[2,i] = sim[i].particles['saturn'].inc
-        s_elems[3,i] = sim[i].particles['saturn'].omega
-        s_elems[4,i] = sim[i].particles['saturn'].Omega
+        j_elems[0,i] = jorb.a
+        j_elems[1,i] = jorb.e
+        j_elems[2,i] = jorb.inc
+        j_elems[3,i] = jorb.omega
+        j_elems[4,i] = jorb.Omega
         
-        u_elems[0,i] = sim[i].particles['uranus'].a
-        u_elems[1,i] = sim[i].particles['uranus'].e
-        u_elems[2,i] = sim[i].particles['uranus'].inc
-        u_elems[3,i] = sim[i].particles['uranus'].omega
-        u_elems[4,i] = sim[i].particles['uranus'].Omega
+        s_elems[0,i] = sorb.a
+        s_elems[1,i] = sorb.e
+        s_elems[2,i] = sorb.inc
+        s_elems[3,i] = sorb.omega
+        s_elems[4,i] = sorb.Omega
         
-        n_elems[0,i] = sim[i].particles['neptune'].a
-        n_elems[1,i] = sim[i].particles['neptune'].e
-        n_elems[2,i] = sim[i].particles['neptune'].inc
-        n_elems[3,i] = sim[i].particles['neptune'].omega
-        n_elems[4,i] = sim[i].particles['neptune'].Omega
+        u_elems[0,i] = uorb.a
+        u_elems[1,i] = uorb.e
+        u_elems[2,i] = uorb.inc
+        u_elems[3,i] = uorb.omega
+        u_elems[4,i] = uorb.Omega
+        
+        n_elems[0,i] = norb.a
+        n_elems[1,i] = norb.e
+        n_elems[2,i] = norb.inc
+        n_elems[3,i] = norb.omega
+        n_elems[4,i] = norb.Omega
+
 
         if vem:
-            v_elems[0,i] = sim[i].particles['venus'].a
-            v_elems[1,i] = sim[i].particles['venus'].e
-            v_elems[2,i] = sim[i].particles['venus'].inc
-            v_elems[3,i] = sim[i].particles['venus'].omega
-            v_elems[4,i] = sim[i].particles['venus'].Omega
+            vorb = particles['venus'].orbit(com)
+            eorb = particles['earth'].orbit(com)
+            morb = particles['mars'].orbit(com)
             
-            e_elems[0,i] = sim[i].particles['earth'].a
-            e_elems[1,i] = sim[i].particles['earth'].e
-            e_elems[2,i] = sim[i].particles['earth'].inc
-            e_elems[3,i] = sim[i].particles['earth'].omega
-            e_elems[4,i] = sim[i].particles['earth'].Omega
-        
-            m_elems[0,i] = sim[i].particles['mars'].a
-            m_elems[1,i] = sim[i].particles['mars'].e
-            m_elems[2,i] = sim[i].particles['mars'].inc
-            m_elems[3,i] = sim[i].particles['mars'].omega
-            m_elems[4,i] = sim[i].particles['mars'].Omega
+            v_elems[0,i] = vorb.a
+            v_elems[1,i] = vorb.e
+            v_elems[2,i] = vorb.inc
+            v_elems[3,i] = vorb.omega
+            v_elems[4,i] = vorb.Omega
+            
+            e_elems[0,i] = eorb.a
+            e_elems[1,i] = eorb.e
+            e_elems[2,i] = eorb.inc
+            e_elems[3,i] = eorb.omega
+            e_elems[4,i] = eorb.Omega
+            
+            m_elems[0,i] = morb.a
+            m_elems[1,i] = morb.e
+            m_elems[2,i] = morb.inc
+            m_elems[3,i] = morb.omega
+            m_elems[4,i] = morb.Omega
 
+        #'''
+        '''
+
+        planet_idx = []
+        for j in planets:
+            planet_idx.append(particles[j].index-1)
+            
+        if vem:
+            j_idx = 3
+        else:
+            j_idx = 0
+            
+        j_elems[0,i] = orbs[planet_idx[j_idx]].a
+        j_elems[1,i] = orbs[planet_idx[j_idx]].e
+        j_elems[2,i] = orbs[planet_idx[j_idx]].inc
+        j_elems[3,i] = orbs[planet_idx[j_idx]].omega
+        j_elems[4,i] = orbs[planet_idx[j_idx]].Omega
+        
+        s_elems[0,i] = orbs[planet_idx[j_idx+1]].a
+        s_elems[1,i] = orbs[planet_idx[j_idx+1]].e
+        s_elems[2,i] = orbs[planet_idx[j_idx+1]].inc
+        s_elems[3,i] = orbs[planet_idx[j_idx+1]].omega
+        s_elems[4,i] = orbs[planet_idx[j_idx+1]].Omega
+        
+        u_elems[0,i] = orbs[planet_idx[j_idx+2]].a
+        u_elems[1,i] = orbs[planet_idx[j_idx+2]].e
+        u_elems[2,i] = orbs[planet_idx[j_idx+2]].inc
+        u_elems[3,i] = orbs[planet_idx[j_idx+2]].omega
+        u_elems[4,i] = orbs[planet_idx[j_idx+2]].Omega
+        
+        n_elems[0,i] = orbs[planet_idx[j_idx+3]].a
+        n_elems[1,i] = orbs[planet_idx[j_idx+3]].e
+        n_elems[2,i] = orbs[planet_idx[j_idx+3]].inc
+        n_elems[3,i] = orbs[planet_idx[j_idx+3]].omega
+        n_elems[4,i] = orbs[planet_idx[j_idx+3]].Omega
+
+        if vem:
+            v_elems[0,i] = orbs[planet_idx[0]].a
+            v_elems[1,i] = orbs[planet_idx[0]].e
+            v_elems[2,i] = orbs[planet_idx[0]].inc
+            v_elems[3,i] = orbs[planet_idx[0]].omega
+            v_elems[4,i] = orbs[planet_idx[0]].Omega
+            
+            e_elems[0,i] = orbs[planet_idx[1]].a
+            e_elems[1,i] = orbs[planet_idx[1]].e
+            e_elems[2,i] = orbs[planet_idx[1]].inc
+            e_elems[3,i] = orbs[planet_idx[1]].omega
+            e_elems[4,i] = orbs[planet_idx[1]].Omega
+        
+            m_elems[0,i] = orbs[planet_idx[2]].a
+            m_elems[1,i] = orbs[planet_idx[2]].e
+            m_elems[2,i] = orbs[planet_idx[2]].inc
+            m_elems[3,i] = orbs[planet_idx[2]].omega
+            m_elems[4,i] = orbs[planet_idx[2]].Omega
+    #'''
 
     #First sort and remove values from the time array that aren't consistent with the higher resolution data. 
     t_arr = sb_elems[0].copy()
@@ -2345,13 +2636,17 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
     '''
     return 1, sb_elems[0], sb_elems[1:], planet_elems, clone_elems, vem
 
-    
+def hcm_calc(a,rmsa,rmse,rmsi):    
+    G = 6.673e-11
+    M = 1.989e30
+    n = np.sqrt(G*M/(a*1.496e11)**3)
+    return n*a*1.498e11*np.sqrt(5/4*(rmsa/a)**2+2*rmse**2+2*rmsi**2)   
 
-def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = None, small_planets_flag = False, output_arrays = False, gs_dict = None):
+def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], small_planets_flag = False, output_arrays = False, gs_dict = None):
 
     #t_init, sb_elems, planet_elems, clone_elems, p_equinoct_arr, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
     #                                    clones=clones,return_timeseries=return_timeseries,logfile=logfile, tno_results = tno_results)
-    proper_object = proper_element_class()
+    proper_object = proper_element_class(des=des)
     #if len(int_data) < 1:
     #    return 0, proper_object, []
         
@@ -2390,11 +2685,11 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = None, 
     mean_elem['g("/yr)'] = np.median(diffg)/dt*3600*360/2/np.pi
     mean_elem['s("/yr)'] = np.median(diffs)/dt*3600*360/2/np.pi
 
-    if planet_elems == None:
+    if len(planet_elems) == 0:
         g_arr = []
         s_arr = []
         if gs_dict == None:
-            if small_planet_flag:
+            if small_planets_flag:
                 gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7, 'g2': 7.34474/1296000, 'g3': 17.32832/1296000, 'g4': 18.00233/1296000, 's2': -6.57080/1296000, 's3': -18.74359/1296000, 's4': -17.63331/1296000}
             else:
                 gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7}
@@ -2408,7 +2703,7 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = None, 
         g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(times, planet_elems, small_planets_flag = small_planets_flag)
 
     if output_arrays:
-        flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_arr, pq_arr, hk_wins, pq_wins, t_wins = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True, output_arrays = output_arrays)
+        flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_new, pq_new, a_filt, hk_wins, pq_wins, a_wins, t_wins, hk_arr, pq_arr = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True, output_arrays = output_arrays)
     else:
         flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True)
 
@@ -2451,26 +2746,46 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = None, 
     proper_object.proper_errors = prop_errs
 
     #rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac
-    proper_object.proper_extras['E Resonant Metric'] = rese
-    proper_object.proper_extras['sinI Resonant Metric'] = resI
-    proper_object.proper_extras['E Resonant Flag'] = sec_res_e
-    proper_object.proper_extras['sinI Resonant Flag'] = sec_res_I
+    proper_object.proper_indicators['Ecc Mean Flag'] = rese
+    proper_object.proper_indicators['sinI Mean Flag'] = resI
+    proper_object.proper_indicators['Ecc Mean Indicator'] = sec_res_e
+    proper_object.proper_indicators['sinI Mean Indicator'] = sec_res_I
     
-    proper_object.proper_extras['E Osculating Amplitude'] = e_osc_amp
-    proper_object.proper_extras['sinI Osculating Amplitude'] = I_osc_amp
-    proper_object.proper_extras['E Filtered Amplitude'] = e_amp
-    proper_object.proper_extras['sinI Filtered Amplitude'] = I_amp
+    proper_object.proper_indicators['Ecc Osculating Amplitude'] = e_osc_amp
+    proper_object.proper_indicators['sinI Osculating Amplitude'] = I_osc_amp
+    proper_object.proper_indicators['Ecc Filtered Amplitude'] = e_amp
+    proper_object.proper_indicators['sinI Filtered Amplitude'] = I_amp
 
-    proper_object.proper_extras['Secular Resonant Angle'] = angle_sec_res
-    proper_object.proper_extras['Librating Angle'] = librate_angle
-    proper_object.proper_extras['Angle Entropy'] = angle_ent
-    proper_object.proper_extras['Phi Entropy'] = phifrac
+    proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'], prop_errs['RMS_a'], prop_errs['RMS_e'], prop_errs['RMS_sinI'])
+
+
+    
+
+    proper_object.proper_internal['Secular Resonant Angle'] = angle_sec_res
+    proper_object.proper_internal['Librating Angle'] = librate_angle
+    proper_object.proper_internal['Angle Entropy'] = angle_ent
+    proper_object.proper_internal['Phi Entropy'] = phifrac
 
     #if clones > 0:
     #    sb_elems = np.concatenate((np.array([sb_elems[1:]]),clone_elems), axis = 0)
 
     if output_arrays:
-        return 1, proper_object, hk_arr, pq_arr, hk_wins, pq_wins, t_wins
+        proper_object.hk_original = hk_arr
+        proper_object.pq_original = pq_arr
+        
+        proper_object.hk_filtered = hk_new
+        proper_object.pq_filtered = pq_new
+
+        proper_object.hk_windows = hk_wins
+        proper_object.pq_windows = pq_wins
+        proper_object.time_windows = t_wins
+
+        proper_object.a_original = a_init
+        proper_object.a_filtered = a_filt
+        proper_object.a_windows = a_wins
+
+        proper_object.time = times
+        
     return 1, proper_object
     
 

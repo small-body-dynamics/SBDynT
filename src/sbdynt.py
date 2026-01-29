@@ -216,7 +216,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         logmessage+= "proper elements calculation\n"
         writelog(logf,logmessage)  
 
-        
+    print('Running Asteroid integration for Proper Elements')
     rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
                                        logfile=logfile,tmax=5e6,tout=500.)
     if(rflag < 1):
@@ -254,20 +254,18 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         return tno_results
 
     if run_proper:
-        pflag, pe = calc_proper_elements(ast_results.proper_elements, des=des,datadir=datadir,archivefile=archivefile,
-                                        clones=clones,return_timeseries=True,logfile=logfile)
-
-        if(pflag < 1):
-            print("Failed at proper elements calculation stage")
-            return ast_results
-
         print('Running Asteroid Proper Elements')
         pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag)
 
+        if(pflag < 1):
+            print("Failed at proper elements calculation stage")
+            return ast_results
+            
         ast_results.proper_elements = pe
 
     if run_chaos:
+        print('Running Asteroid Chaos Indicators')
         ast_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
 
     return ast_results
@@ -321,7 +319,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
     
 #function to do a standard TNO analysis run using all default choices
 def run_tno(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False, run_proper = False, run_chaos = False):
+            logfile=False,deletefile=False, run_ML = True, run_proper = False, run_chaos = False):
     '''
     documentation here...
     '''
@@ -379,21 +377,25 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
     tno_results.logfile = logf
 
     #'''
-    print('Running TNO ML')
-    cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
+    sim = None
+    
+    tno_class = TNO_ML_outputs()
+    if run_ML:
+        print('Running TNO ML')
+        cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
                                     archivefile=archivefile,datadir=datadir,
                                     deletefile=deletefile,logfile=logfile)
 
-    if(cflag < 1):
-        print("Failed at the machine learning stage")
-        return tno_results
+        if(cflag < 1):
+            print("Failed at the machine learning stage")
+            return tno_results
 
-    if(logf=='screen'):
-        tno_class.print_results()
+        if(logf=='screen'):
+            tno_class.print_results()
 
-    tno_results.tno_ml_outputs = tno_class
+        tno_results.tno_ml_outputs = tno_class
     #'''
-    #tno_class = TNO_ML_outputs()
+
     if run_proper:
         if(tno_class.most_common_class == 'scattering'):
             if(logf):
@@ -638,7 +640,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
 
 
 def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False, run_proper=False, run_chaos=False, output_arrays = True):
+            logfile=False,deletefile=False, run_ML = False, run_proper=False, run_chaos=False, output_arrays = True):
     '''
     documentation here...
     '''
@@ -685,24 +687,36 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
     tno_results.icfile = icfile
     tno_results.logfile = logf
 
-    '''
-    print('Running TNO ML')
-    cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
+    tno_class = TNO_ML_outputs()
+    if run_ML:
+        #'''
+        print('Running TNO ML')
+        cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
                                     archivefile=archivefile,datadir=datadir,
                                     deletefile=deletefile,logfile=logfile, classify_only=True)
 
-    if(cflag < 1):
-        print("Failed at the machine learning stage")
-        return tno_results
+        if(cflag < 1):
+            print("Failed at the machine learning stage")
+            return tno_results
 
-    if(logf=='screen'):
-        tno_class.print_results()
+        if(logf=='screen'):
+            tno_class.print_results()
 
-    tno_results.tno_ml_outputs = tno_class
-    #'''
-    tno_class = TNO_ML_outputs()
+        tno_results.tno_ml_outputs = tno_class
+        #'''
+
+    if run_proper or run_chaos:
+        print('Reading TNO integration for Proper Elements and/or Chaos')
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+                                   clones=clones,logfile=logfile, object_type = tno_results.object_type)
+
+        if(reflag < 1):
+            print("Failed when reading in integrated simulation for proper elements")
+            return tno_results
     
     if run_proper:
+        print('Running TNO Proper Elements')
+        
         if(tno_class.most_common_class == 'scattering'):
             if(logf):
                 logmessage = "This is most likely a scattering TNO.\n"
@@ -716,21 +730,9 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
         
             return tno_results
         else:
-            print('Reading TNO integration')
-            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
-                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
-
-            if(reflag < 1):
-                print("Failed when reading in integrated simulation for proper elements")
-                return tno_results
                 
-            print('Running TNO PE')
-            if output_arrays:
-                pflag, pe, hk_arr, pq_arr, hk_wins, pq_wins, t_wins = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays= output_arrays)
-
-            else:    
-                pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+            #print('Running TNO PE')
+            pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag)
 
             if(pflag < 1):
@@ -739,21 +741,12 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
 
             tno_results.proper_elements = pe
             
-    elif run_chaos:
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
-                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
     if run_chaos:
+        print('Running TNO Choas Indicators')
         #print('clone elemes:', clone_elems.shape, clone_elems)
         tno_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
         
-    if output_arrays:
-        tno_results.hk_arr = hk_arr
-        tno_results.pq_arr = pq_arr
-        tno_results.hk_wins = hk_wins
-        tno_results.pq_wins = pq_wins
-        tno_results.time = times
-        tno_results.t_wins = t_wins
-        #return tno_results, hk_arr, pq_arr, hk_wins, pq_wins
+
     return tno_results
 
 
@@ -778,7 +771,7 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
         logf = datadir + '/' +logf
     
 
-    object_type = None
+    #object_type = obj
     #initialize the results class
     tno_results = small_body(des,object_type,clones)
     #tno_results.planets = ['outer']
@@ -825,13 +818,9 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
                 return tno_results
                 
             print('Running TNO PE')
-            if output_arrays:
-                pflag, pe, hk_arr, pq_arr, hk_wins, pq_wins, t_wins = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
-            else:
-                pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag)
+            pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
             if(pflag < 1):
                 print("Failed at proper elements calculation stage")
@@ -846,12 +835,6 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
         #print('clone elemes:', clone_elems.shape, clone_elems)
         tno_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
         
-    if output_arrays:
-        tno_results.hk_arr = hk_arr
-        tno_results.pq_arr = pq_arr
-        tno_results.hk_wins = hk_wins
-        tno_results.pq_wins = pq_wins
-        tno_results.t_wins = t_wins
-        tno_results.time = times
+   
         
     return tno_results
