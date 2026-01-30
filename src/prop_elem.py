@@ -62,7 +62,7 @@ class proper_element_class:
     def plot_time_arrays(self):
         ps.plot_osc_and_prop(self)
 
-    def plot_freq_space(self, plotflag='1'):
+    def plot_freq_space(self, plotflag='1', ifreqs={}):
         if '1' in plotflag:
             self.p_hkpq = True
         else:
@@ -76,7 +76,7 @@ class proper_element_class:
         else:
             self.p_vO = False
             
-        ps.plot_freq_space(self)
+        ps.plot_freq_space(self, ifreqs = ifreqs)
 
     def plot_hkpq(self):
         ps.plot_hkpq(self)
@@ -1572,8 +1572,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
 
         half = int(len(freq)/2)
 
-        good_freq_inds = np.where(abs(1/freq) <= abs(t_init[-1]))[0]
-        bad_freq_inds = np.where(abs(1/freq) > abs(t_init[-1]))[0]
+        good_freq_inds = np.where(abs(1/freq) <= np.max(abs(t_init)))[0]
+        bad_freq_inds = np.where(abs(1/freq) > np.max(abs(t_init)))[0]
 
         #print(Yhkj.shape)
         #print(1/freq)
@@ -1865,38 +1865,12 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             if abs(1/s) > 5e5:
                 protect_s_bins = protect_s_bins*2
             
-   
-    
-            #z1 = -(-g6-s6); z2 = -(-g5-s7); z3 = -(-g5-s6); z4 = (2*g6-g5); z5 = (2*g6-g7); z6 = -(-s6-g5+g6); z7 = -(-3*g6+2*g5)
-            #z8 = -(2*(-g6)-s6); z9 = -(3*(-g6)-s6); z10 = -((-g6)-s6)
-            #z11 = -(-2*g7+g6); z12 = -(-2*g5); z13 = -(4*g7); z14 = -(-s6)
-
-            #z1 = -(g+s-g6-s6); z2 = -(g+s-g5-s7); z3 = -(g+s-g5-s6); z4 = -(2*g6-g5); z5 = -(2*g6-g7); z6 = -(s-s6-g5+g6); z7 = -(g-3*g6+2*g5)
-            #z8 = -(2*(g-g6)+s-s6); z9 = -(3*(g-g6)+s-s6); z10 = -((g-g6)+s-s6)
-            #z11 = -(g-2*g7+g6); z12 = -(2*g-2*g5); z13 = -(-4*g+4*g7); z14 = -(-2*s-s6)
-
-            #if small_planets_flag:
-        #freq1 = [(g1),(g2),(g3),(g4),(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,z8,z9,g-z8,g-z9,g-z10,z11,z12,z13]
-        #freq2 = [(s1),(s2),(s3),(s4),(s6),(s7),(s8),z1,z2,z3,z6,z8,z9,s-z8,s-z9,s-z10,z14]
-            #    freq1 = [(g2),(g3),(g4),(g5),(g6),(g7),(g8),g-z8,g-z9,g-z10,z11,z12,z13,-g+2*s-g5]
-            #    freq2 = [(s2),(s3),(s4),(s6),(s7),(s8),s-z8,s-z9,s-z10,z14,g-s+g5-s7,g+g5-2*s6,2*g-2*s6]
-            #else:
-            #    freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,g-z8,g-z9,g-z10,z11,z12]
-            #    freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9,s-z8,s-z9,s-z10,z14]
-
-            #g_freqs = [-s+g6+s6,-s+g5+s7,-s+g5+s6,2*g6-g5,2*g6-g7,3*g6-2*g5,(-s+s6+2*g6)/2,(-s+s6+2*g6)/3,-s+s6+g6,2*g7-g6,2*g6,g6/2]
-            #s_freqs = [-g+g6+s6,-g+g5+s7,-g+g5+s6,s6+g5-g6,(-2*g+s6+2*g6)/2,(-3*g+s6+2*g6)/3,-g+s6+g6,-s6/2,2*g6-2*s6]
-            
-            #g_freqs = [2*g6-g5,2*g6-g7,3*g6-2*g5,2*g7-g6,2*g6,g6+g7-g5,g5+g6-g7]
-            #s_freqs = [s6+g5-g6,2*g6-2*s6,g5,g6,g7,g8]
-
-            
-            #gs_freqs = [2*g6-g5+s6-s7,g5-s6+s7]
 
             #FROM ORBFIT INL VARIABLE IN SELRE9.90, added 2*g6-2*s6 as the shortest possible 4th order 
             #gs_freqs = [2*g6-g5,2*g6-g7,3*g6-2*g5,-g5+g6+g7,g5+g6-g7,-g5+2*g6-s6-s7,g5+s7-s6,2*g5-g6,2*g6-2*s6]
-            
-            #Same as above, but with secualr frequencie sincluded in secualr frequency map
+
+            '''
+            #Same as above, but with secular frequencies included in secular frequency map
             gs_freqs = [2*gs_dict['g6']-gs_dict['g5'],
                         2*gs_dict['g6']-gs_dict['g7'],
                         3*gs_dict['g6']-2*gs_dict['g5'],
@@ -1912,35 +1886,15 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
                         gs_dict['g5']+gs_dict['s6'],
                         gs_dict['g6']+gs_dict['s6']]
 
-            #for i in g_freqs:
-            #    g_arr.append(i)
-            #for i in s_freqs:
-            #    s_arr.append(i)
             for i in gs_freqs:
                 g_arr.append(i)
                 s_arr.append(i)
 
             g_arr.append(gs_dict['g8']+gs_dict['s8'])
             s_arr.append(gs_dict['g8']+gs_dict['s8'])
-            #protect_gs = np.array([g-s,2*g-s,g-2*s,3*g-s,g-3*s,2*g-2*s,3*g-3*s,2*g-3*s,3*g-2*s,
-            #      g+s,2*g+s,g+2*s,3*g+s,g+3*s,2*g+2*s,3*g+3*s,2*g+3*s,3*g+2*s])
-            
-            #protect_gs = np.array([g-s,2*g-s,g-2*s,2*g-2*s,g+s,2*g+s,g+2*s,2*g+2*s])
-            
-            protect_gs = np.array([g-s,2*g-s,g-2*s,2*g-2*s,g+s],dtype=np.float64)
-            
-            protect_gs = np.array([g-s,2*g-s,g-2*s,g+s],dtype=np.float64)
-            #protect_gs = np.array([g-s,2*g-s,g-2*s])
-            
-            #protect_g = np.append([g,2*g,3*g],protect_gs)
-            #protect_s = np.append([s,2*s,3*s,g,2*g],protect_gs)
-            protect_g = np.append([g,2*g, 3*g],protect_gs)
-            #protect_g = np.array([g,2*g])
-            protect_s = np.append([s,2*s,3*s],protect_gs)
-
+            '''
     
             protect_g = np.array([g])
-            #protect_g = np.array([g,2*g])
             protect_s = np.array([s])
         except Exception as error:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -2068,11 +2022,11 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         hk_new = ee_new*np.cos(ee_ang) + 1j*ee_new*np.sin(ee_ang)
         pq_new = II_new*np.cos(II_ang) + 1j*II_new*np.sin(II_ang)
 
-        max_idx_g, g_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(np.cos(np.angle(hk_new))))**2, window_half_dex=0.02, window_protect_dex=0.15)
-        max_idx_s, s_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(np.cos(np.angle(pq_new))))**2, window_half_dex=0.02, window_protect_dex=0.15)
+        max_idx_g, g_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(hk_new))**2, window_half_dex=0.02, window_protect_dex=0.15)
+        max_idx_s, s_fin, local_power_all, protect_bins = find_local_max_windowed(freq, np.abs(np.fft.fft(pq_new))**2, window_half_dex=0.02, window_protect_dex=0.15)
 
-        g_arr[0] = g_fin
-        s_arr[0] = s_fin
+        #g_arr[0] = g_fin
+        #s_arr[0] = s_fin
 
         g = g_fin
         s = s_fin
@@ -2702,6 +2656,79 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     else:        
         g_arr,g_inds,s_arr,s_inds, gs_dict = get_planet_freqs(times, planet_elems, small_planets_flag = small_planets_flag)
 
+    '''
+    #OrbFit SELRE9.f90 frequencies
+    gs_freqs = [2*gs_dict['g6']-gs_dict['g5'],
+                        2*gs_dict['g6']-gs_dict['g7'],
+                        3*gs_dict['g6']-2*gs_dict['g5'],
+                        -gs_dict['g5']+gs_dict['g6']+gs_dict['g7'],
+                        gs_dict['g5']+gs_dict['g6']-gs_dict['g7'],
+                        -gs_dict['g5']+2*gs_dict['g6']-gs_dict['s6']-gs_dict['s7'],
+                        gs_dict['g5']+gs_dict['s7']-gs_dict['s6'],
+                        2*gs_dict['g5']-gs_dict['g6'],
+                        2*gs_dict['g6']-2*gs_dict['s6'],
+                        gs_dict['s6']+gs_dict['g5']-gs_dict['g6'],
+                        2*gs_dict['g6']+gs_dict['s6'],
+                        3*gs_dict['g6']+gs_dict['s6'],
+                        gs_dict['g5']+gs_dict['s6'],
+                        gs_dict['g6']+gs_dict['s6']]
+    '''
+
+    g_freqs = {
+        '2g6-g5': 2*gs_dict['g6'] - gs_dict['g5'],
+        '2g5-g6': 2*gs_dict['g5'] - gs_dict['g6'],
+        '2g7-g6': 2*gs_dict['g7'] - gs_dict['g6'],
+        '2g6-g7': 2*gs_dict['g6'] - gs_dict['g7'],
+        '3g6-g5': 3*gs_dict['g6'] - 2*gs_dict['g5'],
+        'g6-g5+g7': gs_dict['g6'] - gs_dict['g5'] + gs_dict['g7'],
+        'g6+g5-g7': gs_dict['g6'] + gs_dict['g5'] - gs_dict['g7'],
+        '2g6-g5+s6-s7': 2*gs_dict['g6'] - gs_dict['g5'] + gs_dict['s6'] - gs_dict['s7'],
+        'g5+s7-s6': gs_dict['g5'] + gs_dict['s7'] - gs_dict['s6']
+    }
+    
+    s_freqs = {
+        's6+s7': gs_dict['s6'] + gs_dict['s7'], 
+        's6+s8': gs_dict['s6'] + gs_dict['s8'], 
+        's7+s8': gs_dict['s7'] + gs_dict['s8'], 
+        '2s6-s7': 2*gs_dict['s6'] - gs_dict['s7'],     
+        '2s6-s8': 2*gs_dict['s6'] - gs_dict['s8'],     
+        '2s7-s6': 2*gs_dict['s7'] - gs_dict['s6'],     
+        '2s7-s8': 2*gs_dict['s7'] - gs_dict['s8'],     
+        '2s8-s7': 2*gs_dict['s8'] - gs_dict['s7'],        
+        '2g5-s6': 2*gs_dict['g5'] - gs_dict['s6'],       
+        '2g5-s7': 2*gs_dict['g5'] - gs_dict['s7'],   
+        '2g6-s6': 2*gs_dict['g6'] - gs_dict['s6'],       
+        '2g6-s7': 2*gs_dict['g6'] - gs_dict['s7'],       
+        'g5+g6-s6': gs_dict['g5'] + gs_dict['g6'] - gs_dict['s6'],      
+        'g5+g6-s7': gs_dict['g5'] + gs_dict['g6'] - gs_dict['s7'],      
+        'g5-g6+s6': gs_dict['g5'] - gs_dict['g6'] + gs_dict['s6'],                   
+    }
+
+    gs_freqs = {
+        'g6+s6': gs_dict['g6'] + gs_dict['s6'],
+        '2g6+s6': 2*gs_dict['g6'] + gs_dict['s6'],
+        '3*g6+s6': 3*gs_dict['g6'] + gs_dict['s6'],
+        'g7+s7': gs_dict['g7'] + gs_dict['s7'],
+        'g8+s8': gs_dict['g8'] + gs_dict['s8'],
+        'g5+s6': gs_dict['g5'] + gs_dict['s6'],
+        'g5+s7': gs_dict['g5'] + gs_dict['s7'],
+        'g6+s7': gs_dict['g6'] + gs_dict['s7'],
+        'g7+s8': gs_dict['g7'] + gs_dict['s8'],
+        'g6-s6': gs_dict['g6'] - gs_dict['s6'],
+        'g7-s7': gs_dict['g7'] - gs_dict['s7'],
+        'g8-s8': gs_dict['g8'] - gs_dict['s8'],
+        
+    }
+
+    for key, val in g_freqs.items():
+        g_arr.append(val)
+    for key, val in s_freqs.items():
+        s_arr.append(val)
+    for key, val in gs_freqs.items():
+        g_arr.append(val)
+        s_arr.append(val)
+
+    
     if output_arrays:
         flag, pes, rms_val, error_list, omega_n, Omega_n, maxvals, g, s, rese, resI, sec_res_e, sec_res_I, e_osc_amp, I_osc_amp, e_amp, I_amp, angle_sec_res, librate_angle, angle_ent, phifrac, hk_new, pq_new, a_filt, hk_wins, pq_wins, a_wins, t_wins, hk_arr, pq_arr = compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,windows=5,debug=False,objname=des, rms = True, shortfilt=True, output_arrays = output_arrays)
     else:
@@ -2758,9 +2785,6 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
 
     proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'], prop_errs['RMS_a'], prop_errs['RMS_e'], prop_errs['RMS_sinI'])
 
-
-    
-
     proper_object.proper_internal['Secular Resonant Angle'] = angle_sec_res
     proper_object.proper_internal['Librating Angle'] = librate_angle
     proper_object.proper_internal['Angle Entropy'] = angle_ent
@@ -2785,6 +2809,62 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
         proper_object.a_windows = a_wins
 
         proper_object.time = times
+
+        g5 = gs_dict['g5']; g6 = gs_dict['g6']; g7 = gs_dict['g7']; g8 = gs_dict['g8']
+        s6 = gs_dict['s6']; s7 = gs_dict['s7']; s8 = gs_dict['s8']
+
+    proper_object.secular_frequencies = {
+        'g-g5': g-g5, 'g-g6': g-g6, 'g-g7': g-g7, 'g-g8': g-g8,
+        's-s6': s-s6, 's-s7': s-s7, 's-s8': s-s8,
+        #g-frequencies
+        'g-2g6+g5': g-2*g6+g5, 
+        'g-2g5+g6': g-2*g5+g6, 
+        'g-2g7+g6': g-2*g7+g6, 
+        'g-3g6+2g5': g-3*g6+2*g5, 
+        'g-g6+g5-g7': g-g6+g5-g7, 
+        'g-g6-g5=g7': g-g6-g5+g7, 
+        'g-2g6+g5-s6+s7': g-2*g6+g5-s6+s7, 
+        'g-g5-s7+s6': g-g5-s7+s6, 
+        # s-frequencies
+        '2s-s6-s7': 2*s-s6-s7,
+        '2s-s6-s8': 2*s-s6-s8,
+        '2s-s7-s8': 2*s-s7-s8,
+        's-2s6+s7': s-2*s6+s7,
+        's-2s6+s8': s-2*s6+s8,
+        's-2s7+s6': s-2*s7+s6,
+        's-2s7+s8': s-2*s7+s8,
+        's-2s8+s7': s-2*s8+s6,
+        's-2g5+s6': s-2*g5+s6,
+        's-2g5+s7': s-2*g5+s7,
+        's-2g6+s6': s-2*g6+s6,
+        's-2g6+s7': s-2*g6+s7,
+        's-g5-g6+s6': s-g5-g6+s6,
+        's-g5-g6+s7': s-g5-g6+s7,
+        's-g5+g6-s6': s-g5+g6-s6,
+        #g+s-frequencies
+        'g+s-g6-s6': g+s-g6-s6,
+        '2g+s-2g6-s6': 2*g+s-2*g6-s6,
+        '3g+s-3g6-s6': 3*g+s-3*g6-s6,
+        'g+s-g7-s7': g+s-g7-s7,
+        'g+s-g8-s8': g+s-g8-s8,
+        '2(g+s)-g7-s7-g8-s8': 2*(g+s)-g7-s7-g8-s8,
+        'g+s-g5-s6': g+s-g5-s6,
+        'g+s-g5-s7': g+s-g5-s7,
+        'g+s-g6-s7': g+s-g6-s7,
+        'g+s-g7-s8': g+s-g7-s8,
+        'g-s-g6+s6': g-s-g6+s6,
+        'g-s-g7+s7': g-s-g7+s7,
+        'g-s-g8+s8': g-s-g8+s8,
+    }
+
+    proper_object.secfreq_flags = {}
+
+    for key,val in proper_object.secular_frequencies.items():
+        proper_object.secular_frequencies[key] = val*3600*360
+
+        proper_object.secfreq_flags[key] = (abs(val*3600*360) < 0.01, abs(val*3600*360) < 0.05, abs(val*3600*360) < 0.1, abs(val*3600*360) < 0.2)
+
+    
         
     return 1, proper_object
     

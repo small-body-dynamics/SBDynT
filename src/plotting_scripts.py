@@ -450,10 +450,11 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     gps = prop_elem.proper_elements['g(rev/yr)'] + prop_elem.proper_elements['s(rev/yr)']
 
     ind0 = np.argmin(abs(t))
-    gt = g*t*2*np.pi + varpin[ind0]
-    st = s*t*2*np.pi + Omegan[ind0]
-    g_st = g_s*t*2*np.pi + omegan[ind0]
-    gpst = gps*t*2*np.pi + phin[ind0]
+    #ind0 = 0
+    gt = g*t*2*np.pi % (2*np.pi) + varpin[ind0]
+    st = s*t*2*np.pi % (2*np.pi) + Omegan[ind0]
+    g_st = g_s*t*2*np.pi % (2*np.pi) + omegan[ind0]
+    gpst = gps*t*2*np.pi % (2*np.pi) + phin[ind0]
 
     
 
@@ -481,8 +482,8 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
         ax[0].set_title(r'$\cos(\varpi)$',fontsize=14)
 
         for num, vals in ifreqs.items():
-            freq = vals[0]
-            label = vals[1]
+            freq = vals[1]
+            label = vals[0]
             if num == 0:
                 line = 2*np.pi*freq*t + varpin[ind0]
                 ax[0].plot(t, np.cos(line), alpha=0.35,ls='--', label=label)
@@ -594,7 +595,7 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     return 0
 
 
-def plot_freq_space(prop_elem):
+def plot_freq_space(prop_elem, ifreqs={}):
     
     objname = prop_elem.des
     
@@ -625,6 +626,8 @@ def plot_freq_space(prop_elem):
     YOn = np.abs(np.fft.rfft(np.cos(np.angle(pqn))))**2
 
     pf = prop_elem.planet_freqs
+
+    #colors = rcParams['axes.prop_cycle'].by_key()['color']
     
     alp = 0.3
     if prop_elem.p_hkpq:
@@ -659,6 +662,17 @@ def plot_freq_space(prop_elem):
         ax[1].axhline(Ypq[0], ls='--', alpha=0.2,c='tab:blue')
         ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='tab:orange')
         #ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='k')
+
+        
+        for num, vals in ifreqs.items():
+            freq = vals[1]
+            label = vals[0]
+            
+            if num == 1:
+                ax[0].axvline(1/freq, alpha=0.35,ls='-.', label=label)
+                ax[0].legend()
+                ax[1].axvline(1/freq, alpha=0.35,ls='-.', label=label)
+                ax[1].legend()
     
         import matplotlib.ticker as ticker
         import math
@@ -717,6 +731,16 @@ def plot_freq_space(prop_elem):
         ax[0].axhline(Yen[0], ls='--', alpha=0.2,c='tab:orange')
         ax[1].axhline(YI[0], ls='--', alpha=0.2,c='tab:blue')
         ax[1].axhline(YIn[0], ls='--', alpha=0.2,c='tab:orange')
+
+        for num, vals in ifreqs.items():
+            freq = vals[1]
+            label = vals[0]
+            
+            if num == 2:
+                ax[0].axvline(abs(1/freq), alpha=0.35,ls='-.', label=label)
+                ax[0].legend()
+                ax[1].axvline(abs(1/freq), alpha=0.35,ls='-.', label=label)
+                ax[1].legend()
         
         ax[0].set_xscale('log')
         ax[0].set_yscale('log')
@@ -757,6 +781,16 @@ def plot_freq_space(prop_elem):
         ax[0].axhline(Yvn[0], ls='--', alpha=0.2,c='tab:orange')
         ax[1].axhline(YO[0], ls='--', alpha=0.2,c='tab:blue')
         ax[1].axhline(YOn[0], ls='--', alpha=0.2,c='tab:orange')
+        
+        for num, vals in ifreqs.items():
+            freq = vals[1]
+            label = vals[0]
+            
+            if num == 3:
+                ax[0].axvline(abs(1/freq), alpha=0.35,ls='-.', label=label)
+                ax[0].legend()
+                ax[1].axvline(abs(1/freq), alpha=0.35,ls='-.', label=label)
+                ax[1].legend()
 
         ax[0].set_xscale('log')
         ax[0].set_yscale('log')
