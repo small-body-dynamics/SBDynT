@@ -2793,6 +2793,9 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     #if clones > 0:
     #    sb_elems = np.concatenate((np.array([sb_elems[1:]]),clone_elems), axis = 0)
 
+    g5 = gs_dict['g5']; g6 = gs_dict['g6']; g7 = gs_dict['g7']; g8 = gs_dict['g8']
+    s6 = gs_dict['s6']; s7 = gs_dict['s7']; s8 = gs_dict['s8']
+    
     if output_arrays:
         proper_object.hk_original = hk_arr
         proper_object.pq_original = pq_arr
@@ -2810,8 +2813,7 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
 
         proper_object.time = times
 
-        g5 = gs_dict['g5']; g6 = gs_dict['g6']; g7 = gs_dict['g7']; g8 = gs_dict['g8']
-        s6 = gs_dict['s6']; s7 = gs_dict['s7']; s8 = gs_dict['s8']
+        
 
     proper_object.secular_frequencies = {
         'g-g5': g-g5, 'g-g6': g-g6, 'g-g7': g-g7, 'g-g8': g-g8,
