@@ -58,7 +58,7 @@ class small_body:
         self.int_direction = ''
         self.run_properties = self.analysis_vars()
             
-        self.proper_elements = proper_elements_class(designation)
+        self.proper_elements = proper_element_class(designation)
         self.chaos_indicators = chaos_indicators()
 
         #DS added variables for proper_element branch
