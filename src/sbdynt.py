@@ -58,8 +58,8 @@ class small_body:
         self.int_direction = ''
         self.run_properties = self.analysis_vars()
             
-        self.proper_elements = None
-        self.chaos_indicators = None
+        self.proper_elements = proper_elements_class(designation)
+        self.chaos_indicators = chaos_indicators()
 
         #DS added variables for proper_element branch
         self.a_arr = []
@@ -273,7 +273,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         
 
 def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
-                                       logfile=None,tmax=10e6,tout=500., direction='bf'):
+                                       logfile=None,tmax=10e6,tout=500., direction='bf', deletefile = True):
 
     icfile = ic_file_name(des=des)
     if(datadir):
@@ -282,32 +282,27 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
     if direction == 'bf':
         
         rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
-                                       logfile=logfile,tmax=(tmax/2),tout=tout)
+                                       logfile=logfile,tmax=(tmax/2),tout=tout, deletefile = deletefile)
         try:        
             sa = rebound.Simulationarchive(icfile)
-            sim2 = sa[0]
+            snew = sa[0]
         except:
             print("failed to read in the saved initial conditions file to restart from t=0")
             return 0, sim
 
-        return run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
-                                         logfile=logfile,tmax=-(tmax/2),tout=tout)
+        return run_simulation(snew,des=des,archivefile=archivefile,datadir=datadir,
+                                         logfile=logfile,tmax=-(tmax/2),tout=tout, deletefile = False)
 
 
     elif direction == 'forwards':
         
         return run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
-                                       logfile=logfile,tmax=tmax,tout=tout)
+                                       logfile=logfile,tmax=tmax,tout=tout, deletefile = deletefile)
 
     elif direction == 'backwards':
-        try:        
-            sa = rebound.Simulationarchive(icfile)
-            sim2 = sa[0]
-        except:
-            print("failed to read in the saved initial conditions file to restart from t=0")
-            return 0, sim
-        return  run_simulation(sim2,des=des,archivefile=archivefile,datadir=datadir,
-                                       logfile=logfile,tmax=-tmax,tout=tout)
+
+        return  run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
+                                       logfile=logfile,tmax=-tmax,tout=tout, deletefile = deletefile)
 
     else:
         print('direction given not backwards, forwards, or bf. Call this function again with a valid direction')
@@ -406,7 +401,7 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
             
             tno_results.proper_elements.a = tno_class.features.a_mean
             tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:
@@ -415,7 +410,8 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
                 logmessage+= "proper elements calculation\n"
                 writelog(logf,logmessage)  
 
-        
+            #for i in sim.particles:
+            #    print(i)
             print('Running TNO integration for PE')
             rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
                                        logfile=logfile,tmax=75e6,tout=5000.)
@@ -563,7 +559,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
             
             sb_results.proper_elements.a = tno_class.features.a_mean
             sb_results.proper_elements.e = tno_class.features.e_mean
-            sb_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+            sb_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
         
             return sb_results
 
@@ -726,14 +722,14 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
             
             tno_results.proper_elements.a = tno_class.features.a_mean
             tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:
                 
             #print('Running TNO PE')
             pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag)
+                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
             if(pflag < 1):
                 print("Failed at proper elements calculation stage")
@@ -742,7 +738,7 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
             tno_results.proper_elements = pe
             
     if run_chaos:
-        print('Running TNO Choas Indicators')
+        print('Running TNO Chaos Indicators')
         #print('clone elemes:', clone_elems.shape, clone_elems)
         tno_results.chaos_indicators = compute_chaos(sb_elem = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems)
         
@@ -805,7 +801,7 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
             
             tno_results.proper_elements.a = tno_class.features.a_mean
             tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.I_mean)
+            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:

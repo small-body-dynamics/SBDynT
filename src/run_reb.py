@@ -238,6 +238,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     # missing planets
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
                 epoch=epoch)
+
+    #for i in sim.particles:
+    #    print(i)
     if(apflag < 1):
         print("run_reb.initialize_simulation failed at run_reb.add_planets")
         return flag, 0., sim
@@ -262,6 +265,8 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         sim.add(m=0., x=sbx, y=sby, z=sbz,
                 vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
 
+    #for i in sim.particles:
+    #    print(i)
     sim.move_to_com()
 
     if(saveic):
@@ -391,6 +396,165 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
             tools.writelog(logfile,logmessage)    
 
     return 1, epoch, sim
+
+
+
+
+def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 268100.0, sv = [0,0,0,0,0,0], cov = [], cloning_method='Gaussian',
+                          datadir='', saveic=False, logfile=False, save_sbdb=False):
+    """
+    inputs:
+        planets (optional): string list, list of planet names - defaults to all
+        des: string, small body designation
+        clones (optional): integer, number of clones. Defaults to 0
+        cloning_method (optional): string,  defaults to standard Guassian sampling
+                           if set to 'find_3_sigma' the first two
+                           returned clones will be approximately 3-
+                           sigma min and max semimajor axis clones
+                           if clones>2, the rest will be sampled in a Guassian manner
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later either to a default 
+                           file name or to a file with the name equal to the string passed
+                           (default) if False nothing is saved
+        logfile (optional): boolean or string; 
+                            if True:  will save some messages to adefault log file name
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
+                            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string; 
+                           if True:  will save a pickle file with the results of the 
+                           JPL SBDB query either to a default file name or to a file
+                           with the name equal to the string passed
+                           (default) if False nothing is saved
+                           
+
+    outputs:
+        flag: integer, 0 if failed, 1 if successful
+        epoch: float, date of the simulation start (JD)
+        sim: rebound simulation instance with planets and test particles added
+             with adjustments for missing major perturbers
+        weights (optional output, triggered by use of non-default cloning_method):
+            numpy array of weights for the clones added to the simulation
+            in the default sampling method, clones are equally weighted, so we need
+            not output weights
+            when cloning_method = 'find_3_sigma' and nclones > 2, the weights of the
+            two extreme clones are set to 0 and the rest to 1
+    """
+    
+    flag = 0
+
+    if(des == None):
+        print("The designation of the small body must be provided")
+        print("failed in horizons_api.initialize_simulation()")
+        return flag, epoch, sim
+
+    if(logfile==True):
+        logfile = tools.log_file_name(des=des)
+    #if(datadir and logfile and logfile!='screen'):        
+    #    logfile = datadir + '/' +logfile
+
+
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
+    planets = [pl.lower() for pl in planets]
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['all']):
+        planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+
+
+    # initialize simulation variable
+    sim = rebound.Simulation()
+    sim.units = ('yr', 'AU', 'Msun')
+
+    # set up small body variables
+    ntp = 1 + clones
+    sbx = np.zeros(ntp)
+    sby = np.zeros(ntp)
+    sbz = np.zeros(ntp)
+    sbvx = np.zeros(ntp)
+    sbvy = np.zeros(ntp)
+    sbvz = np.zeros(ntp)
+
+    # get the small body's position and velocity
+    x,y,z,vx,vy,vz = sv
+
+    try:
+        sbx,sby,sbz,sbvx,sbvy,sbvz = np.random.multivariate_normal(sv, cov, clones).T
+    except Exception as err:
+        print(err)
+        print(sv, cov, clones)
+        return
+
+    vx = vx*365; vy = vy*365; vz = vz*365
+    sbvx = sbvx*365; sbvy = sbvy*365; sbvz = sbvz*365
+    
+    sbx = np.concatenate(([x], sbx)); sby = np.concatenate(([y], sby)); sbz = np.concatenate(([z], sbz)); sbvx = np.concatenate(([vx], sbvx)); sbvy = np.concatenate(([vy], sbvy)); sbvz = np.concatenate(([vz], sbvz))
+    
+    #if(sflag < 1):
+    #    print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
+    #    return flag, 0., sim
+    
+    if(logfile):
+        logmessage = "simulation epoch: " + str(epoch) + "\n"
+        tools.writelog(logfile,logmessage)
+
+
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+    #print('epoch',epoch)
+    apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
+                epoch=epoch)
+    if(apflag < 1):
+        print("run_reb.initialize_simulation failed at run_reb.add_planets")
+        return flag, 0., sim
+    
+    if(clones > 0):
+        for i in range(0, ntp):
+            if(i == 0):
+                #first clone is always just the best-fit orbit
+                #and the hash is not numbered
+                sbhash = str(des)
+            else:
+                sbhash = str(des) + '_' + str(i)
+            # correct for the missing planets
+            sbx[i] += sx; sby[i] += sy; sbz[i] += sz
+            sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
+            sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
+                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
+    else:
+        sbx += sx; sby += sy; sbz += sz
+        sbvx += svx; sbvy += svy; sbvz += svz
+        sbhash = des 
+        sim.add(m=0., x=sbx, y=sby, z=sbz,
+                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
+
+    sim.move_to_com()
+
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+        else:
+            ic_file = saveic
+        if(datadir):
+            ic_file = datadir + '/'  +ic_file
+        sim.save_to_file(ic_file)
+        if(logfile):
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            tools.writelog(logfile,logmessage)
+    flag = 1
+
+    if(cloning_method=='Gaussian'):
+        return 1, epoch, sim
+    else:
+        return 1, epoch, sim, weights
+
 
 
 def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,

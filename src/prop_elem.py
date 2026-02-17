@@ -2369,9 +2369,11 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
         
         com = s.com()
         #orbs = s.orbits()     
-       
-        sb_idx = particles[des].index
 
+        try:
+            sb_idx = particles[des].index
+        except:
+            continue
         #o = orbs[sb_idx]
         o = particles[des].orbit(com)
 
@@ -2383,8 +2385,10 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
         sb_elems[5,i] = o.Omega
         
         for j in range(clones):
-            c_idx = particles[des+'_'+str(j+1)].index
-            
+            try:
+                c_idx = particles[des+'_'+str(j+1)].index
+            except:
+                continue
             #clone = orbs[c_idx]
             c_name = des+'_'+str(j+1)
             clone = sim[i].particles[c_name].orbit(com)

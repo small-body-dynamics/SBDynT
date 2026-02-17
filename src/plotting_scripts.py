@@ -59,9 +59,9 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
     plt.suptitle('object ' + sbody)
         
     if(tmin == None):
-        tmin = t[0]
+        tmin = abs(t[0])
     if(tmax == None):
-        tmax = t[-1]
+        tmax = abs(t[-1])
 
     deltat = tmax-tmin
 
@@ -94,8 +94,10 @@ def plot_aei(sbody = '',a=[[0.],], e=[[0.],], inc=[[0.]], t=[0.],nclones=0,
     e_ax1.set_ylabel('e')
     i_ax1=plt.subplot2grid((nrows,ncol),(2,0))
     i_ax1.set_ylabel('inc (deg)')
-    i_ax1.set_xlabel(timelabel)
-    
+    try:
+        i_ax1.set_xlabel(timelabel)
+    except:
+        print(tmax, tmin)
     a_ax1.set_xlim([tmin/tscale,tmax/tscale])
     e_ax1.set_xlim([tmin/tscale,tmax/tscale])
     i_ax1.set_xlim([tmin/tscale,tmax/tscale])
@@ -162,8 +164,8 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
 
     #calculate the rotating frame values for the small body
     flag, xr, yr, zr, vxr, vyr, vzr, t = \
-            tools.calc_rotating_frame(sbody=sbody, archivefile=archivefile,
-                                      planet=planet, nclones=nclones,
+            tools.calc_rotating_frame(des=sbody, archivefile=archivefile,
+                                      planet=planet, clones=nclones,
                                       tmin=tmin,tmax=tmax)
 
     if(not flag):
@@ -172,8 +174,8 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
         return 0,None
     #calculate the rotating frame values for the planet
     flag, pxr, pyr, pzr, pvxr, pvyr, pvzr, t = \
-            tools.calc_rotating_frame(sbody=planet, archivefile=archivefile,
-                                      planet=planet, nclones=0,
+            tools.calc_rotating_frame(des=planet, archivefile=archivefile,
+                                      planet=planet, clones=0,
                                       tmin=tmin,tmax=tmax)
 
     if(not flag):
@@ -194,9 +196,9 @@ def calc_and_plot_rotating_frame(sbody='',planet = '', archivefile='', nclones=0
     
         
     if(tmin == None):
-        tmin = t[0]
+        tmin = abs(t[0])
     if(tmax == None):
-        tmax = t[-1]
+        tmax = abs(t[-1])
 
     deltat = tmax-tmin
     #print(tmax,deltat)
@@ -833,11 +835,11 @@ def plot_hkpq(prop_elem):
     ax[1].scatter(np.imag(pq), np.real(pq), s=1, alpha=0.2, label='Unfiltered')
     ax[1].scatter(np.imag(pqn), np.real(pqn), s=1, alpha=0.2, label='Filtered')
 
-    ax[0].set_xlabel('H')
-    ax[0].set_ylabel('K')
+    ax[0].set_xlabel('h',fontsize=13)
+    ax[0].set_ylabel('k',fontsize=13)
     
-    ax[1].set_xlabel('P')
-    ax[1].set_ylabel('Q')
+    ax[1].set_xlabel('p',fontsize=13)
+    ax[1].set_ylabel('q',fontsize=13)
 
     ax[0].axvline(0,ls='--', c='grey', alpha=0.35)
     ax[0].axhline(0,ls='--', c='grey', alpha=0.35)

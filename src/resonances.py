@@ -63,7 +63,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
 
 
     #read the simulation archive and calculate resonant angles
-    sa = rebound.SimulationArchive(archivefile)
+    sa = rebound.Simulationarchive(archivefile)
 
     nout = len(sa)
 
@@ -87,8 +87,8 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
     for i,sim in enumerate(sa):
         #calculate the planet's orbit relative to the barycenter
         pl = sim.particles[planet]
-        com = sim.calculate_com()
-        o_pl = pl.calculate_orbit(com)
+        com = sim.com()
+        o_pl = pl.orbit(com)
         #planet's mean longitude for the resonant angles
         lamda_pl = o_pl.Omega+o_pl.omega+o_pl.M
 
@@ -107,7 +107,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
                 print("resonances.read_sa_for_resonance failed")
                 print("Problem finding a particle with that hash in the archive")
                 return 0, a, e, inc, node, aperi, ma, phi, t, ''
-            o = tp.calculate_orbit(com)
+            o = tp.orbit(com)
             a[j,i] = o.a
             e[j,i] = o.e
             inc[j,i] = o.inc
@@ -120,7 +120,7 @@ def read_sa_for_resonance(sbody = '', archivefile='',planet='',p=0
             pt = float(p)*lamda - float(q)*lamda_pl - float(m)*(o.Omega+o.omega)
             if(n!=0 or r!=0 or s!=0):
                 pt = pt - float(n)*o.Omega - float(r)*(o_pl.Omega+o_pl.omega) - float(s)*o_pl.Omega
-            pt = tools.mod2pi(pt)
+            pt = (pt)%(2*np.pi)
             phi[j,i] = pt
     
     flag = 1
@@ -202,9 +202,9 @@ def plot_resonance(sbody = '', res_string='',a=[[0.],], e=[[0.],], inc=[[0.],], 
         xwidth= 5
 
     if(tmin == None):
-        tmin = t[0]
+        tmin = abs(t[0])
     if(tmax == None):
-        tmax = t[-1]
+        tmax = abs(t[-1])
 
     deltat = tmax-tmin
 
@@ -542,3 +542,76 @@ def analyze_res(tmin=0.,tmax=0.,dtwindow = 5e5,a=[[0.],], e=[[0.],], inc=[[0.],]
              
     
     return flag, a_stats, e_stats, i_stats, phi_stats, fwindows
+
+def farey_tree(num, denom, prmin, prmax):
+    order_max = 20
+    # Initialize fractions
+    flag = 0
+    oldnum = num.copy()  
+    olddenom = denom.copy()
+    nfractions = len(oldnum)
+    if nfractions == 1:
+        # Only one fraction left, can't keep building the tree
+        return flag, num, denom,np.array([0.]),np.array([0.]), 0
+        
+    # the next layer in the farey tree will have nfraction-1 new fractions
+    newnum = np.zeros(nfractions-1)  
+    newdenom = np.zeros(nfractions-1)
+
+    # the full set of numbers will have 2*nfractions -1 entries
+    num = np.zeros(2*nfractions-1)  
+    denom = np.zeros(2*nfractions-1)
+    
+    nn = 0
+    new_n = 0
+    for n in range(0,nfractions-1):
+        num[nn] = oldnum[n]
+        denom[nn] = olddenom[n] 
+        nn+=1
+        num[nn] = oldnum[n] + oldnum[n + 1]
+        denom[nn] = olddenom[n] + olddenom[n + 1]
+        if(num[nn]<=order_max):
+            nn+=1
+            newnum[new_n] = oldnum[n] + oldnum[n + 1]
+            newdenom[new_n] = olddenom[n] + olddenom[n + 1]
+            new_n+=1
+
+
+    num[nn] = oldnum[nfractions-1]
+    denom[nn] = olddenom[nfractions-1]
+
+    if(new_n <1):
+        flag = 2
+    else:
+        flag = 1
+    
+    newnum = newnum[0:new_n]
+    newdenom = newdenom[0:new_n]
+    num = num[0:nn+1]
+    denom = denom[0:nn+1]
+    
+    
+    left = 0
+    right = nn+1
+    for n in range(0,nn):
+        if(prmin > float(num[n]/denom[n])):# and left ==0):
+            left = n
+
+    for n in range(nn,0,-1):
+        if(prmax < float(num[n]/denom[n])):# and right==nn):
+            right = n+1
+    num = num[left:right]
+    denom = denom[left:right]
+
+    new_check_q = np.empty(0)
+    new_check_p = np.empty(0)
+
+    for n in range(0,new_n):
+        pr = float(newnum[n]/newdenom[n])
+        if(pr>=prmin and pr<=prmax):
+            new_check_q = np.append(new_check_q,int(newnum[n]))
+            new_check_p = np.append(new_check_p,int(newdenom[n]))
+            
+
+    n_check = len(new_check_p)
+    return flag, num, denom,new_check_q, new_check_p, n_check 

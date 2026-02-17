@@ -314,18 +314,18 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
                     logmessage = "best-fit-orbit has a <30 day arc!\n"
                     tools.writelog(logfile,logmessage)
 
-            elif(arc < 30.):
-                print("horizons_api.query_sb_from_jpl failed")
-                warningstring = ("WARNING!!! The object's observational arc is "
-                              + "less than 30 days which probably means the "
-                              + "orbit is of too low quality for useful "
-                              + "dynamical analysis and it's not possible to "
-                              + "produce useful clones. "
-                              + "This object can be re-run, but only for "
-                              + "clones=0 and even then he results should be "
-                              + "used with caution.")
-                print(textwrap.fill(warningstring, 80))
-                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
+            #elif(arc < 30.):
+            #    print("horizons_api.query_sb_from_jpl failed")
+            #    warningstring = ("WARNING!!! The object's observational arc is "
+            #                  + "less than 30 days which probably means the "
+            #                  + "orbit is of too low quality for useful "
+            #                  + "dynamical analysis and it's not possible to "
+            #                  + "produce useful clones. "
+            #                  + "This object can be re-run, but only for "
+            #                  + "clones=0 and even then he results should be "
+            #                  + "used with caution.")
+            #    print(textwrap.fill(warningstring, 80))
+            #    return flag, 0., 0., 0., 0., 0., 0., 0., 0.
             #no clones, so we can just use the other best-fit orbit instead
             epoch = oepoch
             objorbit = obj['orbit']['elements']
