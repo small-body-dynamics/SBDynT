@@ -399,9 +399,9 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
                 logmessage += "No further integration needed."
                 writelog(logf,logmessage)  
             
-            tno_results.proper_elements.a = tno_class.features.a_mean
-            tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
+            tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
+            tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
+            tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:
@@ -557,9 +557,9 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
                 logmessage += "Chaos indicators will not be computed."
                 writelog(logf,logmessage)  
             
-            sb_results.proper_elements.a = tno_class.features.a_mean
-            sb_results.proper_elements.e = tno_class.features.e_mean
-            sb_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
+            sb_results.proper_elements.proper_elements.a = tno_class.features.a_mean
+            sb_results.proper_elements.proper_elements.e = tno_class.features.e_mean
+            sb_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
             return sb_results
 
@@ -720,9 +720,9 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
                 logmessage += "No further integration needed."
                 writelog(logf,logmessage)  
             
-            tno_results.proper_elements.a = tno_class.features.a_mean
-            tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
+            tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
+            tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
+            tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:
@@ -799,9 +799,9 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
                 logmessage += "No further integration needed."
                 writelog(logf,logmessage)  
             
-            tno_results.proper_elements.a = tno_class.features.a_mean
-            tno_results.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.sini = np.sin(tno_class.features.i_mean)
+            tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
+            tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
+            tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
             return tno_results
         else:
