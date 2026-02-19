@@ -117,7 +117,7 @@ def query_horizons_planets(obj=None, epoch=2459580.5):
 
 
 def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
-                      logfile=False, save_sbdb=False, datadir=''):
+                      logfile=False, save_sbdb=False, datadir='', out_orb=False, out_sv=False):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -196,7 +196,6 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
         print("first attempted JPL small body database browser query failed, returning:")
         print(obj)
         return flag, 0., 0., 0., 0., 0., 0., 0., 0.
-    
 
     #some objects can't be found with their packed designation, 
     #so let's be sure the above didn't return an error code
@@ -410,6 +409,30 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
         return flag, 0., 0., 0., 0., 0., 0., 0., 0.
 
     weights = np.ones(clones+1)
+
+    if out_orb:
+        import hard_coded_constants as const
+        
+        bfa = bfq/(1-bfecc)
+        mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
+        covmat = (obj['orbit']['covariance']['data'])
+        tecc, tq, ttp, tnode, targperi, tinc = \
+                np.random.multivariate_normal(mean, covmat, 10000).T
+
+        ta = tq/(1-tecc)
+        tmm = gm/(ta*ta*ta)  # mean motion
+        tmm = np.sqrt(tmm)
+        tma = tmm*(epoch-ttp)
+
+        meanorb = [bfa, bfecc, i0, O0, w0, ma0]
+        clones_mat = np.array([ta, tecc, tinc*deg2rad, tnode*deg2rad, targperi*deg2rad, tma])
+        covorb = np.cov(clones_mat, rowvar=True)
+        
+        return 1, epoch, meanorb, covorb
+
+
+
+    
     if(clones > 0):
         covmat = (obj['orbit']['covariance']['data'])
         mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
@@ -490,7 +513,7 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
         vy[0] = vy0
         vz[0] = vz0
         
-        # convert clones into standard elements then cartesian coordinates
+        # convert clones into standard elements then cartesian coordinates        
         for j in range(clones):
             a = q[j]/(1.-ecc[j])
             mm = gm/(a*a*a)  # mean motion

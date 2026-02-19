@@ -133,6 +133,8 @@ def add_planets(sim, planets=['all'],
 
     sim.N_active = npl
     flag = 1
+
+    
     return flag, sim, sx, sy, sz, svx, svy, svz
 
 
@@ -492,8 +494,8 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 2
         print(sv, cov, clones)
         return
 
-    vx = vx*365; vy = vy*365; vz = vz*365
-    sbvx = sbvx*365; sbvy = sbvy*365; sbvz = sbvz*365
+    vx = vx*365.25; vy = vy*365.25; vz = vz*365.25
+    sbvx = sbvx*365.25; sbvy = sbvy*365.25; sbvz = sbvz*365.25
     
     sbx = np.concatenate(([x], sbx)); sby = np.concatenate(([y], sby)); sbz = np.concatenate(([z], sbz)); sbvx = np.concatenate(([vx], sbvx)); sbvy = np.concatenate(([vy], sbvy)); sbvz = np.concatenate(([vz], sbvz))
     
