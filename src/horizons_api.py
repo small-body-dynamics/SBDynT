@@ -117,7 +117,7 @@ def query_horizons_planets(obj=None, epoch=2459580.5):
 
 
 def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
-                      logfile=False, save_sbdb=False, datadir='', out_orb=False, out_sv=False):
+                      logfile=False, save_sbdb=False, datadir='', out_orb=False):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes

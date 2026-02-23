@@ -1,0 +1,2 @@
+,family_number,objname,hcm_cut,count,low_a,cen_a,high_a,low_e,cen_e,high_e,low_I,cen_I,high_I
+0,1,Haumea,800,18,41.0,43.1,44.5,0.08,0.118,0.2,25,28.2,30

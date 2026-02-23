@@ -52,6 +52,8 @@ class proper_element_class:
         self.proper_indicators = {}
         self.proper_internal = {}
         self.prop_finish = False
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': np.max(de)}
+        self.family_results = {'family_name': None, 'pairwise_dMet': np.inf}
 
         #Plotting Flags
         self.p_hkpq = True
@@ -2528,9 +2530,13 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
     t_arr = sb_elems[0].copy()
     sortt = np.sort(t_arr)
 
-    dt = round(abs(sortt[-1] - sortt[-2])) 
+    dt = round(abs(sortt[-1] - sortt[-2]))
+
 
     test_arr = t_arr.copy()
+    #print(dt, test_arr)
+    #print(test_arr % dt)
+    #skip_short_res = np.where(abs(test_arr % dt) <= 1)[0]
     skip_short_res = np.where(test_arr.astype(int) % dt == 0)[0]
     
     #t_arr = np.sort(t_arr[skip_short_res])
@@ -2870,13 +2876,68 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
 
         proper_object.secfreq_flags[key] = (abs(val*3600*360) < 0.01, abs(val*3600*360) < 0.05, abs(val*3600*360) < 0.1, abs(val*3600*360) < 0.2)
 
-    
+    fam_results = check_family_candidates(proper_object)
+
+    proper_object.family_results = fam_results
+
+
+    scat_results = check_scatter(times,a_init)
+    proper_object.scattered = scat_results
         
     return 1, proper_object
     
 
-        
+def check_scatter(t,a):
+    da = np.gradient(a)
+    de = np.abs(da/a)[1:-2]
 
+    scat_result = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': np.max(de)}
+
+    if np.nanmean(a) < 20:
+        thresh = 1e-2
+    else:
+        thresh = 1e-3
+    
+    if np.max(de) > thresh:
+        scat_ind = np.argmax(de)
+        
+        scat_result['scattered'] = True
+        scat_result['scat_time'] = t[scat_ind]
+        scat_result['Max delta-E'] = de[scat_ind]
+    return scat_result
+        
+def hcm_pair(a1, a2, e1, e2, sini1, sini2):
+    G = 6.673e-11
+    M = 1.989e30
+    am = np.mean(np.array([a1,a2]))
+    n = np.sqrt(G*M/(am*1.496e11)**3)
+    return n*am*1.498e11*np.sqrt(5/4*((a2-a1)/am)**2+2*(e2-e1)**2+2*(sini2-sini1)**2)  
+    
+def check_family_candidates(proper_object):
+
+    family_occupancy = {'family_name': None, 'pairwise_dMet': np.inf}
+    pe = proper_object.proper_elements
+    
+    if pe['a'] > 20:
+        fam_df = pd.read_csv('../data/sbdynt_files/tno_family_centers.txt', index_col=0)
+    #elif pe['a'] < 5:
+    #    fam_df = pd.read_csv('../data/sbdynt_files/ast_family_centers.txt', index_col=0)
+    else:
+        return family_occupancy
+    
+    for i in range(len(fam_df)):
+        fam_obj = fam_df.iloc[i]
+        hcm_cen = hcm_pair(fam_obj['cen_a'], pe['a'], 
+                           fam_obj['cen_e'], pe['e'], 
+                           np.sin(fam_obj['cen_I']/180*np.pi), pe['sinI'])
+
+        if (hcm_cen < fam_obj['hcm_cut']) and (pe['a'] > fam_obj['low_a']) and (pe['a'] < fam_obj['high_a']) and (pe['e'] > fam_obj['low_e']) and (pe['e'] < fam_obj['high_e']) and (pe['sinI'] > np.sin(np.pi/180*fam_obj['low_I'])) and (pe['sinI'] < np.sin(np.pi/180*fam_obj['high_I'])):
+            family_occupancy['family_name'] = fam_obj['objname']
+            family_occupancy['pairwise_dMet'] = hcm_cen
+
+            break
+
+    return family_occupancy
         
     
 

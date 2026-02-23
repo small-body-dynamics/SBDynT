@@ -8,7 +8,7 @@ import functools
 #import schwimmbad
 import run_reb
 import json
-import prop_elem
+from prop_elem import *
 
 from sbdynt import *
 
@@ -24,6 +24,7 @@ class chaos_indicators:
         self.Clone_RMS_a = None
         self.Clone_RMS_e = None
         self.Clone_RMS_sinI = None
+        self.scattered = 
 
 
     
@@ -36,6 +37,9 @@ def compute_chaos(sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
             I_arr = sb_elem[2,:]
             o_arr = sb_elem[3,:]
             O_arr = sb_elem[4,:]
+
+            scat_results = check_scatter(times,a_init)
+            ci.scattered = scat_results
                  
             ci.ACFI = ACFI_calc(a_arr)
             ci.Entropy = entropy_calc(a_arr, e_arr, I_arr)
