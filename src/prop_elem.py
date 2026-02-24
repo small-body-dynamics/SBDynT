@@ -52,7 +52,7 @@ class proper_element_class:
         self.proper_indicators = {}
         self.proper_internal = {}
         self.prop_finish = False
-        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': np.max(de)}
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0}
         self.family_results = {'family_name': None, 'pairwise_dMet': np.inf}
 
         #Plotting Flags

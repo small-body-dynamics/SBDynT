@@ -278,7 +278,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
             ic_file = saveic
         if(datadir):
             ic_file = datadir + '/'  +ic_file
-        sim.save_to_file(ic_file)
+        sim.save_to_file(ic_file, delete_file=True)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
             tools.writelog(logfile,logmessage)

@@ -20,3 +20,23 @@ using mercurius outputting every 500.0 years
 to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
 starting at 2026-01-28 08:32:20.379085
 finishing at 2026-01-28 08:37:07.153160
+Running Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-02-23 14:40:57.327044
+finishing at 2026-02-23 14:41:00.965080
+Running Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-02-23 14:41:00.983096
+finishing at 2026-02-23 14:41:04.393942
+Running Ceres from 0.0 to 2500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-02-23 14:44:31.119350
+finishing at 2026-02-23 14:52:34.609682
+Running Ceres from 0.0 to -2500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-02-23 14:52:34.696217
+finishing at 2026-02-23 15:00:09.817065

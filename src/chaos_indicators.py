@@ -24,7 +24,7 @@ class chaos_indicators:
         self.Clone_RMS_a = None
         self.Clone_RMS_e = None
         self.Clone_RMS_sinI = None
-        self.scattered = 
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0}
 
 
     

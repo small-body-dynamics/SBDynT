@@ -503,7 +503,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
     
     sb_results = small_body(des,object_type,clones)
     iflag, sim, epoch, clones, cloning_method, weights = \
-                setup_default_sb_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
+                setup_sb_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
                                               save_sbdb=False,saveic=True,
                                               archivefile=archivefile,
                                               logfile=logfile)
