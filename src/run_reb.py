@@ -3,10 +3,6 @@ import numpy as np
 # local
 import horizons_api
 import tools
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
 from datetime import datetime
 
 

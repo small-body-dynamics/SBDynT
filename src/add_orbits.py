@@ -288,7 +288,7 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
 
 
 
-def initialize_from_heliocentric_destnosim(des=None, clones=None
+def initialize_from_heliocentric_destnosim(des=None, clones=None,
                                            a=1.,e=0.,inc=0.,
                                            node=0.,aperi=0.,ma=0.,
                                            planets=['all'],

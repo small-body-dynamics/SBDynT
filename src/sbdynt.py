@@ -5,32 +5,16 @@ from run_reb import *
 from plotting_scripts import *
 from hard_coded_constants import *
 from add_orbits import *
-<<<<<<< HEAD
-
-from horizons_api import *
-from tools import *
-from resonances import *
-from run_reb import *
-from plotting_scripts import *
-from hard_coded_constants import *
-from add_orbits import *
 from machine_learning import *
 from tno_classifier import *
-#from proper_elements import *
 from tno import *
 from asteroid import *
 from prop_elem import *
 from chaos_indicators import *
 
+
 from datetime import datetime
 import os
-=======
-from machine_learning import *
-from tno_classifier import *
-from proper_elements import *
-from tno import *
->>>>>>> origin/main
-
 import rebound
 
 # Globally disable two rebound-specific warnings that come up a lot regarding the 
