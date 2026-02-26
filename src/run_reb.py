@@ -137,7 +137,7 @@ def add_planets(sim, planets=['all'],
     return flag, sim, sx, sy, sz, svx, svy, svz
 
 
-def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='Gaussian',
+def initialize_simulation(planets=['all'], des=None, clones=None, cloning_method='Gaussian',
                           datadir='', saveic=False, logfile=False, save_sbdb=False):
     """
     inputs:
@@ -250,6 +250,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         print("run_reb.initialize_simulation failed at run_reb.add_planets")
         return flag, 0., sim
     
+    if(clones == None):
+        clones=0
+
     if(clones > 0):
         for i in range(0, ntp):
             if(i == 0):
@@ -407,7 +410,7 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
 
 
 
-def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 268100.0, sv = [0,0,0,0,0,0], cov = [], cloning_method='Gaussian',
+def initialize_simulation_from_sv(planets=['all'], des=None, clones=None, epoch = 268100.0, sv = [0,0,0,0,0,0], cov = [], cloning_method='Gaussian',
                           datadir='', saveic=False, logfile=False, save_sbdb=False):
     """
     inputs:
@@ -481,6 +484,8 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 2
     sim.units = ('yr', 'AU', 'Msun')
 
     # set up small body variables
+    if(clones == None):
+        clones=0
     ntp = 1 + clones
     sbx = np.zeros(ntp)
     sby = np.zeros(ntp)
