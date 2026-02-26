@@ -116,8 +116,8 @@ def query_horizons_planets(obj=None, epoch=2459580.5):
 ###############################################################################
 
 
-def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
-                      logfile=False, save_sbdb=False, datadir='', out_orb=False):
+def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
+                      logfile=False, save_sbdb=False, datadir=''):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser, query Horizons for the value of GM that goes
@@ -312,19 +312,19 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
                 if(logfile):
                     logmessage = "best-fit-orbit has a <30 day arc!\n"
                     tools.writelog(logfile,logmessage)
+            elif(arc < 30.):
+                print("horizons_api.query_sb_from_jpl failed")
+                warningstring = ("WARNING!!! The object's observational arc is "
+                              + "less than 30 days which probably means the "
+                              + "orbit is of too low quality for useful "
+                              + "dynamical analysis and it's not possible to "
+                              + "produce useful clones. "
+                              + "This object can be re-run, but only for "
+                              + "clones=0 and even then he results should be "
+                              + "used with caution.")
+                print(textwrap.fill(warningstring, 80))
+                return flag, 0., 0., 0., 0., 0., 0., 0., 0.
 
-            #elif(arc < 30.):
-            #    print("horizons_api.query_sb_from_jpl failed")
-            #    warningstring = ("WARNING!!! The object's observational arc is "
-            #                  + "less than 30 days which probably means the "
-            #                  + "orbit is of too low quality for useful "
-            #                  + "dynamical analysis and it's not possible to "
-            #                  + "produce useful clones. "
-            #                  + "This object can be re-run, but only for "
-            #                  + "clones=0 and even then he results should be "
-            #                  + "used with caution.")
-            #    print(textwrap.fill(warningstring, 80))
-            #    return flag, 0., 0., 0., 0., 0., 0., 0., 0.
             #no clones, so we can just use the other best-fit orbit instead
             epoch = oepoch
             objorbit = obj['orbit']['elements']
@@ -410,29 +410,6 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
 
     weights = np.ones(clones+1)
 
-    if out_orb:
-        import hard_coded_constants as const
-        
-        bfa = bfq/(1-bfecc)
-        mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
-        covmat = (obj['orbit']['covariance']['data'])
-        tecc, tq, ttp, tnode, targperi, tinc = \
-                np.random.multivariate_normal(mean, covmat, 10000).T
-
-        ta = tq/(1-tecc)
-        tmm = gm/(ta*ta*ta)  # mean motion
-        tmm = np.sqrt(tmm)
-        tma = tmm*(epoch-ttp)
-
-        meanorb = [bfa, bfecc, i0, O0, w0, ma0]
-        clones_mat = np.array([ta, tecc, tinc*deg2rad, tnode*deg2rad, targperi*deg2rad, tma])
-        covorb = np.cov(clones_mat, rowvar=True)
-        
-        return 1, epoch, meanorb, covorb
-
-
-
-    
     if(clones > 0):
         covmat = (obj['orbit']['covariance']['data'])
         mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
@@ -498,7 +475,6 @@ def query_sb_from_jpl(des=None, clones=0, cloning_method='Gaussian',
         argperi = argperi*deg2rad
         inc = inc*deg2rad
 
-        
         # set up output arrays
         x = np.zeros(clones+1)
         y = np.zeros(clones+1)
@@ -660,3 +636,156 @@ def query_sb_from_horizons(des=None, epoch=2459580.5):
         return flag, x[0], y[0], z[0], vx[0], vy[0], vz[0]
     else:
         return flag, x, y, z, vx, vy, vz
+
+
+
+
+def get_orbit_cov_from_jpl(des=None, clones=10000):
+    """
+    Get the orbit and covariance matrix of a small body from JPL's small
+    body database browser and query Horizons for the value of GM that goes
+    with that orbit
+
+    inputs:
+        des: string, the designation for the object in the SBDB
+        clones: integer, number of clones, default 10000
+    outputs:
+        flag: integer, 1=success, 0=problem
+        epoch: float, JD epoch of the orbits 
+        gm: float, heliocentric gm associated with the orbits
+        meanorb: float, best-fit orbit from the SBDB
+        covorb: float array or arrays for cloned orbits
+                [a, e, inc, node, argpari, mean_anomaly]
+
+    """
+    pdes, destype = tools.mpc_designation_translation(des)
+
+    try:
+        # query the JPL small body database browser for the best-fit
+        # orbit and associated covariance matrix
+        obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
+    except:
+        print("horizons_api.get_orbit_cov_from_jpl failed")
+        print("first attempted JPL small body database browser query failed, returning:")
+        print(obj)
+        return flag, 0., 0., 0., 0.
+
+    #some objects can't be found with their packed designation, 
+    #so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj['code']
+    except KeyError:
+        errorcode = None
+    
+    if(errorcode == 200):
+        #try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
+        except:
+            print("horizons_api.get_orbit_cov_from_jpl failed")
+            print("second attempted JPL small body database browser query failed, returning:")
+            print(obj)
+            return flag, 0., 0., 0., 0.
+
+    #some objects can't be found with their packed designation, 
+    #so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj['code']
+    except KeyError:
+        errorcode = None
+    
+    if(errorcode == 200):
+        #try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
+        except:
+            print("horizons_api.get_orbit_cov_from_jpl failed")
+            print("second attempted JPL small body database browser query failed, returning:")
+            print(obj)
+            return flag, 0., 0., 0., 0.
+
+    #check to see if the user-provided designation is the same type as the primary one
+    #if the user gave a provisional designation, but the object is numbered, the SBDB
+    #query won't return the most up-to-date orbit (even though the darned system knows
+    #the provisional designation corresponds to the numbered object...grr
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj['object']['des'])
+    if(sbdbdestype != destype):
+        try:
+            newdes = obj['object']['des']
+            obj = SBDB.query(newdes, full_precision=True, covariance='mat', phys=True)   
+        except:
+            print("horizons_api.get_orbit_cov_from_jpl failed")
+            print("The user-provided designation was not the most up to date designation")            
+            print("third attempted JPL small body database browser query failed, returning:")
+            print(obj) 
+            return flag, 0., 0., 0., 0.
+
+
+    # We have to query JPL horizons to find out what exact value of GM  
+    # was used for the orbit fit above (this should be in the SBDB but
+    # alas it is not!)
+    
+    # build the url to query horizons
+    # if the designation being used is a provisional one, we will
+    # translate it to a packed designation for cleaner searching
+    url = 'https://ssd.jpl.nasa.gov/api/horizons.api'
+    start_time = 'JD'+str(epoch)
+    stop_time = 'JD'+str(epoch+1)
+    url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'"
+    if(destype == 'provisional'):
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    elif(destype == 'other'):
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    else:
+        url += "&OUT_UNITS='AU-D'&COMMAND='"
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+
+    
+    # run the query and exit if it fails
+    response = requests.get(url)
+    try:
+        data = json.loads(response.text)
+    except ValueError:
+        print("horizons_api.query_sb_from_jpl failed")
+        print("Unable to decode JSON results from Horizons API request")
+        flag = 0
+        return flag, 0., 0., 0., 0.
+    
+    # this is the GM in au^2/day^2
+    try:
+        gmpart = data["result"].split("Keplerian GM")[1]
+        gm = np.float64(gmpart.split("\n")[0].split()[1])
+    except:
+        print("horizons_api.query_sb_from_jpl failed")
+        print("\nunable to pull the GM value from the horizons results:\n")
+        print(data["result"])
+        flag = 0
+        return flag, 0., 0., 0., 0.
+
+        
+    bfa = bfq/(1-bfecc)
+    mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
+    covmat = (obj['orbit']['covariance']['data'])
+    tecc, tq, ttp, tnode, targperi, tinc = \
+            np.random.multivariate_normal(mean, covmat, clones).T
+
+    ta = tq/(1-tecc)
+    tmm = gm/(ta*ta*ta)  # mean motion
+    tmm = np.sqrt(tmm)
+    tma = tmm*(epoch-ttp)
+
+    meanorb = [bfa, bfecc, i0, O0, w0, ma0]
+    clones_mat = np.array([ta, tecc, tinc*deg2rad, tnode*deg2rad, targperi*deg2rad, tma])
+    covorb = np.cov(clones_mat, rowvar=True)
+       
+    return 1, epoch, gm, meanorb, covorb
+

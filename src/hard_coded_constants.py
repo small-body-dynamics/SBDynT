@@ -71,3 +71,33 @@ destnosim_GM[5] = 3.76844407e-02 + 7.80e-6
 destnosim_GM[6] = 1.12830982e-02 + 2.79e-6
 destnosim_GM[7] = 1.72348553e-03 + 0.18e-6
 destnosim_GM[8] = 2.03318556e-03 + 0.43e-6
+
+
+
+#constants used for the proper elements calculations
+#
+# frequencies associated with the secular modes of the 
+# solar system, converted from "/yr to cycles/yr
+conv = 1296000.
+# g1s1 -> g4s4 taken from Murray and Dermott SSD Table 7.1
+g1 = 5.46326/conv
+s1 = -5.20154/conv
+g2 = 7.34474/conv
+s2 = -6.57080/conv
+g3 = 17.32832/conv
+s3 = -18.74359/conv
+g4 = 18.00233/conv
+s4 = -17.63331/conv
+
+
+# g5s6 -> g8s8 taken from Knezevic et al 1991
+g5 = 4.25749319/conv
+g6 = 28.24552984/conv
+g7 = 3.08675577/conv
+g8 = 0.67255084/conv
+s6 = -26.34496354/conv
+s7 = -2.99266093/conv
+s8 = -0.69251386/conv
+#the two extra terms from M&D for higher-order secular theory
+g9 = 2.*g5 - g6
+g10 = 2.*g6 - g5

@@ -168,7 +168,7 @@ def aei_to_xv(GM=1., a=1, e=0., inc=0., node=0., argperi=0., ma=0.):
     if(e >= 1. or e < 0. or a < 0.):
         print("in tools.aei_to_xv, the provided orbital eccentricity is")
         print("not between 0 and 1, so cannot proceed with conversion")
-        return 1,  x, y, z, vx, vy, vz
+        return 0,  x, y, z, vx, vy, vz
 
     sp = np.sin(argperi)
     cp = np.cos(argperi)

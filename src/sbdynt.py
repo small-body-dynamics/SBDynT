@@ -5,6 +5,7 @@ from run_reb import *
 from plotting_scripts import *
 from hard_coded_constants import *
 from add_orbits import *
+<<<<<<< HEAD
 
 from horizons_api import *
 from tools import *
@@ -23,6 +24,12 @@ from chaos_indicators import *
 
 from datetime import datetime
 import os
+=======
+from machine_learning import *
+from tno_classifier import *
+from proper_elements import *
+from tno import *
+>>>>>>> origin/main
 
 import rebound
 
@@ -53,8 +60,8 @@ class small_body:
         if(object_type == 'tno'):
             self.tno_ml_outputs = None
 
-        self.tmax = 0
-        self.tout = 0
+        self.tmax = None
+        self.tout = None
         self.int_direction = ''
         self.run_properties = self.analysis_vars()
             
@@ -70,7 +77,7 @@ class small_body:
         self.t_arr = []
 
 
-    def analysis_vars(self, tmax = None, tout = None, int_direction = None, planets=None):
+    def analysis_vars(self, tmax=None, tout=None, int_direction=None, planets=None):
         
         allowed_d = ['backwards','forwards','bf']
         if(tmax == None):
@@ -94,17 +101,19 @@ class small_body:
         if(int_direction == None):
             self.int_direction = 'bf'
         elif(int_direction not in allowed_d):
-            print('The given direction variable=', int_direction, ' is not one of the 4 allowed inputs ("backwards","forwards","b+f", None). Setting direction to "bf". Call this function again with a valid direction is you do not want a forwards + backwards integration.')  
+            print('The given direction variable=', int_direction, ' is not one of the 4 allowed inputs ')
+            print('("backwards","forwards","bf", None). Setting direction to "bf". Call this function ')
+            print('again with a valid direction is you do not want a forwards + backwards integration.')  
             self.int_direction = 'bf'
 
         if(planets==None):
             if(self.object_type == 'asteroid'):
-                self.planets = ['inner']
+                self.planets = ['inner+outer']
             elif(self.object_type == 'tno'):
                 self.planets = ['outer']
             else:
-                print('object_type is neither asteroid or tno. Setting default planets = ["outer"]')
-                self.planets = ['outer']
+                print('object_type is neither asteroid or tno. Setting default planets = ["all"]')
+                self.planets = ['all']
             
         
 def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save_sbdb=False,
@@ -145,7 +154,7 @@ def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save
 
 
     if(iflag < 1):
-        print("failed at tno.setup_default_tno_integration()")
+        print("failed at sbdynt.setup_default_tno_integration()")
         return flag, None, None, None, None, None
 
 
@@ -191,7 +200,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
     object_type = 'asteroid'
     #initialize the results class
     ast_results = small_body(des,object_type,clones)
-    ast_results.planets = ['inner']
+    ast_results.planets = ['inner+outer']
     ast_results.cloning_method = cloning_method
     ast_results.clone_weights = weights
 
@@ -251,7 +260,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
 
     if(reflag < 1):
         print("Failed when reading in integrated simulation for proper elements")
-        return tno_results
+        return ast_results
 
     if run_proper:
         print('Running Asteroid Proper Elements')
@@ -314,7 +323,8 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
     
 #function to do a standard TNO analysis run using all default choices
 def run_tno(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False, run_ML = True, run_proper = False, run_chaos = False):
+            logfile=False, deletefile=False, run_ML = True, 
+            run_proper = False, run_chaos = False):
     '''
     documentation here...
     '''
@@ -337,24 +347,6 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         logmessage = "Initializing a TNO simulation instance by querying JPL"
         writelog(logf,logmessage)  
 
-    print('Initializing TNO')
-    iflag, sim, epoch, clones, cloning_method, weights = \
-                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
-                                              save_sbdb=False,saveic=True,
-                                              archivefile=archivefile,
-                                              logfile=logfile)
-    
-
-    if(iflag < 1):
-        print("Failed at initialization stage")
-        return None
-
-    object_type = 'tno'
-    #initialize the results class
-    tno_results = small_body(des,object_type,clones)
-    tno_results.planets = ['outer']
-    tno_results.cloning_method = cloning_method
-    tno_results.clone_weights = weights
 
     icfile = ic_file_name(des=des)
     if(datadir):
@@ -367,12 +359,30 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         file = archivefile
     if(datadir):
         file = datadir + '/' + file
+
+
+    iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
+                                              save_sbdb=False,saveic=True,
+                                              archivefile=archivefile,
+                                              logfile=logfile)
+    
+    if(iflag < 1):
+        print("Failed at initialization stage")
+        return None
+
+    object_type = 'tno'
+    #initialize the results class
+    tno_results = small_body(des,object_type,clones)
+    tno_results.planets = ['outer']
+    tno_results.cloning_method = cloning_method
+    tno_results.clone_weights = weights
+
+    
     tno_results.archivefile = file
     tno_results.icfile = icfile
     tno_results.logfile = logf
 
-    #'''
-    sim = None
     
     tno_class = TNO_ML_outputs()
     if run_ML:
@@ -389,7 +399,6 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
             tno_class.print_results()
 
         tno_results.tno_ml_outputs = tno_class
-    #'''
 
     if run_proper:
         if(tno_class.most_common_class == 'scattering'):
@@ -410,8 +419,6 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
                 logmessage+= "proper elements calculation\n"
                 writelog(logf,logmessage)  
 
-            #for i in sim.particles:
-            #    print(i)
             print('Running TNO integration for PE')
             rflag, sim = run_simulation(sim,des=des,archivefile=archivefile,datadir=datadir,
                                        logfile=logfile,tmax=75e6,tout=5000.)
@@ -452,8 +459,6 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
             print('Running TNO PE')
             pflag, pe = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag)
-            #pflag, pe, sb_elems = calc_proper_elements(tno_results.proper_elements, des=des,datadir=datadir,archivefile=archivefile,
-            #                            clones=clones, logfile=logfile, int_data=int_data)
 
             if(pflag < 1):
                 print("Failed at proper elements calculation stage")
@@ -834,3 +839,4 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
    
         
     return tno_results
+

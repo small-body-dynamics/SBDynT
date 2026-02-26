@@ -131,8 +131,9 @@ dmypy.json
 
 
 #Large files
-*series.csv
 *.bin
+#keep initial conditions binary files as examples
+!*-ic.bin
 *.h5
 *.csv
 
@@ -140,3 +141,11 @@ dmypy.json
 .idea/
 *.swp
 *.pkl
+
+#trained classifiers (package dependent, must be locally made)
+#and proper elements pre-stored frequencies
+src/MLdata/trained*.pkl
+src/PEdata/*.pkl
+
+#example output data
+example-notebooks/outputs-from-example-notebooks

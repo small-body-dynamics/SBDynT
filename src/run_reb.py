@@ -3,6 +3,10 @@ import numpy as np
 # local
 import horizons_api
 import tools
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
 from datetime import datetime
 
 
@@ -133,7 +137,6 @@ def add_planets(sim, planets=['all'],
 
     sim.N_active = npl
     flag = 1
-
     
     return flag, sim, sx, sy, sz, svx, svy, svz
 
@@ -185,6 +188,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     flag = 0
     epoch = None
 
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(des == None):
         print("The designation of the small body must be provided")
         print("failed in horizons_api.initialize_simulation()")
@@ -192,8 +198,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-    #if(datadir and logfile and logfile!='screen'):        
-    #    logfile = datadir + '/' +logfile
+
+    if(datadir and logfile and logfile!='screen'):        
+        logfile = datadir + '/' +logfile
 
 
     # make sure planets is a list and make all planet names lowercase
@@ -202,7 +209,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
-    if(planets == ['inner']):
+    if(planets == ['inner+outer']):
         planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
@@ -278,7 +285,7 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
             ic_file = saveic
         if(datadir):
             ic_file = datadir + '/'  +ic_file
-        sim.save_to_file(ic_file, delete_file=True)
+        sim.save_to_file(ic_file)
         if(logfile):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
             tools.writelog(logfile,logmessage)
@@ -322,6 +329,9 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
         print("failed in run_reb.initialize_simulation_at_epoch()")
         return flag, 0.,sim
 
+    if(datadir):
+        tools.check_datadir(datadir)
+    
     if(logfile==True):
         logfile = tools.log_file_name(des=des[0])
     if(datadir and logfile and logfile!='screen'):
@@ -401,7 +411,6 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
 
 
 
-
 def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 268100.0, sv = [0,0,0,0,0,0], cov = [], cloning_method='Gaussian',
                           datadir='', saveic=False, logfile=False, save_sbdb=False):
     """
@@ -455,8 +464,8 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 2
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
-    #if(datadir and logfile and logfile!='screen'):        
-    #    logfile = datadir + '/' +logfile
+    if(datadir and logfile and logfile!='screen'):        
+        logfile = datadir + '/' +logfile
 
 
     # make sure planets is a list and make all planet names lowercase
@@ -497,7 +506,8 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 2
     vx = vx*365.25; vy = vy*365.25; vz = vz*365.25
     sbvx = sbvx*365.25; sbvy = sbvy*365.25; sbvz = sbvz*365.25
     
-    sbx = np.concatenate(([x], sbx)); sby = np.concatenate(([y], sby)); sbz = np.concatenate(([z], sbz)); sbvx = np.concatenate(([vx], sbvx)); sbvy = np.concatenate(([vy], sbvy)); sbvz = np.concatenate(([vz], sbvz))
+    sbx = np.concatenate(([x], sbx)); sby = np.concatenate(([y], sby)); sbz = np.concatenate(([z], sbz))
+    sbvx = np.concatenate(([vx], sbvx)); sbvy = np.concatenate(([vy], sbvy)); sbvz = np.concatenate(([vz], sbvz))
     
     #if(sflag < 1):
     #    print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
@@ -558,7 +568,6 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=0, epoch = 2
         return 1, epoch, sim, weights
 
 
-
 def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
                    deletefile=False,integrator='mercurius',
                    datadir='', logfile=False):
@@ -606,6 +615,7 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
         archivefile = tools.archive_file_name(des)
     
     if(datadir):
+        tools.check_datadir(datadir)
         archivefile = datadir + '/' +archivefile
 
     if(logfile==True):
@@ -693,6 +703,9 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
 
     if(logfile==True):
         logfile = tools.log_file_name(des=des)
+    if(datadir):
+        tools.check_datadir(datadir)
+    
     if(datadir and logfile and logfile!='screen'):
         logfile = datadir + '/' +logfile
     logmessage = ''

@@ -1,4 +1,5 @@
 import sys
+import rebound
 import numpy as np
 import pandas as pd
 import tools
@@ -6,7 +7,6 @@ import run_reb
 import tno
 import resonances
 import machine_learning
-
 
 from os import path
 from datetime import date
@@ -51,11 +51,14 @@ class TNO_ML_outputs:
     def set_initial_clone_classification(self):
         # find the most probable class and associated confidence on a 
         # clone-by-clone basis
-        # make an empty list and empty array
-        for n in range (self.clones+1):
+        for n in range (self.clones+1):        
             cn = np.argmax(self.class_probs[n])
             self.clone_classification[n] = self.classes_dictionary[cn]
             self.clone_confidence[n] = self.class_probs[n,cn]
+            #run checks for objects outside the range of interest (mostly relevant
+            #to cases where classifying the end state of a simulation
+            if(self.features.a_mean[n] < 5.):
+                self.clone_classification[n] = 'not_TNO'                
         return
     
     def correct_clone_classification(self):
@@ -67,11 +70,11 @@ class TNO_ML_outputs:
                     self.clone_classification[n] = 'scattering'
                 elif(self.features.e_mean[n] < 0.24):
                     if(self.features.a_mean[n] < 39.4):
-                        self.clone_classification[n] = 'classical-inner'
+                        self.clone_classification[n] = 'classical_inner'
                     elif(self.features.a_mean[n] < 47.7):
-                        self.clone_classification[n] = 'classical-main'
+                        self.clone_classification[n] = 'classical_main'
                     else:
-                        self.clone_classification[n] = 'classical-outer'
+                        self.clone_classification[n] = 'classical_outer'
                 else:
                     self.clone_classification[n] = 'detached'
             elif(self.clone_classification[n] == 'scattering'):
@@ -80,11 +83,11 @@ class TNO_ML_outputs:
                     self.clone_classification[n] = 'detached'
                     if(self.features.e_mean[n] < 0.24):
                         if(self.features.a_mean[n] < 39.4):
-                            self.clone_classification[n] = 'classical-inner'
+                            self.clone_classification[n] = 'classical_inner'
                         elif(self.features.a_mean[n] < 47.7):
-                            self.clone_classification[n] = 'classical-main'
+                            self.clone_classification[n] = 'classical_main'
                         else:
-                            self.clone_classification[n] = 'classical-outer'
+                            self.clone_classification[n] = 'classical_outer'
         return
 
 
@@ -105,10 +108,13 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("#Clone number, most probable G08 class, p, q, m, n, phi_std, phi_delta, res_image_prob, probability of that class, ",end ="")
-        print("probability of ", end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        #print("probability_of_", end ="")
         for n in range(nclas):
-            print("%s, " % self.classes_dictionary[n],end ="")
+            class_string =  self.classes_dictionary[n]
+            if(class_string == 'class-det'):
+                class_string = "class_det"
+            print("probability_%s, " % class_string,end ="")
         print("\n",end ="")
         format_string = "%d, %s, "
         for n in range(nclas-1):
@@ -123,14 +129,41 @@ class TNO_ML_outputs:
                 print("%e, " % self.class_probs[n][j] ,end ="")
             print("\n",end ="")
 
+    def print_results_detailed(self):
+        print("#Most common classification: %s" % self.most_common_class)
+        percentage = 100*self.fraction_most_common_class
+        print("#Shared by %f percent of clones\n#" % percentage)
 
-
+        nclas = len(self.classes_dictionary)
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        print("probability_of_", end ="")
+        for n in range(nclas):
+            class_string =  self.classes_dictionary[n]
+            if(class_string == 'class-det'):
+                class_string = "class_det"
+            print("probability_%s, " % class_string,end ="")
+        print("mean_a, mean_e, mean_i, std_a, std_e, std_i ",end ="")
+        print("\n",end ="")
+        format_string = "%d, %s, "
+        for n in range(nclas-1):
+            format_string+="%e, "
+        format_string+="%e,\n"
+        for n in range(0,self.clones+1):
+            print("%d, %s, %d, %d, %d, %d, %e, %e, %e, %e, " % (n,self.clone_classification[n], 
+                   self.res_p[n],  self.res_q[n], self.res_m[n], self.res_n[n],
+                   self.res_phi_std[n], self.res_phi_delta[n], self.res_img_probability[n],
+                   self.clone_confidence[n]),end ="")
+            for j in range(nclas):
+                print("%e, " % self.class_probs[n][j] ,end ="")
+            print("%e, %e, %e, " % (self.features.a_mean[n], self.features.e_mean[n], self.features.i_mean[n]), end = "")
+            print("%e, %e, %e, " % (self.features.a_stddev[n], self.features.e_stddev[n], self.features.i_stddev[n]), end = "")
+            print("\n",end ="")
 
 #################################################################
 def run_and_MLclassify_TNO(sim=None, des=None, clones=None, 
                             datadir='', archivefile=None, 
                             deletefile=False,logfile=False,
-                            classify_only=False):
+                            classify_only=False,related_clones=True):
     '''
     add documentation here...
     '''
@@ -152,15 +185,33 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             print("failed at machine_learning.run_and_MLclassify_TNO()")    
             return flag, None, sim
 
-    print('run and ML classify')
-    #for i in sim.particles:
-    #    print(i)
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
     if(logfile==True):
         logf = tools.log_file_name(des=des)
     else:
         logf=logfile
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
+
+    if(archivefile == None):
+        archivefile = tools.archive_file_name(des=des)
+    
+    if(datadir):
+        archivefile = datadir + "/" + archivefile
+
+    if(classify_only==True and clones==None):
+        try:
+            sa = rebound.Simulationarchive(archivefile)
+        except:
+            print("tno_classifier.run_and_MLclassify_TNO failed")
+            print("Problem reading the simulation archive file:")
+            print(archivefile)
+            return flag, None, sim
+        ntp_max = sa[0].N - sa[0].N_active
+        clones = ntp_max - 1
 
     flag = 0
     #make an empty set of classification outputs 
@@ -183,12 +234,6 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
         return flag, None, sim
 
     tno_class.classes_dictionary = clf.classes_dictionary
-
-    if(archivefile == None):
-        archivefile = tools.archive_file_name(des=des)
-    
-    if(datadir):
-        archivefile = datadir + "/" + archivefile
 
     #short integration first
 
@@ -232,7 +277,16 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
 
     rrf_short = np.sqrt(xr*xr + yr*yr + zr*zr)
     phirf_short = np.arctan2(yr, xr)
-    tiss_short = apl_short/a_short + 2.*np.cos(inc_short)*np.sqrt(a_short/apl_short*(1.-ec_short*ec_short))
+    if(a_short.all()):
+        #no zero/missing values in a_short
+        tiss_short = apl_short/a_short + 2.*np.cos(inc_short)*np.sqrt(a_short/apl_short*(1.-ec_short*ec_short))
+    else:
+        #loop through and avoid dividing by zero
+        tiss_short = np.zeros_like(a_short)
+        for n in range(0,clones+1):
+            if(a_short[n].all()):
+                tiss_short[n] = apl_short/a_short[n] + 2.*np.cos(inc_short[n])*np.sqrt(a_short[n]/apl_short*(1.-ec_short[n]*ec_short[n]))
+
 
     #do a quick check for severe scattering and Centaurs to save the time of doing
     #the longer integration
@@ -288,7 +342,15 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
 
     rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
     phirf = np.arctan2(yr, xr)
-    tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
+    if(a.all()):
+        #no zer0/missing vlaues in a
+        tiss = apl/a + 2.*np.cos(inc)*np.sqrt(a/apl*(1.-ec*ec))
+    else:
+        #loop through and avoid dividing by zero
+        tiss = np.zeros_like(a)
+        for n in range(0,clones+1):
+            if(a[n].all()):
+                tiss[n] = apl/a[n] + 2.*np.cos(inc[n])*np.sqrt(a[n]/apl*(1.-ec[n]*ec[n]))
 
 
             
@@ -359,7 +421,10 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     for n in range(tno_class.clones+1):
         prob_res = tno_class.class_probs[n][res_index]
         predicted_class = tno_class.clone_classification[n]
-        if(predicted_class == 'Nresonant' or prob_res >= 1e-2):
+        if(predicted_class == 'not_TNO'):
+            #prevent the resonance angle classifier from being run
+            res_check_performed[n] = 1.
+        elif( predicted_class == 'Nresonant' or prob_res >= 1e-2 ):
             #run the resonance angle classifier
             res_check_performed[n] = 1.
             rflag, p_id, q_id, m_id, n_id, angle_prob, sigma_phi_id, delta_phi_id, phi = run_res_angle_classifier(
@@ -435,35 +500,40 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
                 tno_class.clone_classification[n] = 'scattering'
                 tno_class.clone_confidence[n] = -1
     
+
+    #For clones that are sampled from the same object, we will
     #reloop through the clones to check for the already confidently idenfied resonances
     #(this helps id some of the higher order resonances that don't always trigger the angle check)
-    for n in range(tno_class.clones+1):
-        if(tno_class.clone_classification[n] != 'Nresonant' and tno_class.features.a_delta[n] < 2.5
-            and res_check_performed[n] < 1.):
-            for i in range(1,len(pres)):
-                phi = pres[i]*lambda_long[n] - qres[i]*lambda_pl_long - mres[i]*pomega_long[n] - nres[i]*node_long[n]
-                cflag, angle_prob, sigma_phi, delta_phi = machine_learning.check_angle(clf.phi_classifier,t_long,phi,-1.)
-                #print(n, pres[i], qres[i], mres[i], nres[i], cflag, angle_prob, sigma_phi, delta_phi)
-                if(angle_prob > 0.999 and (sigma_phi < 1.6 or delta_phi < 6.2)):
-                    #change the classification to resonant
-                    tno_class.clone_classification[n] = 'Nresonant'
-                    tno_class.clone_confidence[n] = -1
-                    tno_class.res_p[n] = pres[i]
-                    tno_class.res_q[n] = qres[i]
-                    tno_class.res_m[n] = mres[i]
-                    tno_class.res_n[n] = nres[i]
-                    tno_class.res_phi_std[n] = sigma_phi
-                    tno_class.res_phi_delta[n] = delta_phi
-                    tno_class.res_img_probability[n] = angle_prob
-                elif(angle_prob>0.5):
-                    #record some of the resonance parameters without changing the classification
-                    tno_class.res_p[n] = pres[i]
-                    tno_class.res_q[n] = qres[i]
-                    tno_class.res_m[n] = mres[i]
-                    tno_class.res_n[n] = nres[i]
-                    tno_class.res_phi_std[n] = sigma_phi
-                    tno_class.res_phi_delta[n] = delta_phi
-                    tno_class.res_img_probability[n] = angle_prob
+    #This is skipped if the clones are just a simulation model and not actually related
+    if(related_clones==True):
+        for n in range(tno_class.clones+1):
+            if(tno_class.clone_classification[n] != 'Nresonant' and tno_class.features.a_delta[n] < 2.5
+                and res_check_performed[n] < 1.):
+                for i in range(1,len(pres)):
+                    phi = pres[i]*lambda_long[n] - qres[i]*lambda_pl_long - mres[i]*pomega_long[n] - nres[i]*node_long[n]
+                    cflag, angle_prob, sigma_phi, delta_phi = machine_learning.check_angle(clf.phi_classifier,t_long,phi,-1.)
+                    #print(n, pres[i], qres[i], mres[i], nres[i], cflag, angle_prob, sigma_phi, delta_phi)
+                    if(angle_prob > 0.999 and (sigma_phi < 1.6 or delta_phi < 6.2)):
+                        #change the classification to resonant
+                        tno_class.clone_classification[n] = 'Nresonant'
+                        tno_class.clone_confidence[n] = -1
+                        tno_class.res_p[n] = pres[i]
+                        tno_class.res_q[n] = qres[i]
+                        tno_class.res_m[n] = mres[i]
+                        tno_class.res_n[n] = nres[i]
+                        tno_class.res_phi_std[n] = sigma_phi
+                        tno_class.res_phi_delta[n] = delta_phi
+                        tno_class.res_img_probability[n] = angle_prob
+                    elif(angle_prob>0.5):
+                        #record some of the resonance parameters without changing the classification
+                        tno_class.res_p[n] = pres[i]
+                        tno_class.res_q[n] = qres[i]
+                        tno_class.res_m[n] = mres[i]
+                        tno_class.res_n[n] = nres[i]
+                        tno_class.res_phi_std[n] = sigma_phi
+                        tno_class.res_phi_delta[n] = delta_phi
+                        tno_class.res_img_probability[n] = angle_prob
+    
     #run the minor corrections and assign clone-by-clone and most common classes
     tno_class.correct_clone_classification()
     tno_class.determine_most_common_classification()
@@ -678,3 +748,4 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
         flag = 1
     
     return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
+
