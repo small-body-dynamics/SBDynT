@@ -13,7 +13,7 @@ from prop_elem import *
 from sbdynt import *
 
 
-class chaos_indicators:
+class stability_indicators:
 
     def __init__(self):
 
@@ -24,12 +24,12 @@ class chaos_indicators:
         self.Clone_RMS_a = None
         self.Clone_RMS_e = None
         self.Clone_RMS_sinI = None
-        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0}
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0, 'qlim': 0, 'Qlim': np.inf, 'pcrossing_flag': False, 'qmin': 0, 'Qmax': 0}
 
 
     
-def compute_chaos(sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
-    ci = chaos_indicators()
+def compute_stability(times = [], sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
+    ci = stability_indicators()
     try:
         if len(sb_elem) > 0:
             a_arr = sb_elem[0,:]
@@ -38,7 +38,7 @@ def compute_chaos(sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
             o_arr = sb_elem[3,:]
             O_arr = sb_elem[4,:]
 
-            scat_results = check_scatter(times,a_init)
+            scat_results = check_scatter(times,a_arr,e_arr)
             ci.scattered = scat_results
                  
             ci.ACFI = ACFI_calc(a_arr)
@@ -527,7 +527,7 @@ def hcm_calc(a,rmsa,rmse,rmsi):
             
     
 
-def calc_chaos(objname,objtype,prop_vals=None):
+def calc_stability(objname,objtype,prop_vals=None):
     #print(objname)
     file = '../data/' + objtype + '/' + str(objname)
     try:
@@ -711,7 +711,7 @@ if __name__ == "__main__":
         
         pool.map(run1, des)
         
-        run2 = functools.partial(calc_chaos, objtype=objtype)
+        run2 = functools.partial(calc_stability, objtype=objtype)
         data = pool.map(run2, des)
         
         chaos_df = pd.DataFrame(data,columns=['Name','MEGNO','Div_RMS_a','Div_RMS_e','Div_RMS_sinI','Entropy_DelH','Delta_a','Delta_e','Delta_sinI','Prop_RMS_a','Prop_RMS_e','Prop_RMS_sinI','Prop_Delta_a','Prop_Delta_e','Prop_Delta_sinI','ACFI','Diffusion Coefficient','Diffusion STD','Diffusion_Clones','MEGNO_flag','Proper_SMA_flag','Clone_SMA_flag','Entropy_flag','AFCI_flag','Diffusion Flag'])

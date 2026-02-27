@@ -45,9 +45,9 @@ class proper_element_class:
         self.tmax = 0
         self.tout = 0
         self.osculating_elements = {}
-        self.proper_elements = {}
+        self.proper_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf}
         self.mean_elements = {}
-        self.proper_errors = {}
+        self.proper_errors = {'RMS_a': np.inf, 'RMS_e': np.inf, 'RMS_sinI': np.inf}
         self.proper_extras = {}
         self.proper_indicators = {}
         self.proper_internal = {}
@@ -2881,22 +2881,29 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     proper_object.family_results = fam_results
 
 
-    scat_results = check_scatter(times,a_init)
+    scat_results = check_scatter(times, a_init, e_init)
     proper_object.scattered = scat_results
         
     return 1, proper_object
     
 
-def check_scatter(t,a):
+def check_scatter(t,a,e):
     da = np.gradient(a)
     de = np.abs(da/a)[1:-2]
 
-    scat_result = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': np.max(de)}
+    q = a*(1-e)
+    Q = a*(1+e)
+
+    scat_result = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': np.max(de), 'qlim': 0, 'Qlim': np.inf, 'pcrossing_flag': False, 'qmin': np.min(q), 'Qmax': np.max(Q)}
 
     if np.nanmean(a) < 20:
         thresh = 1e-2
+        scat_result['qlim'] = 1.7
+        scat_result['Qlim'] = 4.1
     else:
         thresh = 1e-3
+        scat_result['qlim'] = 34
+        scat_result['Qlim'] = 1e5
     
     if np.max(de) > thresh:
         scat_ind = np.argmax(de)
@@ -2904,6 +2911,12 @@ def check_scatter(t,a):
         scat_result['scattered'] = True
         scat_result['scat_time'] = t[scat_ind]
         scat_result['Max delta-E'] = de[scat_ind]
+
+    if np.min(q) < scat_result['qlim']:
+        scat_result['pcrossing_flag'] = True
+    if np.max(Q) > scat_result['Qlim']:
+        scat_result['pcrossing_flag'] = True
+    
     return scat_result
         
 def hcm_pair(a1, a2, e1, e2, sini1, sini2):
