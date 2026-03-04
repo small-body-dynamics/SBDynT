@@ -39,14 +39,24 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     """
 
     if(logfile==True):
-        logfile = tools.log_file_name(des=des)
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' + logfile
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' + logf
 
     sim = rebound.Simulation()
     if(des==None):
-        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
-        print("you must provide a designation (used to label the particle within rebound)")
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage += "you must provide a designation (used to label the particle within rebound)"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
     if(np.isscalar(a)):
@@ -62,9 +72,13 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     if(clones == None):
         clones = ntp_avail-1
     elif (clones > ntp_avail-1):
-        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed")
-        print("the number of clones specified is more than than the length of orbital")
-        print("element arrays that were provided.")
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage += "the number of clones specified is more than than the length of orbital\n"
+        logmessage += "element arrays that were provided."
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
 
@@ -75,6 +89,8 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
 
@@ -85,9 +101,13 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     # add the planets and return the position/velocity corrections for
     # missing planets
 
-    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim,planets=planets,epoch=epoch)
+    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim,planets=planets,epoch=epoch,logfile=logf)
     if(apflag < 1):
-        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets")
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)        
         return 0, sim
 
     # First, we need to convert the Find_Orb orbit to heliocentric
@@ -97,6 +117,15 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
     for n in range(0,clones+1):
         i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.find_orb_sunGM, 
                         a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n])
+        if(i<1):
+            logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+            logmessage += "at tools.aei_to_xv for clone" + str(n)
+            if(logf!='screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)
+            return 0, sim
+
         # those positions and velocities are in km and km/s, so need to convert
         # to au/year (defining a year as 365.25 days
         x=x*const.kmtoau
@@ -131,9 +160,9 @@ def initialize_from_heliocentric_Find_Orb_orbit(des=None,clones=None,
         if(datadir):
             ic_file = datadir + '/' +ic_file
         sim.save_to_file(ic_file)
-        if(logfile):
+        if(logf):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
-            tools.writelog(logfile,logmessage)       
+            tools.writelog(logf,logmessage)       
 
     return 1, sim
 
@@ -146,7 +175,7 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
                                              node=0.,aperi=0.,ma=0.,
                                              planets=['all'],
                                              epoch=None, ecl_or_inv='ecl', 
-                                             cov_orb=[],
+                                             cov_orb=None,
                                              datadir='', saveic=False,
                                              logfile=False):
     """
@@ -169,18 +198,35 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
 
 
     if(logfile==True):
-        logfile = tools.log_file_name(des=des)
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' + logfile
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' + logf
 
     sim = rebound.Simulation()
     
-    if(des==None):
-        print("add_orbits.initialize_from_heliocentric_DE440_orbit failed")
-        print("you must provide a designation (used to label the particle)")
+    if(epoch==None):
+        logmessage = "add_orbits.initialize_from_heliocentric_DE440_orbit failed\n"
+        logmessage += "you must provide an epoch for the orbits"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
-
+    if(des==None):
+        logmessage = "add_orbits.initialize_from_heliocentric_DE440_orbit failed\n"
+        logmessage += "you must provide a designation (used to label the particle)"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return 0, sim
 
     # make sure planets is a list and make all planet names lowercase
     if not (type(planets) is list):
@@ -188,6 +234,8 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']        
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
 
@@ -209,10 +257,16 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
         clones=0
 
     if(clones > 0):
-        if(len(cov_orb) == 0):
-            print('No covariance matrix was provided, so SBdynT cannot produce clones for this particle. ')
-            print('Submit a covariance matrix with columns and rows associated with [a,e,inc,node,argperi,ma] ')
-            print('or set clones to None.')
+        if(cov_orb == None):
+            logmessage = "add_orbits.initialize_from_heliocentric_DE440_orbit failed\n"
+            logmessage += 'No covariance matrix was provided, so SBdynT cannot produce clones for this particle.\n'
+            logmessage += 'Submit a covariance matrix with columns and rows associated with [a,e,inc,node,argperi,ma]\n'
+            logmessage += 'or set clones to None.\n'
+            if(logf!='screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)
+            return 0, sim            
         mean = np.array([a, e, inc, node, aperi, ma])
         ca, ce, cinc, cnode, caperi, cma = np.random.multivariate_normal(mean, cov_orb, clones).T
         ca = ca
@@ -225,7 +279,15 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
         for i in range(clones):
             ci, cx, cy, cz, cvx, cvy, cvz = tools.aei_to_xv(GM=const.SS_GM[0]*const.kmtoau**3/const.stoyear**2, 
                     a=ca[i], e=ce[i], inc=cinc[i], node=cnode[i], argperi=caperi[i], ma=cma[i])
-            
+            if(ci<1):
+                logmessage = "add_orbits.initialize_from_heliocentric_DE440_orbit failed\n"
+                logmessage += "at tools.aei_to_xv for clone" + str(i)
+                if(logf!='screen'):
+                    print(logmessage)
+                if(logf):
+                    tools.writelog(logf,logmessage)
+                return 0, sim
+           
             cxl[i] = cx; cyl[i] = cy; czl[i] = cz
             cvxl[i] = cvx; cvyl[i] = cvy; cvzl[i] = cvz
 
@@ -234,9 +296,13 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
     # add the planets and return the position/velocity corrections for
     # missing planets
     apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim, planets=planets,
-                epoch=epoch)
+                epoch=epoch, logfile=logf)
     if(apflag < 1):
-        print("add_orbits.initialize_from_heliocentric_DE440_orbit failed at run_reb.add_planets")
+        logmessage = "add_orbits.initialize_from_heliocentric_DE440_orbit failed at run_reb.add_planets"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
     #now we can apply the corrections from add_planets to the particle
@@ -278,9 +344,10 @@ def initialize_from_heliocentric_DE440_orbit(des=None,clones=None,
         if(datadir):
             ic_file = datadir + '/' +ic_file
         sim.save_to_file(ic_file)
-        if(logfile):
+
+        if(logf):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
-            tools.writelog(logfile,logmessage)       
+            tools.writelog(logf,logmessage)       
 
 
     return 1, sim
@@ -292,7 +359,7 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
                                            a=1.,e=0.,inc=0.,
                                            node=0.,aperi=0.,ma=0.,
                                            planets=['all'],
-                                           epoch=0., sb_cov=[],
+                                           epoch=0., sb_cov=None,
                                            datadir='', saveic=False,
                                            logfile=False):
 
@@ -314,15 +381,24 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
              (all are adjusted for missing major perturbers)
     """
 
-
     if(logfile==True):
-        logfile = tools.log_file_name(des=des)
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' + logfile
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' + logf
 
     if(des==None):
-        print("add_orbits.initialize_from_heliocentric_destnosim failed")
-        print("you must provide a designation (used to label the particle)")
+        logmessage = "add_orbits.initialize_from_heliocentric_destnosim failed\n"
+        logmessage += "you must provide a designation (used to label the particle)"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
     # make sure planets is a list and make all planet names lowercase
@@ -331,6 +407,8 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']      
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
 
@@ -339,27 +417,43 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
     # First, we need to convert the DESTNOSIM orbit to heliocentric
     # cartesian variables using DESTNOSIM's assumed solar GM
     # which is in km^3/s^2, so have to convert a to km first
-    i, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.destnosim_GM[0], 
+    flag, x, y, z, vx, vy, vz = tools.aei_to_xv(GM=const.destnosim_GM[0], 
                     a=a, e=e, inc=inc, node=node, argperi=aperi, ma=ma)
-
+    if(flag<1):
+        logmessage = "add_orbits.initialize_from_heliocentric_destnosim failed\n"
+        logmessage += "at first call to tools.aei_to_xv"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return 0, sim
 
     if(clones == None):
         clones=0
     if(clones > 0):
-        if(len(cov_orb) == 0):
-            print('No covariance matrix was provided, so SBdynT cannot produce clones for this particle. ')
-            print('Submit a covariance matrix with columns and rows associated with [a,e,inc,node,argperi,ma] ')
-            print('or set clones to None.')
-
+        if(cov_orb == None):
+            logmessage = "add_orbits.initialize_from_heliocentric_destnosim failed\n"
+            logmessage += 'No covariance matrix was provided, so SBdynT cannot produce clones for this particle.\n'
+            logmessage += 'Submit a covariance matrix with columns and rows associated with [a,e,inc,node,argperi,ma]\n'
+            logmessage += 'or set clones to None.\n'
+            if(logf!='screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)
+            return 0, sim      
 
     sim = rebound.Simulation()
     # now we can set up the rebound simulation, adding the planets first
     # add the planets and return the position/velocity corrections for
     # missing planets
     apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(sim, planets=planets,
-                epoch=epoch)
+                epoch=epoch, logfile=logf)
     if(apflag < 1):
-        print("add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets")
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return 0, sim
 
     #now we can apply the corrections from add_planets to the particle
@@ -378,6 +472,15 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
         for i in range(clones):
             flag, xc, yc, zc, vxc, vyc, vzc = tools.aei_to_xv(GM=const.destnosim_GM[0], 
                     a=a_c[i], e=e_c[i], inc=inc_c[i], node=node_c[i], argperi=argperi_c[i], ma=M_c[i])
+            if(flag<1):
+                logmessage = "add_orbits.initialize_from_heliocentric_destnosim failed\n"
+                logmessage += "at tools.aei_to_xv for clone" + str(i)
+                if(logf!='screen'):
+                    print(logmessage)
+                if(logf):
+                    tools.writelog(logf,logmessage)
+                return 0, sim
+
             xc+=sx; yc+=sy; zc+=sz;
             vxc+=svx; vyc+=svy; vzc+=svz;
             sbhash = str(des) + '_' + str(i+1)
@@ -396,9 +499,9 @@ def initialize_from_heliocentric_destnosim(des=None, clones=None,
         if(datadir):
             ic_file = datadir + '/' +ic_file
         sim.save_to_file(ic_file)
-        if(logfile):
+        if(logf):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
-            tools.writelog(logfile,logmessage)       
+            tools.writelog(logf,logmessage)       
 
 
 
