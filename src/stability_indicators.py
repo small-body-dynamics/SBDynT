@@ -9,9 +9,7 @@ import functools
 import run_reb
 import json
 
-import prop_elem as pe
-import sbdynt 
-import plotting_scripts as ps
+import sbdynt as sbd
 
 
 class stability_indicators:
@@ -69,16 +67,16 @@ class stability_indicators:
 
 
     def plot_ACFI(self):
-        ps.plot_ACFI(self)
+        sbd.plot_ACFI(self)
 
     def plot_entropy(self):
-        ps.plot_entropy(self)
+        sbd.plot_entropy(self)
             
     def plot_power(self, pe_obj = None):
-        ps.plot_power(self, pe_obj = pe_obj)
+        sbd.plot_power(self, pe_obj = pe_obj)
             
     def plot_clones(self):
-        ps.plot_clone_osc(self)
+        sbd.plot_clone_osc(self)
 
     def plot_scattering(self):
         return 0
@@ -124,7 +122,7 @@ def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = No
             o_arr = sb_elems[3]
             O_arr = sb_elems[4]
 
-            scat_results = pe.check_scatter(times,a_arr,e_arr)
+            scat_results = sbd.check_scatter(times,a_arr,e_arr)
             ci.scattered = scat_results
                  
             ci.ACFI = ACFI_calc(a_arr)
@@ -447,7 +445,7 @@ def power_prop_calc(t, e, I, omega, Omega, size = 3, pe_obj = None):
 
     n_bins = len(power_hk)
 
-    g_idx, g, local_power_all, protect_g_bins = pe.find_local_max_windowed(freq_s, power_hk, window_half_dex=0.02, window_protect_dex=0.15)
+    g_idx, g, local_power_all, protect_g_bins = sbd.find_local_max_windowed(freq_s, power_hk, window_half_dex=0.02, window_protect_dex=0.15)
 
     Ypq_s = np.fft.fft(pq)
     power_pq = np.abs(Ypq_s)**2
@@ -470,7 +468,7 @@ def power_prop_calc(t, e, I, omega, Omega, size = 3, pe_obj = None):
             
     power_pq[short_ind] = power_pq[short_ind]/10
             
-    s_idx, s, local_power_all, protect_s_bins = pe.find_local_max_windowed(freq_s, power_pq, window_half_dex=0.02, window_protect_dex=0.15)
+    s_idx, s, local_power_all, protect_s_bins = sbd.find_local_max_windowed(freq_s, power_pq, window_half_dex=0.02, window_protect_dex=0.15)
     
     if size == 1:
         top3_hk = power_hk0[g_idx]

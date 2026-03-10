@@ -2994,9 +2994,9 @@ def hcm_pair(a1, a2, e1, e2, sini1, sini2):
 def check_family_candidates(proper_object):
 
     family_occupancy = {'family_name': None, 'pairwise_dMet': np.inf}
-    pe = proper_object.proper_elements
+    prope = proper_object.proper_elements
     
-    if pe['a'] > 20:
+    if prope['a'] > 20:
         fam_df = pd.read_csv('../data/sbdynt_files/tno_family_centers.txt', index_col=0)
     #elif pe['a'] < 5:
     #    fam_df = pd.read_csv('../data/sbdynt_files/ast_family_centers.txt', index_col=0)
@@ -3005,11 +3005,11 @@ def check_family_candidates(proper_object):
     
     for i in range(len(fam_df)):
         fam_obj = fam_df.iloc[i]
-        hcm_cen = hcm_pair(fam_obj['cen_a'], pe['a'], 
-                           fam_obj['cen_e'], pe['e'], 
+        hcm_cen = hcm_pair(fam_obj['cen_a'], prope['a'], 
+                           fam_obj['cen_e'], prope['e'], 
                            np.sin(fam_obj['cen_I']/180*np.pi), pe['sinI'])
 
-        if (hcm_cen < fam_obj['hcm_cut']) and (pe['a'] > fam_obj['low_a']) and (pe['a'] < fam_obj['high_a']) and (pe['e'] > fam_obj['low_e']) and (pe['e'] < fam_obj['high_e']) and (pe['sinI'] > np.sin(np.pi/180*fam_obj['low_I'])) and (pe['sinI'] < np.sin(np.pi/180*fam_obj['high_I'])):
+        if (hcm_cen < fam_obj['hcm_cut']) and (prope['a'] > fam_obj['low_a']) and (prope['a'] < fam_obj['high_a']) and (prope['e'] > fam_obj['low_e']) and (prope['e'] < fam_obj['high_e']) and (prope['sinI'] > np.sin(np.pi/180*fam_obj['low_I'])) and (prope['sinI'] < np.sin(np.pi/180*fam_obj['high_I'])):
             family_occupancy['family_name'] = fam_obj['objname']
             family_occupancy['pairwise_dMet'] = hcm_cen
 

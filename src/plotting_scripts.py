@@ -637,7 +637,7 @@ def plot_power(ci, pe_obj = None):
 
     ax[0].legend()
     #ax[1].legend()
-    fig.suptitle('Small Body: '+str(ci.des) + ', Proper Power=' + str(round(power, 2)*100) + '%',fontsize=16,x=0.52,y=0.94)
+    fig.suptitle('Small Body: '+str(ci.des) + ', Proper Power=' + str(round(power, 2)*100) + '% of the Total Power',fontsize=16,x=0.52,y=0.94)
     fig.tight_layout()
 
     plt.show()

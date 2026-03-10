@@ -8,10 +8,10 @@ from add_orbits import *
 from machine_learning import *
 from tno_classifier import *
 
-import tno
-import asteroid as ast
-import prop_elem as pe
-import stability_indicators as si
+from tno import *
+from asteroid import *
+from stability_indicators import *
+from prop_elem import *
 
 
 from datetime import datetime
@@ -50,8 +50,8 @@ class small_body:
         self.int_direction = ''
         self.run_properties = self.analysis_vars()
 
-        self.proper_elements = pe.proper_element_class(des=designation)
-        self.stability_indicators = si.stability_indicators(des=designation)
+        self.proper_elements = proper_element_class(des=designation)
+        self.stability_indicators = stability_indicators(des=designation)
 
         #DS added variables for proper_element branch
         self.a_arr = []
@@ -113,7 +113,7 @@ def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save
         return flag, None, None, None, None, None
     
     if(logfile==True):
-        logf = tools.log_file_name(des=des)
+        logf = log_file_name(des=des)
     else:
         logf = logfile
     if(datadir and logf and logf!='screen'):        
@@ -126,7 +126,7 @@ def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save
         if(logf):
             logmessage = "Clones were not specified, so the default behavior is to return\n"
             logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
-            tools.writelog(logf,logmessage)  
+            writelog(logf,logmessage)  
         iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=sb_results.planets,
                           des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
                           logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
@@ -239,12 +239,12 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         return None
 
     if(logfile==True):
-        logf = tools.log_file_name(des=des)
+        logf = log_file_name(des=des)
     else:
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
@@ -254,7 +254,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         writelog(logf,logmessage)  
 
     iflag, sim, epoch, clones, cloning_method, weights = \
-                ast.setup_default_ast_integration(des=des, clones=clones, datadir=datadir,
+                setup_default_ast_integration(des=des, clones=clones, datadir=datadir,
                                               save_sbdb=False,saveic=True,
                                               archivefile=archivefile,
                                               logfile=logfile)
@@ -271,13 +271,13 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
     ast_results.cloning_method = cloning_method
     ast_results.clone_weights = weights
 
-    icfile = tools.ic_file_name(des=des)
+    icfile = ic_file_name(des=des)
     if(datadir):
         icfile = datadir + '/' + icfile
 
     
     if(archivefile==None):
-        file = tools.archive_file_name(des=des)
+        file = archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
@@ -293,7 +293,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         writelog(logf,logmessage)  
 
     print('Running Asteroid integration for Proper Elements')
-    rflag, sim = pe.integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
+    rflag, sim = integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
                                        logfile=logfile,tmax=10e6,tout=500., direction='bf', deletefile = deletefile)
     if(rflag < 1):
         print("Failed at integration stage")
@@ -304,7 +304,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         writelog(logf,logmessage)  
 
     print('Reading Asteroid integration')
-    reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+    reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,logfile=logfile, object_type = ast_results.object_type)
 
     if(reflag < 1):
@@ -313,7 +313,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
 
     if run_proper:
         print('Running Asteroid Proper Elements')
-        pflag, prope = pe.calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+        pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
         if(pflag < 1):
@@ -324,7 +324,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
 
     if run_stability:
         print('Running Asteroid Stability Indicators')
-        ast_results.stability_indicators = si.compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems, output_arrays = output_arrays)
+        ast_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems, output_arrays = output_arrays)
 
     return ast_results
 
@@ -356,12 +356,12 @@ def run_existing_ast(des=None, clones=None, datadir='',archivefile=None,
         return None
 
     if(logfile==True):
-        logf = tools.log_file_name(des=des)
+        logf = log_file_name(des=des)
     else:
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
@@ -374,13 +374,13 @@ def run_existing_ast(des=None, clones=None, datadir='',archivefile=None,
     ast_results.cloning_method = 'Covariance Matrix'
     ast_results.clone_weights = None
 
-    icfile = tools.ic_file_name(des=des)
+    icfile = ic_file_name(des=des)
     if(datadir):
         icfile = datadir + '/' + icfile
 
     
     if(archivefile==None):
-        file = tools.archive_file_name(des=des)
+        file = archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
@@ -406,7 +406,7 @@ def run_existing_ast(des=None, clones=None, datadir='',archivefile=None,
             return ast_results
         else:
             print('Reading Asteroid integration')
-            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,logfile=logfile, object_type = ast_results.object_type)
 
             if(reflag < 1):
@@ -415,7 +415,7 @@ def run_existing_ast(des=None, clones=None, datadir='',archivefile=None,
                 
             print('Running Asteroid Proper Elements')
 
-            pflag, prope = pe.calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+            pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
             if(pflag < 1):
@@ -425,11 +425,11 @@ def run_existing_ast(des=None, clones=None, datadir='',archivefile=None,
             ast_results.proper_elements = prope
             
     elif run_stability:
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,logfile=logfile, object_type = ast_results.object_type)
     if run_stability:
         #print('clone elemes:', clone_elems.shape, clone_elems)
-        ast_results.stability_indicators = si.compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = ast_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
+        ast_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = ast_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
         
    
         
@@ -471,12 +471,12 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         return None
 
     if(logfile==True):
-        logf = tools.log_file_name(des=des)
+        logf = log_file_name(des=des)
     else:
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
@@ -486,13 +486,13 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
         writelog(logf,logmessage)  
 
 
-    icfile = tools.ic_file_name(des=des)
+    icfile = ic_file_name(des=des)
     if(datadir):
         icfile = datadir + '/' + icfile
 
     
     if(archivefile==None):
-        file = tools.archive_file_name(des=des)
+        file = archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
@@ -500,7 +500,7 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
 
 
     iflag, sim, epoch, clones, cloning_method, weights = \
-                tno.setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
+                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
                                               save_sbdb=False,saveic=True,
                                               archivefile=archivefile,
                                               logfile=logfile)
@@ -561,12 +561,12 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
 
         print('Running TNO integration for PE/Stability Indicators')
 
-        rflag, sim = pe.integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
+        rflag, sim = integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
                                        logfile=logfile,tmax=150e6,tout=5000., direction='bf', deletefile = deletefile)
         
 
         print('Reading TNO integration')
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,logfile=logfile, object_type = tno_results.object_type)
 
         if(reflag < 1):
@@ -575,7 +575,7 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
 
         if run_proper:
             print('Running TNO PE')
-            pflag, prope = pe.calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+            pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
             if(pflag < 1):
@@ -585,10 +585,10 @@ def run_tno(des=None, clones=None, datadir='',archivefile=None,
             tno_results.proper_elements = prope
             
         if run_stability:
-            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                         clones=clones,logfile=logfile, object_type = tno_results.object_type)
     if run_stability:
-        tno_results.stability_indicators = si.compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
+        tno_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
         
 
     return tno_results
@@ -629,14 +629,14 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
     
 
     iflag, sim, epoch, clones, cloning_method, weights = \
-                tno.setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
+                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
                                               save_sbdb=False,saveic=True,
                                               archivefile=archivefile,
                                               logfile=logfile)
@@ -647,13 +647,13 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
     tno_results.cloning_method = 'Covariance Matrix'
     tno_results.clone_weights = None
 
-    icfile = tools.ic_file_name(des=des)
+    icfile = ic_file_name(des=des)
     if(datadir):
         icfile = datadir + '/' + icfile
 
     
     if(archivefile==None):
-        file = tools.archive_file_name(des=des)
+        file = archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
@@ -682,7 +682,7 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
 
     if run_proper or run_stability:
         print('Reading TNO integration for Proper Elements and/or Chaos')
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = pe.read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
                                    clones=clones,logfile=logfile, object_type = tno_results.object_type)
 
         if(reflag < 1):
@@ -707,7 +707,7 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
         else:
                 
             #print('Running TNO PE')
-            pflag, prope = pe.calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
+            pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
                                              planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
 
             if(pflag < 1):
@@ -719,7 +719,7 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
     if run_stability:
         print('Running TNO Chaos Indicators')
         #print('clone elemes:', clone_elems.shape, clone_elems)
-        tno_results.stability_indicators = si.compute_stability(des=des, times=times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
+        tno_results.stability_indicators = compute_stability(des=des, times=times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
         
 
     return tno_results
@@ -743,7 +743,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
@@ -903,7 +903,7 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
         logf = logfile
 
     if(datadir):
-        tools.check_datadir(datadir)
+        check_datadir(datadir)
 
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
