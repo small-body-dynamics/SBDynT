@@ -8,15 +8,17 @@ import functools
 #import schwimmbad
 import run_reb
 import json
-from prop_elem import *
 
-from sbdynt import *
+import prop_elem as pe
+import sbdynt 
+import plotting_scripts as ps
 
 
 class stability_indicators:
 
-    def __init__(self):
+    def __init__(self, des=''):
 
+        self.des = des
         self.ACFI = None
         self.Entropy = None
         self.Power = None
@@ -26,28 +28,112 @@ class stability_indicators:
         self.Clone_RMS_sinI = None
         self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0, 'qlim': 0, 'Qlim': np.inf, 'pcrossing_flag': False, 'qmin': 0, 'Qmax': 0}
 
+        self.flag_limits = {'ACFI' : 0.75, 'Entropy' : 0.95, 'Power': 0.9, 'Distance_metric': (10,100), 'Clone_RMS_a': 0.01, 'Clone_RMS_e': 0.01, 'Clone_RMS_sinI': 0.01}
+
+        self.t = []
+        self.sb_elems = []
+        self.clone_elems = []
+
+    def print_results(self):
+        print('Stability Indicator Results')
+        if self.ACFI != None:
+            sign = ' < ' if self.ACFI < self.flag_limits['ACFI'] else ' > '
+            print('ACFI: (' , self.ACFI < self.flag_limits['ACFI'], '), ', self.ACFI, sign ,self.flag_limits['ACFI'])
+        else:
+            print('ACFI: Undefined')
+                
+        if self.Entropy != None:
+            sign = ' < ' if self.Entropy < self.flag_limits['Entropy'] else ' > '
+            print('Entropy: (' , self.Entropy < self.flag_limits['Entropy'], '), ', self.Entropy, sign ,self.flag_limits['Entropy'])
+        else:
+            print('Entropy: Undefined')
+                
+        if self.Power != None:
+            sign = ' < ' if self.Power < self.flag_limits['Power'] else ' > '
+            print('Power: (' , self.Power < self.flag_limits['Power'], '), ', self.Power, sign ,self.flag_limits['Power'])
+        else:
+            print('Power: Undefined')
+                
+        if self.Distance_metric != None:
+            if self.Distance_metric < self.flag_limits['Distance_metric'][0]:
+                print('Distance Metric: Stable,', self.Distance_metric, ' < ', self.flag_limits['Distance_metric'][0], 'm/s')
+            elif self.Distance_metric < self.flag_limits['Distance_metric'][1]:
+                print('Distance Metric: Metastable,', self.flag_limits['Distance_metric'][0], ' < ', self.Distance_metric, ' < ', self.flag_limits['Distance_metric'][1], 'm/s')
+            elif self.Distance_metric > self.flag_limits['Distance_metric'][1]:
+                print('Distance Metric: Unstable,', self.Distance_metric, ' > ', self.flag_limits['Distance_metric'][1], 'm/s')
+            else:
+                print('Distance Metric: Undefined')
+        else:
+            print('Distance Metric: Undefined')
+
+
+
+    def plot_ACFI(self):
+        ps.plot_ACFI(self)
+
+    def plot_entropy(self):
+        ps.plot_entropy(self)
+            
+    def plot_power(self, pe_obj = None):
+        ps.plot_power(self, pe_obj = pe_obj)
+            
+    def plot_clones(self):
+        ps.plot_clone_osc(self)
+
+    def plot_scattering(self):
+        return 0
+
+    def plot_pcrossing(self):
+        return 0
+
+        
+            
+
 
     
-def compute_stability(times = [], sb_elem = [], clones=0, pe_obj = None, clone_elems = []):
-    ci = stability_indicators()
-    try:
-        if len(sb_elem) > 0:
-            a_arr = sb_elem[0,:]
-            e_arr = sb_elem[1,:]
-            I_arr = sb_elem[2,:]
-            o_arr = sb_elem[3,:]
-            O_arr = sb_elem[4,:]
+def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = None, clone_elems = [], output_arrays = False):
+    """
+    Compute stability indicators for the given orbital elements.
 
-            scat_results = check_scatter(times,a_arr,e_arr)
+    Parameters:
+        times (str): Name/designation of the celestial body as contained in the simulation archive.
+        sb_elems (2D numpy array): 
+        clones (int): Number of clones contained in clone_elems to include in clone stability analysis
+        pe_obj (proper_element_class object): A proper_element_class object which contains numerical uncertainties for the proper element computation. This is used to compute the Distance Metric stability indicator.
+        clone_elems (3D numpy array): 
+        output_arrays (boolean): If True, saves sb_elems and clone_elems to variables in the stability_indicators class object. Essential for visualization options.
+
+
+    Returns:
+        stability_indicators: An stability_indicators.stability_indicators class object, with parameters filled according to the available data which have been provided. Providing no proper elements object or clone elements will cause those results to be left blank/empty. See the stability_indicators class above to see what variables are included in the file. 
+           
+        
+        
+    """ 
+    
+    ci = stability_indicators(des)
+    if output_arrays:
+        ci.t = times
+        ci.sb_elems = sb_elems
+        ci.clone_elems = clone_elems
+    try:
+        if len(sb_elems) > 0:
+            a_arr = sb_elems[0]
+            e_arr = sb_elems[1]
+            I_arr = sb_elems[2]
+            o_arr = sb_elems[3]
+            O_arr = sb_elems[4]
+
+            scat_results = pe.check_scatter(times,a_arr,e_arr)
             ci.scattered = scat_results
                  
             ci.ACFI = ACFI_calc(a_arr)
             ci.Entropy = entropy_calc(a_arr, e_arr, I_arr)
-            ci.Power = power_calc(e_arr, I_arr, o_arr, O_arr, size=5)
+            ci.Power = power_prop_calc(times, e_arr, I_arr, o_arr, O_arr, size = 5, pe_obj = pe_obj)[0]
 
             if clones > 0:
                 if len(clone_elems) == 0:
-                    print('clones > 0, but clone_elems is not provided. Please supply the clone_elems to copute the RMS indicators')
+                    print('clones > 0, but clone_elems is not provided. Please supply the clone_elems to compute the RMS indicators')
 
                 else:
                     for i in range(clones):
@@ -61,6 +147,7 @@ def compute_stability(times = [], sb_elem = [], clones=0, pe_obj = None, clone_e
                     ci.Clone_RMS_sinI = np.sqrt(np.nanmean(diff_I))
 
         if pe_obj != None:
+            ci.pe_obj = pe_obj
             ci.Distance_metric = hcm_calc(pe_obj.proper_elements['a'], pe_obj.proper_errors['RMS_a'], 
                                           pe_obj.proper_errors['RMS_e'], pe_obj.proper_errors['RMS_sinI'])
 
@@ -299,46 +386,53 @@ def power_calc(e,inc,omega,Omega, size=3):
     power_percentage = np.mean((top3_hk/np.sum(Fhk_sorted),top3_pq/np.sum(Fpq_sorted)))
     return power_percentage
 
-def power_prop_calc(num, y, z, e,inc,omega,Omega, g_arr, s_arr, g_inds, s_inds, small_planets_flag, t, size, debug = False):
-    if num%5 == 0:
-        if y%20 == 0 and z == 0:
-            print('a:',num, '/', 81, 'inc:',y, '/', 41)
+def power_prop_calc(t, e, I, omega, Omega, size = 3, pe_obj = None):
+
+    #e = ci.sb_elems[1]; I = ci.sb_elems[2]
+    #omega = ci.sb_elems[3]; Omega = ci.sb_elems[4]
+
+    if pe_obj != None:
+        gs_dict = pe_obj.planet_freqs
+        
+    else:
+        gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7, 'g2': 7.34474/1296000, 'g3': 17.32832/1296000, 'g4': 18.00233/1296000, 's2': -6.57080/1296000, 's3': -18.74359/1296000, 's4': -17.63331/1296000}
+
+    g_arr = []; s_arr = []
+
+    for key, val in gs_dict.items():
+        if 'g' in key:
+            g_arr.append(val)
+        if 's' in key:
+            s_arr.append(val)
 
     
+    
     hk = e*np.cos(omega+Omega) + 1j*e*np.sin(omega+Omega)
-    pq = np.sin(inc)*np.cos(Omega) + 1j*np.sin(inc)*np.sin(Omega)
+    pq = np.sin(I)*np.cos(Omega) + 1j*np.sin(I)*np.sin(Omega)
 
     dt = abs(t[1]-t[0])
     freq_s = np.fft.fftfreq(len(e),d=dt)
 
-    tol_bins = 1
-    dist = round(tol_bins*1)
-
     Yhk_s = np.fft.fft(hk)
     power_hk = np.abs(Yhk_s)**2
 
-    if small_planets_flag:
-        num_p = 8
-    else:
-        num_p = 5
+    power_hk0 = power_hk.copy()
 
-    j=0
-    
-    for i in g_arr[:num_p]:
+    j = 0
+    dist = 2
+    for i in g_arr:
         ind = np.argmin(abs(freq_s-i))
         if j==0 or j==1:
             mult = 100
         else:
             mult = 20
-        if small_planets_flag == False and j == 3:
-            mult = 20
                     
         power_hk[ind-dist:ind+dist+1] = power_hk[ind-dist:ind+dist+1]/mult
         j += 1
 
-    short_period_g = (1/abs(np.array(g_arr[1]*4)))
-    short_period_s = (1/abs(np.array(s_arr[0]*4)))
-    short_period = 1/abs(2*g_arr[1]-2*s_arr[0])
+    short_period_g = (1/abs(np.array(gs_dict['g6']*4)))
+    short_period_s = (1/abs(np.array(gs_dict['s6']*4)))
+    short_period = 1/abs(2*gs_dict['g6']-2*gs_dict['s6'])
     short_period = min(short_period,short_period_g)
     short_period = min(short_period,short_period_s)
     short_ind = np.where(1/abs(freq_s) < short_period/4)[0]
@@ -353,21 +447,20 @@ def power_prop_calc(num, y, z, e,inc,omega,Omega, g_arr, s_arr, g_inds, s_inds, 
 
     n_bins = len(power_hk)
 
-            
-    g_idx, g, local_power_all, protect_g_bins = prop_elem.find_local_max_windowed(freq_s, power_hk, window_half_dex=0.02, window_protect_dex=0.15)
+    g_idx, g, local_power_all, protect_g_bins = pe.find_local_max_windowed(freq_s, power_hk, window_half_dex=0.02, window_protect_dex=0.15)
 
     Ypq_s = np.fft.fft(pq)
     power_pq = np.abs(Ypq_s)**2
-    #power_pq[abs(1/freq_s) > abs(t[-1])/2] = 0
+    
+    power_pq0 = power_pq.copy()
 
     j=0
-    for i in s_arr[:num_p-1]:
+    for i in s_arr:
         if j==0 or j==1:
             mult = 100
         else:
             mult = 20
-        if small_planets_flag == False and j == 2:
-            mult = 100
+
         ind = np.argmin(abs(freq_s-i))
         power_pq[ind-dist:ind+dist+1] = power_pq[ind-dist:ind+dist+1]/mult
         j += 1
@@ -377,19 +470,19 @@ def power_prop_calc(num, y, z, e,inc,omega,Omega, g_arr, s_arr, g_inds, s_inds, 
             
     power_pq[short_ind] = power_pq[short_ind]/10
             
-    s_idx, s, local_power_all, protect_s_bins = prop_elem.find_local_max_windowed(freq_s, power_pq, window_half_dex=0.02, window_protect_dex=0.15)
+    s_idx, s, local_power_all, protect_s_bins = pe.find_local_max_windowed(freq_s, power_pq, window_half_dex=0.02, window_protect_dex=0.15)
     
     if size == 1:
-        top3_hk = power_hk[g_idx]
-        top3_pq = power_pq[s_idx]
+        top3_hk = power_hk0[g_idx]
+        top3_pq = power_pq0[s_idx]
         if g_idx == 0:
-            hk_percent = top3_hk/np.sum(power_hk)
+            hk_percent = top3_hk/np.sum(power_hk0)
         else:
-            hk_percent = top3_hk/np.sum(power_hk[1:])
+            hk_percent = top3_hk/np.sum(power_hk0[1:])
         if s_idx == 0:
-            pq_percent = top3_pq/np.sum(power_pq)
+            pq_percent = top3_pq/np.sum(power_pq0)
         else:
-            pq_percent = top3_pq/np.sum(power_pq[1:])
+            pq_percent = top3_pq/np.sum(power_pq0[1:])
     else:
         if g_idx < size//2 + 1:
             if g_idx == 0:
@@ -399,17 +492,17 @@ def power_prop_calc(num, y, z, e,inc,omega,Omega, g_arr, s_arr, g_inds, s_inds, 
                 indlow1 = 1
                 indhigh1 = 1 + size
         elif len(power_hk) - g_idx <= size//2:
-            indlow1 = len(power_hk) - size 
-            indhigh1 = len(power_hk) 
+            indlow1 = len(power_hk0) - size 
+            indhigh1 = len(power_hk0) 
         else:
             indlow1 = g_idx - size//2
             indhigh1 = g_idx + size//2 + 1
     
         top3_hk = np.sum(power_hk[indlow1:indhigh1])
         if g_idx == 0:
-            hk_percent = top3_hk/np.sum(power_hk)
+            hk_percent = top3_hk/np.sum(power_hk0)
         else:
-            hk_percent = top3_hk/np.sum(power_hk[1:])
+            hk_percent = top3_hk/np.sum(power_hk0[1:])
 
         if s_idx < size//2 + 1:
             if s_idx == 0:
@@ -418,25 +511,22 @@ def power_prop_calc(num, y, z, e,inc,omega,Omega, g_arr, s_arr, g_inds, s_inds, 
             else:
                 indlow2 = 1
                 indhigh2 = 1 + size
-        elif len(power_pq) - s_idx <= size//2:
-            indlow2 = len(power_pq) - size 
-            indhigh2 = len(power_pq) 
+        elif len(power_pq0) - s_idx <= size//2:
+            indlow2 = len(power_pq0) - size 
+            indhigh2 = len(power_pq0) 
         else:
             indlow2 = s_idx - size//2
             indhigh2 = s_idx + size//2 + 1
-        top3_pq = np.sum(power_pq[indlow2:indhigh2])
+        top3_pq = np.sum(power_pq0[indlow2:indhigh2])
         if s_idx == 0:
-            pq_percent = top3_pq/np.sum(power_pq)
+            pq_percent = top3_pq/np.sum(power_pq0)
         else:
-            pq_percent = top3_pq/np.sum(power_pq[1:])
+            pq_percent = top3_pq/np.sum(power_pq0[1:])
 
-    #if y > 30:
-    #    print('inc ind:',y,'g:',g, 1/g,'s:',s,1/s)
-    
+
     power_percent = np.mean((hk_percent, pq_percent))
-    if debug:
-        return power_percent, g, s, indlow1, indhigh1, indlow2, indhigh2
-    return power_percent
+    
+    return power_percent, g, s, gs_dict
     
 
 def entropy_calc(a,e,inc):

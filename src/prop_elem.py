@@ -52,13 +52,49 @@ class proper_element_class:
         self.proper_indicators = {}
         self.proper_internal = {}
         self.prop_finish = False
-        self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0}
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'scat_ind': np.inf, 'Max delta-E': 0}
         self.family_results = {'family_name': None, 'pairwise_dMet': np.inf}
 
         #Plotting Flags
         self.p_hkpq = True
         self.p_eI = False
         self.p_vO = False
+
+        self.hk_original = np.array([])
+        self.pq_original = np.array([])
+        
+        self.hk_filtered = np.array([])
+        self.pq_filtered = np.array([])
+
+        self.hk_windows = np.array([])
+        self.pq_windows = np.array([])
+        self.time_windows = np.array([])
+
+        self.a_original = np.array([])
+        self.a_filtered = np.array([])
+        self.a_windows = np.array([])
+
+        self.time = np.array([])
+
+    def print_results(self):
+        print(str(self.des), " Proper Element Results from a ", str(int(self.tmax/1e6)), " Myr integration with ", str(int(self.tout)), " year outputs")
+        print()
+        print('# \t SMA (AU) \t Ecc \t Inc$(^{\circ})$ \t g("/yr) \t s("/yr)')
+        print("#Osculating Elements \t" + self.osculating_elements['a'] + "\t" + self.osculating_elements['e'] + "\t" + np.arcsin(self.osculating_elements['sinI'])*180/np.pi + "\t N/A \t N/A" )
+        print("#Mean Elements: \t" + self.mean_elements['a'] + "\t" + self.mean_elements['e'] + "\t" + np.arcsin(self.mean_elements['sinI'])*180/np.pi + "\t " + self.mean_elements['g("/yr)'] + "\t" + self.mean_elements['s("/yr)'])
+        print("#Proper Elements: \t" + self.proper_elements['a'] + "\t" + self.proper_elements['e'] + "\t" + np.arcsin(self.proper_elements['sinI'])*180/np.pi + "\t " + self.proper_elements['g("/yr)'] + "\t" + self.proper_elements['s("/yr)'])
+        
+        print("#Proper Errors: \t" + self.proper_errors['a'] + "\t" + self.proper_errors['e'] + "\t" + np.arcsin(self.proper_errors['sinI'])*180/np.pi + "\t " + self.proper_errors['g("/yr)'] + "\t" + self.proper_errors['s("/yr)'])
+
+        print()
+        
+
+        if self.scattered['scattered']:
+            print(str(des) + ' may have been scattered during the simulation at t=' +str(self.scattered['scat_time']) + ' years, near snapshot #' + str(self.scattered['scat_ind']))
+
+        if self.family_results['family_name'] != None:
+            print(str(self.des) + ' maintains a proper orbit which corresponds dynamically to the ' + self.family_results['family_name'] + ' family.')
+            print('The relative velocity of this object with respect to the family collisional center = ' + str(round(self.family_results['pairwise_dMet']), 2) + 'm/s')
 
 
     def plot_time_arrays(self):
@@ -2298,6 +2334,32 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
 
 
 def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=None, object_type= None):
+
+    """
+    Read a Rebound Simulationarchive binary file, and format the orbital array outputs to work with the proper elements code.
+    This function automatically handles issues that may arise from Simulationarchive's that may have varying time resolution, or integrate in both the forwards and backwards direction, which results naturally from the default TNO SBDynT analysis. 
+
+    Parameters:
+        des (str): Name/designation of the celestial body as contained in the simulation archive.
+        clones (int): Number of clones in the Simulationarchive for the TNO to be read in and returned by the function. Ths number should not exceed the number of clones contained in the actual Simulationarchive itself. 
+        datadir (str): Directory where the Simulationarchive is located. Is defined with respect to the user's working directory.
+        archivefile (str): Name of the Simulationarchive binary file to be read in. The default filename is *des*-simarchive.bin.
+        logfile (boolean): If True, saves a log file of the run for debugging or benchmarking purposes. 
+        objectype (str = 'tno', 'asteroid'): Determines whether this function returns orbital element time arrays for only the 4 giant planets ('tno' = JSUN) or the the 4 giant planets + the 3 major rocky planets ('asteroid' = JSUN + VEM). 
+        If the object_type is not defined, SBDynT will check to see if Venus, Earth, and Mars are contained in the Simulationarchive. If these objects are present in the Simulation, it will return their orbital elements, and set vem = True. 
+
+
+    Returns:
+        flag (0,1):  0 indicates a failure occurred. 1 indicates a successful function run.
+        time (1D numpy.array, shape= len(Simulationarchive)) = The corresponding times for the outputs contained the Simulationarchive.  
+        sb_elems (2D numpy.array, shape= (5, len(Simulationarchive))): The orbital element time arrays for the small body particle contained in the Simulationarchive. The array contains the orbital elements in this order: [sma, ecc, inc, omega, Omega]. 
+        planet_elems (dict): A dictionary containing the orbital element time arrays for the planets to be returned. {'jupiter': jupiter_orb, 'saturn': saturn_orb .... }. The individual "planet_orb" variables have the same shape and format as the sb_elems variable.
+        clone_elems (3D numpy.array, shape = (clones, 5, len(Simulationarchive))): The orbital element time arrays for the clones of the small body particle. 
+        vem (boolean): A boolean corresponding to whether Venus, Earth, and Mars are contained in the planet_elems dictionary, and if they should be included in the proper_elements computation. 
+        
+    """ 
+
+    
     if(archivefile==None):
         file = archive_file_name(des=des)
     else:
@@ -2575,39 +2637,42 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
     else:
         planet_elems = {'jupiter': j_elems, 'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
 
-    '''
-    if small_planets_flag:
-            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn,hv,he,hm,kv,ke,km,pv,pe,pm,qv,qe,qm = equinoct_arrays
-        else:
-            hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn = equinoct_arrays
+    
+    #if vem:
+    #    p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems),*hkpq(v_elems),*hkpq(e_elems),*hkpq(m_elems)]    
+    #else:
+    #    p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems)]    
 
-    p_elems = [a,e,I,o,O]
-    '''
-    
-    if vem:
-        p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems),*hkpq(v_elems),*hkpq(e_elems),*hkpq(m_elems)]    
-    else:
-        p_equinoct_arr = [*hkpq(j_elems),*hkpq(s_elems),*hkpq(u_elems),*hkpq(n_elems)]    
-    '''
-    print('dt')
-    
-    print('sorted t_arr')
-    plt.plot(sb_elems[0])
-    plt.show()
-    print('sort_t')
-    plt.plot(sort_t)
-    plt.show()
-    '''
     return 1, sb_elems[0], sb_elems[1:], planet_elems, clone_elems, vem
 
 def hcm_calc(a,rmsa,rmse,rmsi):    
     G = 6.673e-11
     M = 1.989e30
-    n = np.sqrt(G*M/(a*1.496e11)**3)
-    return n*a*1.498e11*np.sqrt(5/4*(rmsa/a)**2+2*rmse**2+2*rmsi**2)   
+    n = np.sqrt(G*M/(a*149597870700)**3)
+    return n*a*149597870700*np.sqrt(5/4*(rmsa/a)**2+2*rmse**2+2*rmsi**2)   
 
 def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], small_planets_flag = False, output_arrays = False, gs_dict = None):
 
+    """
+    Compute the synthetic proper elements from the given orbital element time arryas for a small body, and the associated orbital elements for the planets included in the Simulation/
+
+    Parameters:
+        des (str): Name/designation of the celestial body as contained in the simulation archive.
+        times (1D numpy array): The integration times associated with the output orbital elements.
+        sb_elems (2D numpy array): The orbital element time arrays for the small body. Should be formatted as [sma, ecc, inc, omega, Omega].
+        planet_elems (dict, optional but recommended): A dictionary of the planet orbital element time arrays associated with the small body, to be used to compute the planetary secular frequencies. Example = {'jupiter': jupiter_elems, 'saturn': saturn_elems ....}, where *planet*_elems has the same shape and format as sb_elems. If this variable is left empty, SBDynT will see if the gs_dict variable is provided. If not, hard coded planetary secular frequencies as reported by Knezevic and Milani 2000 and Brouwer and van Woerkom 1950 are used instead.
+        small_planets_flag (boolean): If True, the function will use the orital elements in planet_elems corresponding to 'venus', 'earth', and 'mars', and will filter out their secular frequencies in the small body's orbit. 
+        output_arrays (boolean): If True, will save the orbital element time arrays and the filtered orbital element time arrays to variables in the proper_element_class object for quick access. This function must be set to true to use the visualization tools after the analysis.
+        gs_dict (dict, optional): A dictionary of the secular planetary frequencies (in rev/yr) to be filtered out. Only used if planet_elems is not defined. If both variables are left empty, hard coded secular frequencies as reported by Knezevic and Milani 2000 and Brouwer and van Woerkom 1950 are used instead. Example: {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7}.
+        
+
+
+    Returns:
+        flag (0,1):  0 indicates a failure occurred. 1 indicates a successful function run.
+        proper_object: A proper_element_class object with results from the analysis. See the proper_element_class for information of the variables which are included in the outputs. 
+        
+    """ 
+    
     #t_init, sb_elems, planet_elems, clone_elems, p_equinoct_arr, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
     #                                    clones=clones,return_timeseries=return_timeseries,logfile=logfile, tno_results = tno_results)
     proper_object = proper_element_class(des=des)
@@ -2958,7 +3023,7 @@ def check_family_candidates(proper_object):
 def prop_calc(objname, filename='Single',windows=5, direction = 'both', time_run = 0, rms = True, shortfilt=True, debug=False):
     
     """
-    Calculate prop elements of small celestial bodies from simulation archive files, using a given file list of names.
+    Calculate proper elements of small celestial bodies from simulation archive files, using a given file list of names.
 
     Parameters:
         objname (int): Name/designation of the celestial body in the dataset.

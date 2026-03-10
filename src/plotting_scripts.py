@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import tools
+import stability_indicators as si
 
 
 def plot_aei(des=None, datadir='', archivefile=None, 
@@ -492,6 +493,159 @@ def plot_osc_and_prop(prop_elem):
 
     return 0
 
+def plot_clone_osc(ci):
+    t = ci.t / 1e6
+    sb_elems = ci.sb_elems
+    clone_elems = ci.clone_elems
+
+    fig,ax = plt.subplots(2,3,figsize=(12,7),sharex=True)
+    ax = ax.flatten()
+
+    ax[0].plot(t, ci.sb_elems[0])
+    ax[1].plot(t, ci.sb_elems[1])
+    ax[2].plot(t, ci.sb_elems[2]*180/np.pi)
+
+    for i in range(len(clone_elems)):
+        ax[3].plot(t, ci.clone_elems[i,0], alpha=0.3)
+        ax[4].plot(t, ci.clone_elems[i,1], alpha=0.3)
+        ax[5].plot(t, ci.clone_elems[i,2]*180/np.pi, alpha=0.3)
+
+    ax[0].set_title('SMA (AU)', fontsize=14)
+    ax[1].set_title('Ecc', fontsize=14)
+    ax[2].set_title('Inc ($^{\circ}$)', fontsize=14)
+
+    ax[0].set_ylabel('Best-fit Orbit')
+    ax[3].set_ylabel('Clone Orbits')
+
+    fig.supxlabel('Time (Myr)', fontsize=14)
+    fig.suptitle('Small Body - ' + str(ci.des), fontsize=16)
+
+    fig.tight_layout()
+    plt.show()
+    
+def plot_entropy(ci):
+    a = ci.sb_elems[0]
+    e = ci.sb_elems[1]
+    t = ci.t
+    
+    hs = np.sqrt(a*(1-e**2))
+
+    bins = int(len(a)/10)
+    hs_nonan = hs[~np.isnan(hs)]
+    t_nonan = t[~np.isnan(hs)]
+    baseline = np.log10(bins)
+    
+    fig, ax = plt.subplots(1,2, figsize=(8,3))
+    fig.subplots_adjust(wspace=0)
+    ax[1].hist(hs_nonan, bins = bins, orientation='horizontal', weights=np.ones(len(hs_nonan))/len(hs_nonan))
+    ax[0].plot(t_nonan, hs_nonan)
+
+    fig.suptitle(str(ci.des) + ' Entropy=' + str(round(ci.Entropy, 2)))
+    ax[0].set_ylabel(r'Specific angular momentum $h_s$')
+
+    ax[1].set_yticks([])
+    ax[1].set_yticklabels([])
+
+    ax[0].set_xlabel('Time (Myr)')
+    ax[1].set_xlabel('Density')
+    plt.show()
+
+def plot_ACFI(ci):
+
+    
+    fig, ax = plt.subplots(1,2, figsize=(3,8))
+    
+    return 
+
+def plot_power(ci, pe_obj = None):
+
+    e = ci.sb_elems[1]; I = ci.sb_elems[2]
+    omega = ci.sb_elems[3]; Omega = ci.sb_elems[4]
+    varpi = omega+Omega
+
+    t = ci.t
+
+    power, g, s, gs_dict = si.power_prop_calc(t, e, I, omega, Omega, size = 5, pe_obj = pe_obj)
+    
+    freq = np.fft.fftfreq(len(t), t[1]-t[0]); freqr = np.fft.rfftfreq(len(t), t[1]-t[0])
+
+    gind = np.argmin(abs(freq - g))
+    sind = np.argmin(abs(freq - s))
+
+    hk = e*np.cos(varpi) + 1j*e*np.sin(varpi)
+    pq = np.sin(I)*np.cos(Omega) + 1j*np.sin(I)*np.sin(Omega)
+    
+    
+
+    Yhk = np.abs(np.fft.fft(hk))**2; Ypq = np.abs(np.fft.fft(pq))**2
+    
+    Ye = np.abs(np.fft.rfft(np.abs(hk)))**2; YI = np.abs(np.fft.rfft(np.abs(pq)))**2
+    Yv = np.abs(np.fft.rfft(np.cos(np.angle(hk))))**2; YO = np.abs(np.fft.rfft(np.cos(np.angle(pq))))**2
+
+    #Yhk_sorted = np.argsort(Yhk[1:])[::-1]; Ypq_sorted = np.argsort(Ypq[1:])[::-1]
+    #top3_hk = np.sum(Yhk[Yhk_sorted[:3]+1]); top3_pq = np.sum(Ypq[Ypq_sorted[:3]+1])
+
+    top_hk = np.sum(Yhk[gind-5:gind+6]); top_pq = np.sum(Ypq[sind-5:sind+6])
+
+    total_hk = np.sum(Yhk); total_pq = np.sum(Ypq)
+    
+    
+    alp = 0.3
+    fig,ax = plt.subplots(1,2,figsize=(9,4), sharex = True)
+
+    ax[0].scatter(1/freq, Yhk, s=1)
+    ax[1].scatter(1/freq, Ypq, s=1)
+    
+    ax[0].scatter(1/freq[gind-5:gind+6], Yhk[gind-5:gind+6], s=3, c='tab:orange')
+    ax[1].scatter(1/freq[sind-5:sind+6], Ypq[sind-5:sind+6], s=3, c='tab:orange')
+
+
+
+    dt = abs(t[1]-t[0])
+    ax[0].set_xscale('symlog', linthresh=dt, linscale=1e-2)
+    ax[0].set_yscale('log')
+    ax[1].set_yscale('log')
+
+        
+    #ax[0].axhline(Yhk[0], ls='--', alpha=0.2,c='tab:blue', label=r'Power($\nu=0$)')
+    #ax[1].axhline(Ypq[0], ls='--', alpha=0.2,c='tab:blue')
+    
+    ax[0].axhline(total_hk, ls='--', alpha=0.8,c='k', label=r'$\sum{Power}$')
+    ax[1].axhline(total_pq, ls='--', alpha=0.8,c='k')
+    
+    ax[0].axhline(top_hk, ls='--', alpha=0.8,c='tab:orange', label=r'$\sum{Power_{ Proper}}$')
+    ax[1].axhline(top_pq, ls='--', alpha=0.8,c='tab:orange')
+    
+    import matplotlib.ticker as ticker
+    import math
+
+    tsort = np.sort(np.abs(t))
+    xmax = round(np.log10(dt*len(t)))+1
+    xmin = round(np.log10(dt))
+
+    xrange = 10**np.arange(xmin, xmax)
+    
+    xticks = np.concatenate((-xrange[::-1], xrange))
+    ax[0].set_xticks(xticks)
+
+    fig.supxlabel('Period (yrs)')
+
+    ax[0].set_ylabel('Power')
+
+    ax[0].set_title('hk Power')
+    ax[1].set_title('pq Power')
+
+    ax[0].legend()
+    #ax[1].legend()
+    fig.suptitle('Small Body: '+str(ci.des) + ', Proper Power=' + str(round(power, 2)*100) + '%',fontsize=16,x=0.52,y=0.94)
+    fig.tight_layout()
+
+    plt.show()
+
+    
+    return 
+
+
 def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     objname = prop_elem.des
 
@@ -941,3 +1095,5 @@ def plot_hkpq(prop_elem):
     plt.show()
     
     return 0
+
+
