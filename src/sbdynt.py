@@ -1,5 +1,5 @@
 from horizons_api import *
-import tools
+from tools import *
 from resonances import *
 from run_reb import *
 from plotting_scripts import *
@@ -324,7 +324,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
 
     if run_stability:
         print('Running Asteroid Stability Indicators')
-        ast_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems, output_arrays = output_arrays)
+        ast_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = ast_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
 
     return ast_results
 
@@ -971,7 +971,7 @@ def run_existing_sb(des=None, clones=None, datadir='',archivefile=None,
                                         clones=clones,logfile=logfile, object_type = tno_results.object_type)
     if run_stability:
         #print('clone elemes:', clone_elems.shape, clone_elems)
-        tno_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = pe, clone_elems = clone_elems, output_arrays = output_arrays)
+        tno_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
         
    
         

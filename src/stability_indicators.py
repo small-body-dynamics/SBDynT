@@ -6,17 +6,53 @@ import sys
 import os
 import functools
 #import schwimmbad
-import run_reb
 import json
 
 import sbdynt as sbd
 
 
 class stability_indicators:
+    """
+    The class object built for containing the stability indicator results. 
 
+    Parameters:
+        # Metadata Parameters
+        - des (str): The name of the small body being analyzed. 
+        - flag_limits (dict): The limits for each indicator at which the indicator transitions from stable to unstable. Used by the print_results() function.
+
+        # Result parameters
+        
+        - ACFI (float): The ACFI indicator value for the small body. Should be a float between 0 and 1. 1 represents perfect correlation and stability and 0 represents complete non-correlation and instability. 
+        - Entropy (float): The Entropy indicator value for this small body. Should be a float between 0 and 1, with values closer to 1 representing stability.
+        - Power (float): The Power indicator value for this small body. A float between 0 and 1. Values close to 1 indicate stability, and values closer to 0 indicate instability. 
+        - Distance_metric (float): The Distance_metirc indicator value for this small body. Is only computed if a pe_obj is submitted to compute_stability. Values are reported in m/s. A value < 10 m/s indciates stability, 10 < D.M. < 100 indicates metastability, and D.M. > 100 indicates instability. 
+        - Clone_RMS_a (float): The Root mean square of the semi-major axis for the clones compared to the best-fit orbit. Requires the user to include clone_elems for comparison to the best-fit orbit. Reported in units of AU. 
+        - Clone_RMS_e (float): The Root mean square of the eccentricity for the clones compared to the best-fit orbit. Requires the user to include clone_elems for comparison to the best-fit orbit.
+        - Clone_RMS_sinI (float): The Root mean square of the sine of the inclination for the clones compared to the best-fit orbit. Requires the user to include clone_elems for comparison to the best-fit orbit.
+
+        # Output arrays: If output_arrays = True, than these parameters are filled. Required for the plotting functions.
+        
+        - t (1D np.array): The array of times corresponding to the orbital elements. 
+        - sb_elems (2D np.array): The orbital elements for the best-fit orbit of the small body. Contains [a, e, I, omega, Omega].
+        - clone_elems (3D np.array): The orbital elements for the clone orbits of the small body. Has shape (#Clones, 5, len(simulation)).
+
+
+        # Functions:
+
+        - print_results(): Prints out the results of the stability_indicator analysis in an easy-to-read format. 
+        - plot_ACFI(): Calls the plot_ACFI function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        - plot_entropy(): Calls the plot_entropy function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        - plot_power(): Calls the plot_power function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        - plot_clones(): Calls the plot_clones function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        
+    """
+    
     def __init__(self, des=''):
 
         self.des = des
+        self.flag_limits = {'ACFI' : 0.75, 'Entropy' : 0.95, 'Power': 0.9, 'Distance_metric': (10,100), 'Clone_RMS_a': 0.01, 'Clone_RMS_e': 0.01, 'Clone_RMS_sinI': 0.01}
+
+        
         self.ACFI = None
         self.Entropy = None
         self.Power = None
@@ -26,14 +62,12 @@ class stability_indicators:
         self.Clone_RMS_sinI = None
         self.scattered = {'scattered': False, 'scat_time': np.inf, 'Max delta-E': 0, 'qlim': 0, 'Qlim': np.inf, 'pcrossing_flag': False, 'qmin': 0, 'Qmax': 0}
 
-        self.flag_limits = {'ACFI' : 0.75, 'Entropy' : 0.95, 'Power': 0.9, 'Distance_metric': (10,100), 'Clone_RMS_a': 0.01, 'Clone_RMS_e': 0.01, 'Clone_RMS_sinI': 0.01}
-
         self.t = []
         self.sb_elems = []
         self.clone_elems = []
 
     def print_results(self):
-        print('Stability Indicator Results')
+        print('Small Body:' + str(self.des) + ', Stability Indicator Results')
         if self.ACFI != None:
             sign = ' < ' if self.ACFI < self.flag_limits['ACFI'] else ' > '
             print('ACFI: (' , self.ACFI < self.flag_limits['ACFI'], '), ', self.ACFI, sign ,self.flag_limits['ACFI'])
@@ -78,11 +112,6 @@ class stability_indicators:
     def plot_clones(self):
         sbd.plot_clone_osc(self)
 
-    def plot_scattering(self):
-        return 0
-
-    def plot_pcrossing(self):
-        return 0
 
         
             
@@ -110,6 +139,13 @@ def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = No
     """ 
     
     ci = stability_indicators(des)
+
+    if len(sb_elems) == 0:
+        print('The sb_elems variable is empty. Call the function again with the sb_elems variable defined')
+        return 0, ci
+
+    
+        
     if output_arrays:
         ci.t = times
         ci.sb_elems = sb_elems
@@ -122,8 +158,11 @@ def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = No
             o_arr = sb_elems[3]
             O_arr = sb_elems[4]
 
-            scat_results = sbd.check_scatter(times,a_arr,e_arr)
-            ci.scattered = scat_results
+            if len(times) != len(a_arr):
+                print('The times variable is not equal in length to the sb_elems variable. Skipping computing the scattering flags')
+            else:
+                scat_results = sbd.check_scatter(times,a_arr,e_arr)
+                ci.scattered = scat_results
                  
             ci.ACFI = ACFI_calc(a_arr)
             ci.Entropy = entropy_calc(a_arr, e_arr, I_arr)
@@ -131,10 +170,13 @@ def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = No
 
             if clones > 0:
                 if len(clone_elems) == 0:
-                    print('clones > 0, but clone_elems is not provided. Please supply the clone_elems to compute the RMS indicators')
+                    print('clones > 0, but clone_elems is not provided. Please supply the clone_elems variable to compute the RMS indicators')
 
                 else:
                     for i in range(clones):
+                        if i >= len(clone_elems):
+                            print(i, '> the number of clones in clone_elems = ', len(clone_elems),'. Stopping iterating over clone_elems')
+                            break
                         #print(a_arr, clone_elems[i,0])
                         diff_a = ((a_arr - clone_elems[i,0])/np.mean(a_arr))**2
                         diff_e = (e_arr - clone_elems[i,1])**2
@@ -145,10 +187,11 @@ def compute_stability(des = '', times = [], sb_elems = [], clones=0, pe_obj = No
                     ci.Clone_RMS_sinI = np.sqrt(np.nanmean(diff_I))
 
         if pe_obj != None:
-            ci.pe_obj = pe_obj
-            ci.Distance_metric = hcm_calc(pe_obj.proper_elements['a'], pe_obj.proper_errors['RMS_a'], 
+            try:
+                ci.Distance_metric = hcm_calc(pe_obj.proper_elements['a'], pe_obj.proper_errors['RMS_a'], 
                                           pe_obj.proper_errors['RMS_e'], pe_obj.proper_errors['RMS_sinI'])
-
+            except Exception as err:
+                print(err, '-> pe_obj.proper_elements and/or pe_obj.proper_errors does not contain valid inputs to compute the Distance metric.') 
             
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -389,7 +432,7 @@ def power_prop_calc(t, e, I, omega, Omega, size = 3, pe_obj = None):
     #e = ci.sb_elems[1]; I = ci.sb_elems[2]
     #omega = ci.sb_elems[3]; Omega = ci.sb_elems[4]
 
-    if pe_obj != None:
+    if pe_obj != None and len(pe_obj.planet_freqs) > 0:
         gs_dict = pe_obj.planet_freqs
         
     else:

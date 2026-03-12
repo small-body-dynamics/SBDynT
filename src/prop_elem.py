@@ -6,18 +6,14 @@ import os
 sys.path.insert(0, '../src')
 import rebound
 import numpy as np
-import horizons_api
-import tools
 import warnings
 warnings.filterwarnings("ignore")
 import scipy.signal as signal
 
 from scipy import signal
-import run_reb
-#import tools
-from tools import *
+
 from scipy.stats import circmean
-import plotting_scripts as ps
+import sbdynt as sbd
 
 
 
@@ -37,22 +33,83 @@ s_arr=[]
 #small_planets_flag=False
 
 class proper_element_class:
+    """
+    The class object built for containing the synthetic proper element results. 
+
+    Parameters:
+        # Metadata Parameters
+        - des (str): The name of the small body being analyzed. 
+        - planets (list): A list of which planets are included in the analysis.
+        - planet_freqs (dict): A dictionary containing the proper frequencies used in the analysis. These typically result from the analysis itself, though users may define their own planetary frequencies if they wish.
+        - tmax (float): The total length of time of the simulation
+        - tout (float): The output interval of the input orbital data.
+
+        # Result parameters
+        - osculating_elements (dict): The osculating elements at time t=0. Contains {a, e, I, omega, Omega, M}.
+        - mean_elements (dict): The average of the orbital elements over the full integration. Contains {a, e, sinI, g("/yr), s("/yr), g(rev/yr), s(rev/yr)}. The average precession rates are computed from the median gradient of the varpi and Omega angles. 
+        - proper_elements (dict): The proper orbital elements computed by this code. Contains {a, e, sinI, omega, Omega, g("/yr), s("/yr), g(rev/yr), s(rev/yr)}. The proper omega and Omega angles are defined with respect to the time t=0 angles in the filtered time arrays. 
+        - proper_errors (dict): The numerical uncertainties associated with the comptued proper elements from the windowed error computation. Contains {RMS_a, RMS_e, RMS_sinI, RMS_g("/yr), RMS_s("/yr)}.
+
+        # Flags and Indicators
+        - proper_indicators (dict): A dictionary of several helpful values that may be relevant to users hoping to better understand the amplitude or impact of secular dynamics on the small body. Contains {Ecc Mean Flag, sinI Mean Flag, Ecc Mean Indicator, sinI Mean Indicator, Ecc Osculating Amplitude, sinI Osculating Amplitude, Ecc Filtered Amplitude, sinI Filtered Amplitude, Distance Metric}. Descriptinos of these indicators and how they can be used are found in Spencer et al. 2026. 
+        - scattered (dict): A dictionary with flags and indicators related to identifying whether an object experiences any potential planet crossing or scattering events. Contains {scattered, scat_time, scat_ind, Max delta-E, qlim, Qlim, pcrossing_flag, qmin, Qmax}.
+        - family_results (dict): An in progress dictionary related to a feature for automatic collisional family candidate identification. Using the Nesvorny familylist.tab file to identify family boundaries, the code runs a brief check to see if the object exists near the collisional center of any collisional families for an asteroid, or the Haumea fmaily collisional center for a TNO. Note that this does not take H-mag into account, and so this is simply a 1st order check to see if the object is within the dynamical region for family membership. Follow-up analysis should be done using the V-shape criterion and other methods to prove family membership.
+
+        
+        # Arrays: If output_arrays = True in original function call, time arrays will be saved to these variabels within the proper_element_class obejct.
+
+        - time (1D np.array): The time array provided by the user. 
+        - hk_original (1D np.array): Equivalent to k + 1j*h, where h and k are computed from the initial osculating orbital elements provided by the user.
+        - pq_original (1D np.array): Equivalent to q + 1j*p, where p and q are computed from the initial osculating orbital elements provided by the user.
+        - hk_filtered (1D np.array): Equivalent to kfilt + 1j*hfilt, where hfilt and kfilt are computed from the filtered orbital elements produced by the analysis.
+        - pq_filtered (1D np.array): Equivalent to qfilt + 1j*pfilt, where pfilt and qfilt are computed from the filtered orbital elements produced by the analysis.
+
+        - a_original (1D np.array): The initial osculating semi-major axis time array provided by the user.
+        - a_filtered (1D np.array): The filtered semi-major axis time array produced by the analysis.
+
+        - t_windows (list of 1D np.arrays): A list of the times used for each window when computing the numerical uncertainty. 
+        - hk_windows (list of 1D np.arrays): A list of the filtered k + 1j*h arrays produced for each window when computing the numerical uncertainty. 
+        - pq_windows (list of 1D np.arrays): A list of the filtered q + 1j*p arrays produced for each window when computing the numerical uncertainty.
+        - a_windows (list of 1D np.arrays): A list of the filtered semi-major axis arrays produced for each window when computing the numerical uncertainty.
+
+
+
+        # Miscellaneous
+        - proper_internal (dict): A dictionary with some very niche indicators used primarily by the author for debugging and analysis. 
+
+
+        # Functions:
+
+        - print_results(): Prints out the results of the stability_indicator analysis in an easy-to-read format. 
+        - plot_time_arrays(): Calls the plot_osc_and_prop function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        
+        - plot_freq_space(plotflag='123', ifreqs={}): Calls the plot_freq_space function from the plotting_scripts.py file. Requires output_arrays to have been called previously. 
+            - plotflag (str): The plotflag variable can be used to select what plots are made by defining a str of any combination of 1, 2, and 3. 1 = hk and pq, 2 = e and I, and 3 = varpi and Omega plots.
+            - ifreq (dict): The ifreq variable can be used to include a vertical line at a given frequency in the plot associated with the key. Ex: ifreq = {'2': ['50,000 years',2e-5]} would produce a vertical line at the frequency 2e-5 rev/yr in the e and I plots, with a label in the legend = '50,000'.
+            
+        - plot_hkpq(): Calls the plot_hkpq function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+        
+        - plot_angles(plot_cos=False, ifreqs={}): Calls the plot_angles function from the plotting_scripts.py file. Requires output_arrays to have been called previously.
+            - plot_cos (boolean): If True, these plots will show the cosine of the angles rather than the circulating angles between(0,2*pi). 
+            - ifreqs (dict): ifreq can be used to plot a custom precession frequency. This could be a useful tool for someone testing secular frequencies. Ex: ifreq = {'3': ['0-freq', 0], '4': ['0-freq', 0]} would plot a single line corresponding to the 0 frequency in both the omega and phi plots, with the label '0-freq' in the legend.
+        
+    
+    """
+    
     def __init__(self, des=''):
         
         self.des = des
-        self.planets = {}
+        self.planets = []
         self.planet_freqs = {}
         self.tmax = 0
         self.tout = 0
-        self.osculating_elements = {}
-        self.proper_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf}
-        self.mean_elements = {}
-        self.proper_errors = {'RMS_a': np.inf, 'RMS_e': np.inf, 'RMS_sinI': np.inf}
-        self.proper_extras = {}
+        self.osculating_elements = {'a': np.inf, 'e': np.inf, 'I': np.inf, 'omega': np.inf, 'Omega': np.inf}
+        self.proper_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf, 'g(rev/yr)': np.inf, 's(rev/yr)': np.inf, 'omega': np.inf, 'Omega': np.inf}
+        self.mean_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf, 'g(rev/yr)': np.inf, 's(rev/yr)': np.inf}
+        self.proper_errors = {'RMS_a': np.inf, 'RMS_e': np.inf, 'RMS_sinI': np.inf, 'RMS_g("/yr)': np.inf, 'RMS_s("/yr)': np.inf}
         self.proper_indicators = {}
         self.proper_internal = {}
-        self.prop_finish = False
-        self.scattered = {'scattered': False, 'scat_time': np.inf, 'scat_ind': np.inf, 'Max delta-E': 0}
+        self.scattered = {'scattered': False, 'scat_time': np.inf, 'scat_ind': np.inf, 'Max delta-E': 0, 'qlim': 0, 'Qlim': np.inf, 'pcrossing_flag': False, 'qmin': 0, 'Qmax': np.inf}
         self.family_results = {'family_name': None, 'pairwise_dMet': np.inf}
 
         #Plotting Flags
@@ -60,6 +117,7 @@ class proper_element_class:
         self.p_eI = False
         self.p_vO = False
 
+        #Output arrays values
         self.hk_original = np.array([])
         self.pq_original = np.array([])
         
@@ -77,14 +135,22 @@ class proper_element_class:
         self.time = np.array([])
 
     def print_results(self):
-        print(str(self.des), " Proper Element Results from a ", str(int(self.tmax/1e6)), " Myr integration with ", str(int(self.tout)), " year outputs")
-        print()
-        print('# \t SMA (AU) \t Ecc \t Inc$(^{\circ})$ \t g("/yr) \t s("/yr)')
-        print("#Osculating Elements \t" + self.osculating_elements['a'] + "\t" + self.osculating_elements['e'] + "\t" + np.arcsin(self.osculating_elements['sinI'])*180/np.pi + "\t N/A \t N/A" )
-        print("#Mean Elements: \t" + self.mean_elements['a'] + "\t" + self.mean_elements['e'] + "\t" + np.arcsin(self.mean_elements['sinI'])*180/np.pi + "\t " + self.mean_elements['g("/yr)'] + "\t" + self.mean_elements['s("/yr)'])
-        print("#Proper Elements: \t" + self.proper_elements['a'] + "\t" + self.proper_elements['e'] + "\t" + np.arcsin(self.proper_elements['sinI'])*180/np.pi + "\t " + self.proper_elements['g("/yr)'] + "\t" + self.proper_elements['s("/yr)'])
+        print(str(self.des), " Proper Element Results from a", str(round(self.tmax/1e6)), "Myr integration with", str(round(self.tout)), "year outputs")
+
+        print("# \t\t\t SMA(AU) \t Ecc    \t Inc(deg) \t g(\"/yr) \t s(\"/yr)")
+        print("#Osculating Elements: \t", round(self.osculating_elements['a'][0], 5) ,"\t" , round(self.osculating_elements['e'][0], 5) , "\t" , round(self.osculating_elements['I'][0]*180/np.pi, 5) , "\t N/A    \t N/A" )
+        print("#Mean Elements: \t" , round(self.mean_elements['a'], 5) , "\t" , round(self.mean_elements['e'], 5) , "\t" , round(np.arcsin(self.mean_elements['sinI'])*180/np.pi, 5) , "\t" , round(self.mean_elements['g("/yr)'], 5) , "\t" , round(self.mean_elements['s("/yr)'], 5))
+        print("#Proper Elements: \t" , round(self.proper_elements['a'], 5) , "\t" , round(self.proper_elements['e'], 5) , "\t" , round(np.arcsin(self.proper_elements['sinI'])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'], 5) , "\t" , round(self.proper_elements['s("/yr)'], 5))
         
-        print("#Proper Errors: \t" + self.proper_errors['a'] + "\t" + self.proper_errors['e'] + "\t" + np.arcsin(self.proper_errors['sinI'])*180/np.pi + "\t " + self.proper_errors['g("/yr)'] + "\t" + self.proper_errors['s("/yr)'])
+        #print("#Proper Errors: \t" , round(self.proper_errors['RMS_a'], 6) , "\t" , round(self.proper_errors['RMS_e'], 6) , "\t" , round(np.arcsin(self.proper_errors['RMS_sinI'])*180/np.pi, 6) , "\t " , round(self.proper_errors['RMS_g("/yr)'], 6) , "\t" , round(self.proper_errors['RMS_s("/yr)']), 6)
+
+        propa_err = self.proper_errors['RMS_a']
+        prope_err = self.proper_errors['RMS_e']
+        propI_err = np.arcsin(self.proper_errors['RMS_sinI'])*180/np.pi
+        propg_err = self.proper_errors['RMS_g("/yr)']
+        props_err = self.proper_errors['RMS_s("/yr)']
+        print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
+
 
         print()
         
@@ -98,7 +164,7 @@ class proper_element_class:
 
 
     def plot_time_arrays(self):
-        ps.plot_osc_and_prop(self)
+        sbd.plot_osc_and_prop(self)
 
     def plot_freq_space(self, plotflag='1', ifreqs={}):
         if '1' in plotflag:
@@ -114,70 +180,14 @@ class proper_element_class:
         else:
             self.p_vO = False
             
-        ps.plot_freq_space(self, ifreqs = ifreqs)
+        sbd.plot_freq_space(self, ifreqs = ifreqs)
 
     def plot_hkpq(self):
-        ps.plot_hkpq(self)
+        sbd.plot_hkpq(self)
 
     def plot_angles(self, plot_cos=False, ifreqs={}):
-        ps.plot_angles(self, plot_cos=plot_cos, ifreqs=ifreqs)
+        sbd.plot_angles(self, plot_cos=plot_cos, ifreqs=ifreqs)
 
-    #Function that calls the proper element computation
-    def compute_proper(self, windows=5, time_run = 0, rms = True, debug = False):
-        self.windows = windows
-        self.time_run = time_run
-        
-        outputs = prop_calc(self.designation, filename=self.filename, windows=windows, direction = self.direction, time_run = time_run, rms = rms, debug=debug)
-
-        #
-            
-        self.proper_elements['a'] = outputs[10]    
-        self.proper_elements['e'] = outputs[11]    
-        self.proper_elements['sinI'] = outputs[12] 
-        self.proper_elements['omega'] = outputs[13]    
-        self.proper_elements['Omega'] = outputs[14]
-        
-        self.osculating_elements['a'] = outputs[1]    
-        self.osculating_elements['e'] = outputs[2]    
-        self.osculating_elements['sinI'] = outputs[3] 
-        self.osculating_elements['omega'] = outputs[4]    
-        self.osculating_elements['Omega'] = outputs[5]    
-        self.osculating_elements['M'] = outputs[6]
-
-        self.mean_elements['a'] = outputs[7]    
-        self.mean_elements['e'] = outputs[8]    
-        self.mean_elements['sinI'] = outputs[9] 
-
-        self.proper_errors['RMS_a'] = outputs[15 + self.windows*3]
-        self.proper_errors['RMS_e'] = outputs[15 + self.windows*3 + 1]
-        self.proper_errors['RMS_sinI'] = outputs[15 + self.windows*3 + 2]
-        
-        self.proper_elements['g'] = outputs[15 + self.windows*3 + 6]    
-        self.proper_elements['s'] = outputs[15 + self.windows*3 + 7]
-
-        self.proper_windows = outputs[15:15 + self.windows*3]
-
-        self.proper_extras['res_e'] = outputs[15 + self.windows*3 + 8]
-        self.proper_extras['res_I'] = outputs[15 + self.windows*3 + 9]
-        
-        self.proper_extras['sec_res_e'] = outputs[15 + self.windows*3 + 10]
-        self.proper_extras['sec_res_I'] = outputs[15 + self.windows*3 + 11]
-        
-        self.proper_extras['e_osc_amp'] = outputs[15 + self.windows*3 + 12]
-        self.proper_extras['I_osc_amp'] = outputs[15 + self.windows*3 + 13]
-        
-        self.proper_extras['e_filt_amp'] = outputs[15 + self.windows*3 + 14]
-        self.proper_extras['I_filt_amp'] = outputs[15 + self.windows*3 + 15]
-        
-        self.proper_extras['angle_sec_res'] = outputs[15 + self.windows*3 + 16]
-        self.proper_extras['librating_angle'] = outputs[15 + self.windows*3 + 17]
-        self.proper_extras['phi_entropy'] = outputs[15 + self.windows*3 + 18]
-        self.proper_extras['phi_frac'] = outputs[15 + self.windows*3 + 19]
-        self.prop_finish = True
-
-        for i in outputs[-1]:
-            self.planet_freqs[i] = outputs[-1][i]*3600*360
-        print('Proper Elements:',self.proper_elements)
 
 
 def pe_vals(t,a,p,q,h,k,g_arr,s_arr,small_planets_flag,debug=False):
@@ -2361,7 +2371,7 @@ def read_archive_for_pe(des, clones=3, datadir=None,archivefile=None, logfile=No
 
     
     if(archivefile==None):
-        file = archive_file_name(des=des)
+        file = sbd.archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
@@ -2676,6 +2686,35 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     #t_init, sb_elems, planet_elems, clone_elems, p_equinoct_arr, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
     #                                    clones=clones,return_timeseries=return_timeseries,logfile=logfile, tno_results = tno_results)
     proper_object = proper_element_class(des=des)
+
+    if len(times) == 0:
+        print('An array of the times associated with the sb_elems was not provided. Please include the times vairable in your function call')
+        return 0, proper_object
+
+    if len(sb_elems) == 0:
+        print('No sb_elems were provided, or the array of sb_elems is empty.')
+        return 0, proper_object
+
+    
+    try:
+        if small_planets_flag:
+            test = planet_elems['venus']
+    except:
+        print('User set small_planets_flag = True, but planet_elems does not contain a "venus" array. Setting small_planets_flag = False for this analysis.')
+        small_planets_flag = False
+    try:
+        if small_planets_flag:
+            test = planet_elems['earth']
+    except:
+        print('User set small_planets_flag = True, but planet_elems does not contain a "earth" array. Setting small_planets_flag = False for this analysis.')
+        small_planets_flag = False
+    try:
+        if small_planets_flag:
+            test = planet_elems['mars']
+    except:
+        print('User set small_planets_flag = True, but planet_elems does not contain a "mars" array. Setting small_planets_flag = False for this analysis.')
+        small_planets_flag = False
+            
     #if len(int_data) < 1:
     #    return 0, proper_object, []
         
@@ -2689,6 +2728,9 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
 
     dt = abs(times[-1]-times[-2])
 
+    proper_object.tmax = round(np.max(times) - np.min(times))
+    proper_object.tout = round(dt)
+
     a_init = sb_elems[0]
     e_init = sb_elems[1]
     I_init = sb_elems[2]
@@ -2698,8 +2740,8 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     osc_elem['a'] = a_init[ind0]
     osc_elem['e'] = e_init[ind0]
     osc_elem['I'] = I_init[ind0]
-    osc_elem['o'] = o_init[ind0]
-    osc_elem['O'] = O_init[ind0]
+    osc_elem['omega'] = o_init[ind0]
+    osc_elem['Omega'] = O_init[ind0]
 
     mean_elem['a'] = np.mean(a_init)
     mean_elem['e'] = np.mean(e_init)
@@ -2718,6 +2760,7 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
         g_arr = []
         s_arr = []
         if gs_dict == None:
+            print('Neither orbital element arrays for the planets nor a gs_dict were provided by the user. Proper elements will be computed using hard coded secular frequencies taken from the literature.')
             if small_planets_flag:
                 gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 's7': -2.309e-6, 's8': -5.3395e-7, 'g2': 7.34474/1296000, 'g3': 17.32832/1296000, 'g4': 18.00233/1296000, 's2': -6.57080/1296000, 's3': -18.74359/1296000, 's4': -17.63331/1296000}
             else:
@@ -2817,6 +2860,8 @@ def calc_proper_elements(des='', times= [], sb_elems = [], planet_elems = [], sm
     prop_elem['s(rev/yr)'] = s
     prop_elem['g("/yr)'] = g*3600*360
     prop_elem['s("/yr)'] = s*3600*360
+    prop_elem['omega'] = omega_n[ind0]
+    prop_elem['Omega'] = Omega_n[ind0]
     
     prop_errs = {}
     prop_errs['RMS_a'] = rms_val[0]
@@ -3007,7 +3052,7 @@ def check_family_candidates(proper_object):
         fam_obj = fam_df.iloc[i]
         hcm_cen = hcm_pair(fam_obj['cen_a'], prope['a'], 
                            fam_obj['cen_e'], prope['e'], 
-                           np.sin(fam_obj['cen_I']/180*np.pi), pe['sinI'])
+                           np.sin(fam_obj['cen_I']/180*np.pi), prope['sinI'])
 
         if (hcm_cen < fam_obj['hcm_cut']) and (prope['a'] > fam_obj['low_a']) and (prope['a'] < fam_obj['high_a']) and (prope['e'] > fam_obj['low_e']) and (prope['e'] < fam_obj['high_e']) and (prope['sinI'] > np.sin(np.pi/180*fam_obj['low_I'])) and (prope['sinI'] < np.sin(np.pi/180*fam_obj['high_I'])):
             family_occupancy['family_name'] = fam_obj['objname']
