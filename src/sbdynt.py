@@ -24,10 +24,6 @@ import warnings
 warnings.filterwarnings("ignore", message="You have to reset function pointers after creating a reb_simulation struct with a binary file.")
 warnings.filterwarnings("ignore", message="File in use for Simulationarchive already exists. Snapshots will be appended.")
 
-# Globally disable a syntaxwarning that has to do with generating latex-friendly plot labele
-#warnings.filterwarnings("ignore", category=SyntaxWarning)
-
-
 class small_body:
     # class that is returned by the main sbdynt function
     # it contains all of the calculated dynamical parameters and 
@@ -99,61 +95,17 @@ class small_body:
             else:
                 print('object_type is neither asteroid or tno. Setting default planets = ["all"]')
                 self.planets = ['all']
-            
-        
-def setup_sb_integration(des=None, sb_results=None, clones=None, datadir='',save_sbdb=False,
-                                  saveic=False,archivefile=None,logfile=False):
-    '''
-
-    '''
-    flag = 0
-    if(des == None):
-        print("The designation of a Small Body must be provided")
-        print("failed at sbdynt.setup_default_sb_integration()")
-        return flag, None, None, None, None, None
-    
-    if(logfile==True):
-        logf = log_file_name(des=des)
-    else:
-        logf = logfile
-    if(datadir and logf and logf!='screen'):        
-        logf = datadir + '/' +logf
-
-    if(clones==None):
-        #default to the Gladman approach of best fit + 3-sigma clones
-        clones = 2
-        cloning_method = 'find_3_sigma'
-        if(logf):
-            logmessage = "Clones were not specified, so the default behavior is to return\n"
-            logmessage += "a best-fit and 3-sigma minimum and maximum semimajor axis clones\n"
-            writelog(logf,logmessage)  
-        iflag, epoch, sim, weights = run_reb.initialize_simulation(planets=sb_results.planets,
-                          des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
-                          logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
-    else:
-        cloning_method = 'Gaussian'
-        iflag, epoch, sim = run_reb.initialize_simulation(planets=sb_results.planets,
-                          des=des, clones=clones, cloning_method= cloning_method,datadir=datadir,
-                          logfile=logfile, save_sbdb=save_sbdb, saveic=saveic)
-        weights = np.ones(clones+1)
-
-
-    if(iflag < 1):
-        print("failed at sbdynt.setup_default_tno_integration()")
-        return flag, None, None, None, None, None
-
-
-    flag = 1
-    return flag, sim, epoch, clones, cloning_method, weights                    
+                 
         
 
 def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
-                                       logfile=None,tmax=10e6,tout=500., direction='bf', deletefile = True):
+                     logfile=None,tmax=10e6,tout=500., direction='bf', 
+                     deletefile = True):
 
     """
     Integrate a given Rebound Simulation in the direction prescribed by the user, specifically built for synthetic proper element computation. 
 
-    Parameters:
+    inputs:
         sim (Rebound Simulation): The Rebound Simulation to be used as the initial starting point for the integration.
         des (str): Name/designation of the celestial body as contained in the simulation archive.
         datadir (str): Directory to save output files to. Is defined with respect to the user's working directory.
@@ -161,19 +113,26 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
         logfile (boolean): If True, saves a log file of the run for debugging or benchmarking purposes. 
         deletefile (boolean): If True, deletes any previous Simulationarchive by the same *datadir/archivefile*. 
         tmax (float): The total integration time in years for the small body. The default is 10e6, or 10 Myr, which is the default for an asteroid run.
-        tout (float): The time interval for the integration outputs to be saved in the Simulationarchive. The default is set to 500 years, the default for an asteroid run. The combined tmax + tout default inputs results in a Simulationarchive with 20,000 individual snapshots saved to the Simulationarchive binary file.
-        direction (str = 'bf','forwards', 'backwards'): The direction the integration should be performed in, with options to do a forwards integration, a backwards integration, or a combined backwards + forwards integration, which is the default setting. The combined "bf" option integrates in each direction for half of the tmax setting. e.g. tmax = 10 Myr years would result in a forwards integration of 5 Myr and a backwards integration of 5 Myr. 
-        
+        tout (float): The time interval for the integration outputs to be saved in the Simulationarchive. The default is set to 
+                      500 years, the default for an asteroid run. The combined tmax + tout default inputs results in a Simulationarchive with 
+                      20,000 individual snapshots saved to the Simulationarchive binary file.
+        direction (str = 'bf','forwards', 'backwards'): The direction the integration should be performed in, with options to do a forwards 
+                      integration, a backwards integration, or a combined backwards + forwards integration, which is the default setting. The 
+                      combined "bf" option integrates in each direction for half of the tmax setting. e.g. tmax = 10 Myr years would result 
+                      in a forwards integration of 5 Myr and a backwards integration of 5 Myr. 
 
-
-    Returns:
+    outputs:
         flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
-        sim (Rebound Simulation): The final Simulation from the full integration. Equivalent to the last snapshot in the saved Simulationarchive. 
-        
-        
+        sim (Rebound Simulation instance): The final Simulation from the full integration. Equivalent to the last snapshot in the 
+                     saved Simulationarchive. 
     """ 
 
     icfile = ic_file_name(des=des)
+
+    if(datadir):
+        check_datadir(datadir)
+
+
     if(datadir):
         icfile = datadir + '/' + icfile
         
@@ -209,34 +168,72 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir=None,
 
     
 #function to do a standard Asteroid analysis run using all default choices
-def run_ast(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False, run_proper = False, run_stability = False, output_arrays = False):
+def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, save_sbdb=True,
+            logfile=False, deletefile=False, run_proper=True, run_stability=True, output_arrays=False):
     """
-    Initialize, Integrate, and perform several dfferent analyses for an asteroid small body contained in the Minor Planet Center database.
+    Initialize, integrate, and perform several different analyses for an asteroid small body contained 
+    in JPL's small body database browser.
 
-    Parameters:
+    inputs:
+        des: string, the designation for the object in the SBDB
+        clones (optional): integer, number of clones. Defaults to None/0
+        cloning_method (optional): string,  defaults to standard Guassian sampling
+                           if set to 'find_3_sigma' the first two
+                           returned clones will be approximately 3-
+                           sigma min and max semimajor axis clones
+                           if clones>2, the rest will be sampled in a Guassian manner
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later either to a default 
+                           file name or to a file with the name equal to the string passed
+                           (default) if False nothing is saved
+        logfile (optional): boolean or string; 
+                            if True:  will save some messages to adefault log file name
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
+                            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string; 
+                           if True:  will save a pickle file with the results of the 
+                           JPL SBDB query either to a default file name or to a file
+                           with the name equal to the string passed
+                           (default) if False nothing is saved
+
         des (str): Name/designation of the celestial body as contained in the simulation archive.
-        clones (int): Number of clones to be included in the analysis. Ths number should not exceed the number of cloens contained in the actual Simulationarchive itself. 
-        datadir (str): Directory to save output files to. Is defined with respect to the user's working directory.
-        archivefile (str): Name of the Simulationarchive binary file to be read in. The default filename is *des*-simarchive.bin.
-        logfile (boolean): If True, saves a log file of the run for debugging or benchmarking purposes. 
-        deletefile (boolean): If True, deletes any previous Simulationarchive by the same *datadir/archivefile*. 
-        run_proper (boolean): If True, computes synthetic proper elements from the Simulationarchive outputs. 
-        run_stability (boolean): If True, computes stability indicators from the Simulationarchive outputs. 
-        output_arrays (boolean): If True, saves the osculating orbital elements and the filtered orbital elements to the proper_elements class object, so the user can have quick access to the time arrays for further analysis or visualization. This speeds up the visualization options for the proper_elements code significantly. 
+        clones (None or int): Default None; if specified, number of clones to be included in the analysis beyond the best-fit orbit. 
+        datadir (str): Default empty; directory/path to save output files to. Is defined with respect to the user's working directory.
+        archivefile (None or str): Name of the Simulationarchive binary file to be read in. The default filename is *des*-simarchive.bin.
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later either to a default 
+                           file name or to a file with the name equal to the string passed
+                           (default) if False nothing is saved        
+        save_sbdb (boolean or str); default True, which will save a pickle file with the results of the JPL SBDB query either to a default
+                       file name or to a file with the name equal to the string passed
+        logfile (boolean or str): If True, saves a log file of the run for debugging or benchmarking purposes; if 'screen'
+                       the same messages are printed to screen instead
+        deletefile (boolean): Default False; if True, deletes any previous Simulationarchive by the same *datadir/archivefile*. 
+        run_proper (boolean): Default True, which computes synthetic proper elements from the Simulationarchive outputs. 
+        run_stability (boolean): Default False; if True, computes stability indicators from the Simulationarchive outputs. 
+        output_arrays (boolean): Default False; if True, saves the osculating orbital elements and the filtered orbital elements to 
+                      the proper_elements class object, so the user can have quick access to the time arrays for further analysis or 
+                      visualization. This speeds up the visualization options for the proper_elements code significantly. 
 
-
-    Returns:
-        tno_results: An sbdynt.small_body class object, with parameters filled according to the analyses selected to be performed by the user. The most significant variables for users will likely be...
-           - tno_results.tno_ml_outputs (See tno_classifier.TNO_ML_Outputs class for more information)
-           - tno_results.proper_elements (See prop_elem.proper_element_class for more information)
-           - tno_results.stability_indicators (See stability_indicators.stability_indicators class for more information)
-        
-        
+    outputs:
+        flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
+        ast_results: An sbdynt.small_body class object, with parameters filled according to the analyses selected to be performed by 
+                     the user. The most significant variables for users will likely be:
+                     - ast_results.proper_elements (See prop_elem.proper_elements class for more information)
+                     - ast_results.stability_indicators (See stability_indicators.stability_indicators class for more information)
+        sim (Rebound Simulation instance): The final Simulation from the full integration. Equivalent to the last snapshot in the 
+                     saved Simulationarchive. 
     """ 
+
+
     if(des == None):
         print("The designation of an asteroid must be provided")
-        return None
+        return 0, None, None
 
     if(logfile==True):
         logf = log_file_name(des=des)
@@ -250,7 +247,8 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
         logf = datadir + '/' +logf
 
     if(logf):
-        logmessage = "Initializing an Asteroid simulation instance by querying JPL"
+        logmessage = "Initializing an Asteroid simulation instance by querying JPL for designation: "
+        logmessage += des
         writelog(logf,logmessage)  
 
     iflag, sim, epoch, clones, cloning_method, weights = \
@@ -258,11 +256,13 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
                                               save_sbdb=False,saveic=True,
                                               archivefile=archivefile,
                                               logfile=logfile)
-    
 
     if(iflag < 1):
-        print("Failed at initialization stage")
-        return None
+        logmessage = "Failed at initialization stage"
+        writelog(logf,logmessage)  
+        if(logfile != 'screen'):
+            print(logmessage)
+        return 0, None, None
 
     object_type = 'asteroid'
     #initialize the results class
@@ -288,12 +288,11 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None,
 
 
     if(logf):
-        logmessage = "Running additional forward integrations for the synthetic\n"
+        logmessage = "Running Asteroid integration for the synthetic\n"
         logmessage+= "proper elements calculation\n"
         writelog(logf,logmessage)  
 
-    print('Running Asteroid integration for Proper Elements')
-    rflag, sim = integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
+    rflag, sim = integrate_for_pe(sim, des=des, archivefile=ast_results.archivefile,
                                        logfile=logfile,tmax=10e6,tout=500., direction='bf', deletefile = deletefile)
     if(rflag < 1):
         print("Failed at integration stage")
@@ -726,17 +725,14 @@ def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
 
 #function to do a standard small body analysis run using given or default choices
 def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
-            logfile=False,deletefile=False):
+           saveic = True, save_sbdb = True, logfile=False,deletefile=False):
     '''
     documentation here...
     '''
     if(des == None):
         print("The designation of a solar system small body must be provided")
         return None
-    if(object_type == None):
-        print("The object_type of a solar system small body must be provided ('asteroid' or 'tno'")
-        return None
-
+        
     if(logfile==True):
         logf = log_file_name(des=des)
     else:
@@ -752,16 +748,49 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
         logmessage = "Initializing a small body simulation instance by querying JPL"
         writelog(logf,logmessage)  
 
-    print('Initializing Small Body')
+    if(object_type == None):
+        #query JPL SBDB to see what kind of object it is
+        flag, a = horizons_api.query_sbdb_for_a(des=des)
+        if(flag<1):
+            print("Object not found in JPL's small body database")
+            return None
+        if(a < 2.5):
+            logmessage = "caution: SBDynT is not optimized for bodies interior to Mars"
+            logmessage += "proceeding with an attempted default asteroid run"
+            if(logf != 'screen'):
+                print(logmessage)  
+            if(logf):           
+                tools.writelog(logf,logmessage)
+            object_type = 'ast'
+
+        elif(a < 6.):
+            object_type = 'ast'
+        elif(a > 29.):
+            object_type = 'tno'
+        else:
+            logmessage = "object is in the giant planet region"
+            logmessage += "proceeding with tno defaults"
+            if(logf != 'screen'):
+                print(logmessage)  
+            if(logf):           
+                tools.writelog(logf,logmessage)
+            object_type = 'tno'
     
     sb_results = small_body(des,object_type,clones)
-    iflag, sim, epoch, clones, cloning_method, weights = \
-                setup_sb_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
-                                              save_sbdb=False,saveic=True,
+    iflag = 0
+    if(object_type == 'ast'):
+        iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_ast_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
+                                              save_sbdb=save_sbdb,saveic=saveic,
                                               archivefile=archivefile,
                                               logfile=logfile)
-    
-
+    elif(object_type == 'tno'):
+        iflag, sim, epoch, clones, cloning_method, weights = \
+                setup_ast_integration(des=des, sb_results=sb_results, clones=clones, datadir=datadir,
+                                              save_sbdb=save_sbdb,saveic=saveic,
+                                              archivefile=archivefile,
+                                              logfile=logfile)
+            
     if(iflag < 1):
         print("Failed at initialization stage")
         return None

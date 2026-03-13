@@ -3,7 +3,6 @@ from astroquery.jplsbdb import SBDB
 import numpy as np
 import requests
 import json
-import textwrap
 from pickle import dump
 
 
@@ -882,4 +881,74 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
     covorb = np.cov(clones_mat, rowvar=True)
        
     return 1, epoch, gm, meanorb, covorb
+
+
+def query_sbbd_for_a(des=None,logfile='screen'):
+    '''
+    Return the semimajor axis of an object to determine what kind of sb it is
+    '''
+    flag = 0
+    pdes, destype = tools.mpc_designation_translation(des)
+
+    try:
+        # query the JPL small body database browser for the best-fit
+        # orbit and associated covariance matrix
+        obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
+    except:
+        logmessage = "horizons_api.query_sb_type_from_jpl failed\n"
+        logmessage += "first attempted JPL small body database browser query failed, returning:\n"
+        logmessage += obj
+        if(logf != 'screen'):
+            print(logmessage)  
+        if(logf):           
+            tools.writelog(logf,logmessage)               
+        return flag, 0.
+    #some objects can't be found with their packed designation, 
+    #so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj['code']
+    except KeyError:
+        errorcode = None
+    
+    if(errorcode == 200):
+        #try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "second attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if(logf != 'screen'):
+                print(logmessage)  
+            if(logf):           
+                tools.writelog(logf,logmessage)                   
+            return flag, 0.
+    
+    #check to see if the user-provided designation is the same type as the primary one
+    #if the user gave a provisional designation, but the object is numbered, the SBDB
+    #query won't return the most up-to-date orbit (even though the darned system knows
+    #the provisional designation corresponds to the numbered object...grr
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj['object']['des'])
+    if(sbdbdestype != destype):
+        try:
+            newdes = obj['object']['des']
+            obj = SBDB.query(newdes, full_precision=True, covariance='mat', phys=True)   
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "The user-provided designation was not the most up to date designation\n"           
+            logmessage +="third attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj 
+            if(logf != 'screen'):
+                print(logmessage)  
+            if(logf):           
+                tools.writelog(logf,logmessage)                   
+            return flag, 0.
+    a_sb = obj['orbit']['elements']['a'].value
+    return 1, a_sb
+
+
 

@@ -302,6 +302,21 @@ def arraymod2pi0(x):
     return mx
 
 
+#############################################################
+#############################################################
+# Returns the index of the median element for odd-length arrays,
+# or one of the middle elements for even-length arrays.
+#############################################################
+def argmedian(x):
+    """
+    input:
+        x, 1-d array
+    output:
+        integer, index of the median element
+    """
+    return np.argpartition(x, len(x) // 2)[len(x) // 2]
+
+
 
 ##############################
 # translate MPC designations to packed designations
