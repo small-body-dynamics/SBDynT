@@ -401,260 +401,6 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
 
 
 
-def pe_vals(t,a,p,q,h,k,g_arr,s_arr,small_planets_flag,debug=False):
-    '''
-
-    Dallin: add at least some stub documentation here
-
-    '''
-    
-    global g1;global g2;global g3;global g4;global g5;global g6;global g7;global g8    
-    global s1;global s2;global s3;global s4;global s6;global s7;global s8
-    
-    try:
-        dt = abs(t[1])
-    
-        n = len(h)
-        freq = np.fft.fftfreq(n,d=dt)
-        freqn = np.fft.rfftfreq(len(a),d=dt)
-        rev = 1296000
-    
-        #particle eccentricity vectors
-        Yhk= np.fft.fft(k+1j*h)
-        Ypq = np.fft.fft(q+1j*p)
-        Ya_f = np.fft.rfft(a)
-        window = signal.windows.hamming(n)
-        Yhk_win = Yhk*window
-        Ypq_win = Ypq*window
-        
-        Ypq[0]=0
-      
-        imax = len(Ypq)
-        #disregard anything with a period shorter than 5000 years
-        freqlim = 1./100.
-        #disregard frequencies for which any planet has power at higher than 10% the max
-        pth = 0.25
-           
-        #print(hk_ind,pq_ind)
-        pYhk = np.abs(Yhk)**2
-        pYpq = np.abs(Ypq)**2
-        
-        #make copies of the FFT outputs
-        Ypq_f = Ypq.copy()
-        Yhk_f = Yhk.copy()
-      
-        gind = np.argmax(np.abs(Yhk_win[1:])**2)+1    
-        sind = np.argmax(np.abs(Ypq_win[1:])**2)+1
-        
-        temp1 = Yhk_win[gind]
-        temp2 = Ypq_win[sind]
-        Yhk_win[gind] = 0
-        Ypq_win[sind] = 0
-        
-        gind2 = np.argmax(np.abs(Yhk_win[1:])**2)+1    
-        sind2 = np.argmax(np.abs(Ypq_win[1:])**2)+1
-        g = freq[gind]  
-        s = freq[sind]
-
-    except Exception as error:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        line_number = exc_tb.tb_lineno
-
-        error_message = "An error occurred in at line "+str(line_number)
-    
-        # Print the error message
-        print(error_message)
-        print(error)
-        return[0,0,0]
-    
-    z1 = (g+s-g6-s6); z2 = (g+s-g5-s7); z3 = (g+s-g5-s6); 
-    z4 = (2.*g6-g5); z5 = (2.*g6-g7); z6 = (s-s6-g5+g6); z7 = (g-3.*g6+2.*g5)
-        
-    z8 = (2.*(g-g6)+s-s6); z9 = (3.*(g-g6)+s-s6); z10 = ((g-g6)+s-s6)
-    
-    z11 = g-2.*g7+g6; z12 = 2.*g-2.*g5; z13 = -4.*g+4.*g7; z14 = -2.*s-s6
-
-    if small_planets_flag:
-        freq1 = [(g2),(g3),(g4),(g5),(g6),(g7),(g8),g-z8,g-z9,g-z10,z11,z12,z13,-g+2.*s-g5]
-        freq2 = [(s2),(s3),(s4),(s6),(s7),(s8),s-z8,s-z9,s-z10,z14,g-s+g5-s7,g+g5-2.*s6,2.*g-2.*s6]
-    else:
-        freq1 = [(g5),(g6),(g7),(g8),z1,z2,z3,z4,z5,z7,g-z8,g-z9,g-z10,z11,z12]
-        freq2 = [(s6),(s7),(s8),z1,z2,z3,z6,z8,z9,s-z8,s-z9,s-z10,z14]
-      
-    de = [g-g5,g-g6,g5-g6,s-s7,s-s6,s7-s6,g+s-s7-g5,g+s-s7-g6,g+s-s6-g5,g+s-s6-g6,2.*g-2.*s,g-2.*g5+g6,
-          g+g5-2.*g6,2.*g-g5-g6,-g+s+g5-s7,-g+s+g6-s7,-g+s+g5-s6,-g+s+g6-s6,g-g5+s7-s6,g-g5-s7+s6,
-          g-g6+s7-s6,g-g6-s7+s6,2.*g-s-s7,2.*g-s-s6,-g+2.*s-g5,-g+2.*s-g6,2.*g-2.*s7,2.*g-2.*s6, 
-          2.*g-s7-s6,g-s+g5-s7,g-s+g5-s6,g-s+g6-s7,g-s+g6-s6,g+g5-2.*s7,g+g6-2.*s7,g+g5-2.*s6,
-          g+g6-2.*s6,g+g5-s7-s6,g+g6-s7-s6,s-2.*s7+s6,s+s7-2.*s6,2.*s-s7-s6,s+g5-g6-s7,s-g5+g6-s7,
-          s+g5-g6-s6,s-g5+g6-s6,2.*s-2.*g5,2.*s-2.*g6,2.*s-g5-g6,s-2.*g5+s7,s-2.*g5+s6,s-2.*g6+s7, 
-          s-2.*g6+s6,s-g5-g6+s7,s-g5-g6+s6,2.*g-2.*g5,2.*g-2.*g6,2.*s-2.*s7,2.*s-2.*s6,g-2.*g6+g7,
-          g-3.*g6+2.*g5,2.*(g-g6)+(s-s6),g+g5-g6-g7,g-g5-g6+g7,g+g5-2.*g6-s6+s7,3.*(g-g6)+(s-s6)]
-    
-    secresind1 = []
-    secresind2 = []
-    for i in freq1:
-        try:
-            secresind1.append((np.abs(freq - i)).argmin())
-        except:
-            continue
-    for i in freq2:
-        try:
-            secresind2.append((np.abs(freq - i)).argmin())
-        except:
-            continue
-    
-    spread_dist1 = 1.05
-    spread_dist2 = 1.05
-    freq_dist1 = 1.1
-    freq_dist2 = 1.1
-    
-    spread_dist1 = 1.1
-    spread_dist2 = 1.1
-    freq_dist1 = 1.15
-    freq_dist2 = 1.15
-    spreads = np.zeros(len(secresind1)+len(secresind2))
-    spreads = spreads.astype(int)
-    freq_dist_lims = np.zeros(len(secresind1)+len(secresind2))
-    freq_dist_lims = freq_dist_lims.astype(int)
-    
-    ##########################################################################################################################
-    for i in range(len(secresind1)): 
-        if freq[secresind1[i]] > 0:
-            
-            while ((freq[secresind1[i]+spreads[i]]/freq[secresind1[i]-spreads[i]])) < spread_dist1:
-                spreads[i] = spreads[i]+1   
-                if secresind1[i]-spreads[i] == 0:
-                    break
-                if secresind1[i]+spreads[i]>=len(freq):
-                    break
-                if freq[secresind1[i]+spreads[i]] < 0:
-                    break
-            while ((freq[secresind1[i]+freq_dist_lims[i]]/freq[secresind1[i]-freq_dist_lims[i]])) < freq_dist1:
-                freq_dist_lims[i] = freq_dist_lims[i]+1
-                if secresind1[i]+freq_dist_lims[i] >= len(freq):
-                    break
-        else:
-            while ((freq[secresind1[i]-spreads[i]]/freq[secresind1[i]+spreads[i]])) < spread_dist1:
-                spreads[i] = spreads[i]+1   
-                if secresind1[i]+spreads[i] >= len(freq):
-                    break    
-                if freq[secresind1[i]-spreads[i]] > 0:
-                    break
-            while ((freq[secresind1[i]-freq_dist_lims[i]]/freq[secresind1[i]+freq_dist_lims[i]])) < freq_dist1:
-                freq_dist_lims[i] = freq_dist_lims[i]+1
-                if secresind1[i]+freq_dist_lims[i] >= len(freq):
-                     break
-                
-    for i in range(len(secresind2)):
-        if freq[secresind2[i]] > 0:
-            while ((freq[secresind2[i]+spreads[i+len(secresind1)]]/freq[secresind2[i]-spreads[i+len(secresind1)]])) < spread_dist2:
-                spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
-                if secresind2[i]-spreads[i+len(secresind1)] == 0:
-                    break
-                if secresind2[i]+spreads[i+len(secresind1)]>=len(freq):
-                    break
-                if freq[secresind2[i]+spreads[i+len(secresind1)]] < 0:
-                    break
-            while ((freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]])) < freq_dist2:
-                freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
-                if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
-                    break
-        else:
-            while ((freq[secresind2[i]-spreads[i+len(secresind1)]]/freq[secresind2[i]+spreads[i+len(secresind1)]])) < spread_dist2:
-                spreads[i+len(secresind1)] = spreads[i+len(secresind1)]+1
-                if secresind2[i]+spreads[i+len(secresind1)] >= len(freq):
-                    break
-                if freq[secresind2[i]+spreads[i+len(secresind1)]] > 0:
-                    break
-            while ((freq[secresind2[i]-freq_dist_lims[i+len(secresind1)]]/freq[secresind2[i]+freq_dist_lims[i+len(secresind1)]])) < freq_dist2:
-                freq_dist_lims[i+len(secresind1)] = freq_dist_lims[i+len(secresind1)]+1
-                if secresind2[i]+freq_dist_lims[i+len(secresind1)] >= len(freq):
-                    break
-##########################################################################################################################
-    Yhk_copy = Yhk_f.copy()    
-    Ypq_copy = Ypq_f.copy()    
-    
-    for i in range(len(secresind1)):
-        if secresind1[i] == gind:
-            continue
-            
-        if abs(secresind1[i] - gind) <= freq_dist_lims[i]:
-            continue
-            
-        if spreads[i] > 0:
-            if secresind1[i] <= 3:
-                continue
-            if len(Yhk_copy) - secresind1[i] <= 3:
-                continue
-                
-            if secresind1[i]-2*spreads[i]-1 <= 0:
-                minarr = Yhk_copy[secresind1[i]+spreads[i]+1:secresind1[i]+2*spreads[i]+1]
-            elif secresind1[i]+2*spreads[i]+1 > len(freq):
-                minarr = Yhk_copy[secresind1[i]-2*spreads[i]-1:secresind1[i]-spreads[i]-1]
-            else:
-                minarr = np.array([(Yhk_copy[secresind1[i]-2*spreads[i]-1:secresind1[i]-spreads[i]-1]),
-                                   (Yhk_copy[secresind1[i]+spreads[i]+1:secresind1[i]+2*spreads[i]+1])],dtype=np.float64)
-            Yhk_f[secresind1[i]-spreads[i]:secresind1[i]+spreads[i]] = np.nanmean(np.real(minarr))+1j*np.nanmean(np.imag(minarr))
-            
-        else:
-            if secresind1[i] <= 3:
-                continue
-            if len(Yhk_copy) - secresind1[i] <= 3:
-                continue
-            else:
-                Yhk_f[secresind1[i]] = (np.nanmean(np.real(Yhk_copy[secresind1[i]-1:secresind1[i]+2].astype(float)))+
-                                        1j*np.nanmean(np.imag(Yhk_copy[secresind1[i]-1:secresind1[i]+2].astype(float))))
-                
-    for i in range(len(secresind2)):
-        if secresind2[i] == sind:
-            continue
-        if abs(secresind2[i] - sind) < freq_dist_lims[i+len(secresind1)]:
-            continue
-    
-        if spreads[i] > 0:
-            if secresind2[i] <= 3:
-                continue
-            if len(Ypq_copy) - secresind2[i] <= 3:
-                continue
-            
-            if secresind2[i]-2*spreads[i+len(secresind1)]-1 <= 0:
-                minarr = Ypq_copy[secresind2[i]+spreads[i+len(secresind1)]+1:secresind2[i]+2*spreads[i+len(secresind1)]+1]
-            elif secresind2[i]+2*spreads[i+len(secresind1)]+1 > len(freq):
-                minarr = Ypq_copy[secresind2[i]-2*spreads[i+len(secresind1)]-1:secresind2[i]-spreads[i+len(secresind1)]-1]
-            else:
-                minarr = np.array([(Ypq_copy[secresind2[i]-2*spreads[i+len(secresind1)]-1:secresind2[i]-spreads[i+len(secresind1)]-1]),
-                                   (Ypq_copy[secresind2[i]+spreads[i+len(secresind1)]+1:secresind2[i]+2*spreads[i+len(secresind1)]+1])],dtype=np.float64)
-            Ypq_f[secresind2[i]-spreads[i+len(secresind1)]:secresind2[i]+spreads[i+len(secresind1)]] = np.nanmean(np.real(minarr))+1j*np.nanmean(np.imag(minarr))
-        else:
-            if secresind2[i] <= 3:
-                continue
-            if len(Ypq_copy) - secresind2[i] <= 3:
-                continue
-            else:
-                Ypq_f[secresind2[i]] = (np.nanmean(np.real(Ypq_copy[secresind2[i]-1:secresind2[i]+2].astype(float)))+
-                                        1j*np.nanmean(np.imag(Ypq_copy[secresind2[i]-1:secresind2[i]+2].astype(float))))
-    ######################################################################################################################                
-         
-    limit_ind = np.where(freq >= freqlim)[0]
-    limit_indr = np.where(freqn >= freqlim)[0]
-    
-    Ypq_f[limit_ind] = 0
-    Yhk_f[limit_ind] = 0
-    Ya_f[limit_indr] = 0
-    
-    pq_f = np.fft.ifft(Ypq_f,len(p))
-    hk_f = np.fft.ifft(Yhk_f,len(h))
-    a_f = np.fft.irfft(Ya_f,len(a))
-    sini_f = np.abs(pq_f)
-    ecc_f = np.abs(hk_f) 
-
-    pc5 = int(n*0.1)
-    
-    if debug==True:
-        return [np.nanmean(a),np.nanmean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])],Yhk_f,Ypq_f,h,k,p,q,freq1,freq2,g,s,freq
-    
-    return np.nanmean(a),np.nanmean(ecc_f[pc5:-pc5]),np.nanmean(sini_f[pc5:-pc5])
 
     
 def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radius_bins_init=3, kernel_size=15, 
@@ -662,6 +408,8 @@ def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radiu
                            shortfilt = True):
     """
     Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
+
+    This function takes an FFT signal, the proper frequencies to be protected, the planetary frequencies to be filtered out, and some other related data, and performs a gaussian_1dfilter on the log10 signal. The funtciton returns the smoothed FFT signal, which corresponds to the proper orbital motion. 
     """
     fft_signal = np.asarray(fft_signal)
     log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
@@ -754,7 +502,7 @@ def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_
                     method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, 
                     shortfilt = True):
     """
-    Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
+    This function takes in the FFT of a signal, and smooths the entire FFT. This is used to perform the additional smoothing on the eccentricity and inclination arrays directly, which should retain now long-period terms. 
     """
     fft_signal = np.asarray(fft_signal)
     log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
@@ -912,84 +660,6 @@ def extract_proper_mode(signal, time, known_planet_freqs, freq_tol=2e-7, protect
 
     return proper_signal, proper_freq, protect_bins, filt_signal
 
-def handle_gs8_resonance(proper_signal, gs, gs8, freqs):
-    '''
-
-    Dallin: add stub description here
-
-    '''
-
-    obj_temp = proper_signal.copy()
-    elem_temp = np.abs(obj_temp)
-    ang_temp = np.angle(obj_temp)
-    
-    Ytemp = np.fft.rfft(elem_temp)
-    prop_freq = np.argmin(abs(freqs - gs))
-
-    indres = np.argmin(abs(freqs - (gs - gs8)))
-        
-    indmax = np.argmax(proper_signal[indres-1:indres+2]) + indres - 1
-    if abs(indmax - prop_freq) < 2:
-        print(indmax, prop_freq)
-        return proper_signal
-        
-    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
-    Ytemp[indmax] = Ytemp[indmax]*scale
-
-    indres = np.argmin(abs( - freqs - (gs - gs8)))
-        
-    indmax = np.argmax(proper_signal[indres-1:indres+2]) + indres - 1
-    if abs(indmax - prop_freq) < 2:
-        
-        print(indmax, prop_freq)
-        return proper_signal
-        
-    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
-    Ytemp[indmax] = Ytemp[indmax]*scale
-
-    obj_temp = np.fft.irfft(Ytemp)
-    proper_signal = obj_temp*np.exp(1j*ang_temp)
-    print('modified sig for gs-gs8', indmax, scale, 1/freqs[indmax])
-    return proper_signal
-
-def handle_gs_gs8_resonance(proper_signal, prop, g, s, g8, s8, freqs):
-    '''
-
-    Dallin: add stub description here
-
-    '''    
-    obj_temp = proper_signal.copy()
-    elem_temp = np.abs(obj_temp)
-    ang_temp = np.angle(obj_temp)
-    
-    Ytemp = np.fft.rfft(elem_temp)
-    prop_freq = np.argmin(abs(freqs - prop))
-
-    indres = np.argmin(abs(freqs - (g + s - g8 - s8)))
-        
-    indmax = np.argmax(proper_signal[indres-1:indres+2])  + indres - 1
-    if(abs(indmax - prop_freq) < 2):
-        print(indmax, prop_freq)
-        return proper_signal
-        
-    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
-    Ytemp[indmax] = Ytemp[indmax]*scale
-        
-    indres = np.argmin(abs(- freqs - (g + s - g8 - s8)))
-        
-    indmax = np.argmax(proper_signal[indres-1:indres+2])  + indres - 1
-    if(abs(indmax - prop_freq) < 2):
-        print(indmax, prop_freq)
-        return proper_signal
-        
-    scale = np.sqrt(abs(np.mean(Ytemp[indmax-1], Ytemp[indmax+1]) / Ytemp[indmax])**2)
-    Ytemp[indmax] = Ytemp[indmax]*scale
-
-    obj_temp = np.fft.irfft(Ytemp)
-    proper_signal = obj_temp*np.exp(1j*ang_temp)
-    print('modified sig for g+s-g8-s8', indmax, scale, 1/freqs[indmax])
-    return proper_signal
-
 def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_dex=0.1):
     """
     Identify local max frequency in windowed summed power spectrum, split separately
@@ -1087,99 +757,6 @@ def find_local_max_windowed(freqs, powers, window_half_dex=0.05, window_protect_
     return max_idx, dominant_freq, local_power_all, protect_bins
 
 
-def get_planet_arrays(archive,small_planets_flag,fullfile):
-    try:
-        g1 = 0; g2 = 0; g3 = 0; g4 = 0; g5 = 0; g6 = 0; g7 = 0; g8 = 0
-        s1 = 0; s2 = 0; s3 = 0; s4 = 0; s5 = 0; s6 = 0; s7 = 0; s8 = 0
-        av_init = 0
-        aj_init = 0
-
-        #Ypq[0] = 0
-        time_run = archive[-1].t
-        goal_p = len(archive)
-        N_og = len(archive)
-
-        
-        if small_planets_flag:
-            if isinstance(av_init, int):
-                if archive[-1].t > 0:
-                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = tools.read_sa_for_sbody(des = str('venus'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = tools.read_sa_for_sbody(des = str('earth'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = tools.read_sa_for_sbody(des = str('mars'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                else:
-                    flag, av_init, ev_init, incv_init, lanv_init, aopv_init, Mv_init, t_init = tools.read_sa_for_sbody(des = str('venus'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                    flag, ae_init, ee_init, ince_init, lane_init, aope_init, Me_init, t_init = tools.read_sa_for_sbody(des = str('earth'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                    flag, am_init, em_init, incm_init, lanm_init, aopm_init, Mm_init, t_init = tools.read_sa_for_sbody(des = str('mars'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-            
-                hv = ev_init*np.sin(lanv_init+aopv_init); he = ee_init*np.sin(lane_init+aope_init); hm = em_init*np.sin(lanm_init+aopm_init)
-                kv = ev_init*np.cos(lanv_init+aopv_init); ke = ee_init*np.cos(lane_init+aope_init); km = em_init*np.cos(lanm_init+aopm_init)                
-                pv = np.sin(incv_init)*np.sin(lanv_init); pe = np.sin(ince_init)*np.sin(lane_init); pm = np.sin(incm_init)*np.sin(lanm_init)                
-                qv = np.sin(incv_init)*np.cos(lanv_init); qe = np.sin(ince_init)*np.cos(lane_init); qm = np.sin(incm_init)*np.cos(lanm_init)
-
-                hv = np.append(hv,np.zeros(goal_p-N_og)); he = np.append(he,np.zeros(goal_p-N_og)); hm = np.append(hm,np.zeros(goal_p-N_og))
-                kv = np.append(kv,np.zeros(goal_p-N_og)); ke = np.append(ke,np.zeros(goal_p-N_og)); km = np.append(km,np.zeros(goal_p-N_og))
-                pv = np.append(pv,np.zeros(goal_p-N_og)); pe = np.append(pe,np.zeros(goal_p-N_og)); pm = np.append(pm,np.zeros(goal_p-N_og))
-                qv = np.append(qv,np.zeros(goal_p-N_og)); qe = np.append(qe,np.zeros(goal_p-N_og)); qm = np.append(qm,np.zeros(goal_p-N_og))
-                            
-                
-        
-        if isinstance(aj_init, int):
-            if archive[-1].t > 0 :
-                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = tools.read_sa_for_sbody(des = str('jupiter'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = tools.read_sa_for_sbody(des = str('saturn'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = tools.read_sa_for_sbody(des = str('uranus'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = tools.read_sa_for_sbody(des = str('neptune'), 
-                                                archivefile=fullfile,clones=0,tmax=(time_run),tmin=0,center='helio',s=archive)
-            else:
-                flag, aj_init, ej_init, incj_init, lanj_init, aopj_init, Mj_init, t_init = tools.read_sa_for_sbody(des = str('jupiter'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, as_init, es_init, incs_init, lans_init, aops_init, Ms_init, t_init = tools.read_sa_for_sbody(des = str('saturn'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, au_init, eu_init, incu_init, lanu_init, aopu_init, Mu_init, t_init = tools.read_sa_for_sbody(des = str('uranus'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-                flag, an_init, en_init, incn_init, lann_init, aopn_init, Mn_init, t_init = tools.read_sa_for_sbody(des = str('neptune'), 
-                                                archivefile=fullfile,clones=0,tmin=(time_run),tmax=0,center='helio',s=archive)
-            
-            hj = ej_init*np.sin(lanj_init+aopj_init); hs = es_init*np.sin(lans_init+aops_init); 
-            hu = eu_init*np.sin(lanu_init+aopu_init); hn = en_init*np.sin(lann_init+aopn_init)
-            kj = ej_init*np.cos(lanj_init+aopj_init); ks = es_init*np.cos(lans_init+aops_init); 
-            ku = eu_init*np.cos(lanu_init+aopu_init); kn = en_init*np.cos(lann_init+aopn_init)
-            pj = np.sin(incj_init)*np.sin(lanj_init); ps = np.sin(incs_init)*np.sin(lans_init); 
-            pu = np.sin(incu_init)*np.sin(lanu_init); pn = np.sin(incn_init)*np.sin(lann_init)
-            qj = np.sin(incj_init)*np.cos(lanj_init); qs = np.sin(incs_init)*np.cos(lans_init); 
-            qu = np.sin(incu_init)*np.cos(lanu_init); qn = np.sin(incn_init)*np.cos(lann_init)
-
-            hj = np.append(hj,np.zeros(goal_p-N_og)); hs = np.append(hs,np.zeros(goal_p-N_og)); 
-            hu = np.append(hu,np.zeros(goal_p-N_og)); hn = np.append(hn,np.zeros(goal_p-N_og))
-            kj = np.append(kj,np.zeros(goal_p-N_og)); ks = np.append(ks,np.zeros(goal_p-N_og)); 
-            ku = np.append(ku,np.zeros(goal_p-N_og)); kn = np.append(kn,np.zeros(goal_p-N_og))
-            pj = np.append(pj,np.zeros(goal_p-N_og)); ps = np.append(ps,np.zeros(goal_p-N_og)); 
-            pu = np.append(pu,np.zeros(goal_p-N_og)); pn = np.append(pn,np.zeros(goal_p-N_og))
-            qj = np.append(qj,np.zeros(goal_p-N_og)); qs = np.append(qs,np.zeros(goal_p-N_og)); 
-            qu = np.append(qu,np.zeros(goal_p-N_og)); qn = np.append(qn,np.zeros(goal_p-N_og))
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        line_number = exc_tb.tb_lineno
-
-        error_message = "An error occurred in at line "+str(line_number)
-        print(error_message)
-        print(e)
-        return 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-
-    if small_planets_flag:
-        return hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn,hv,he,hm,kv,ke,km,pv,pe,pm,qv,qe,qm
-    else:
-        return hj,hs,hu,hn,kj,ks,ku,kn,pj,ps,pu,pn,qj,qs,qu,qn
 
 def ind_filt(ind_list,powers,freq,dexl,div_num):
     for i in ind_list:
@@ -1206,7 +783,9 @@ def hkpq(p_elems):
     return h,k,p,q
     
 def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
-    
+    """
+    This function finds the proper planetary secular frequencies associated with the planetary orbital elements arrays contained in the planet_elems variable, and the returns the result as a dictionary.
+    """
     try:     
         hj,kj,pj,qj = hkpq(planet_elems['jupiter'])
         hs,ks,ps,qs = hkpq(planet_elems['saturn'])
@@ -1392,6 +971,12 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
     return g_arr,g_inds,s_arr,s_inds, gs_dict
 
 def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_I = True):
+    """
+    This function takes a power spectrum for some signal, and the planetary frequencies to filter out of the spectrum.
+    It then performs a simple "filter" by dividing the planetary frequencies not associated with the proper frequency of the planet by some scalar.
+    The result is a "filtered" power spectrum. 
+    This function is not the robust, comprehensive filter used by SBDynT to compute the proper motion, but is instead used to prepare a signal to find the proper frequency within the signal by reducing the planetary influence first.
+    """
     j=0
             
     if small_planets_flag:
@@ -1433,6 +1018,31 @@ def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_
 
 def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_dict,small_planets_flag,
                  windows=5,debug=False,objname='', rms = True, shortfilt=True, output_arrays = False):
+    """
+    Compute the proper motion for a Solar System small body, given the oscualting orbital elements and the planetary secular frequencies to be filtered out.
+    Parameters:
+        a_init (1D numpy.array): The osculating semi-major axis of the small body.
+        e_init (1D numpy.array): The osculating eccentricity of the small body.
+        inc_init (1D numpy.array, radians): The osculating inclination of the small body.
+        aop_init (1D numpy.array, radians): The osculating argument of periapse of the small body.
+        lan_init (1D numpy.array, radians): The osculating longitude of the ascending node of the small body.
+        t_init (1D numpy.array, years): The array of times/epochs axis of the small body arrays.
+
+        g_arr (list, units=rev/yr): The list of eccentricity planetary secular frequencies to be filtered out. i.e. [g5, g6, g7, g8]
+        s_arr (list, units=rev/yr): The list of inclination planetary secular frequencies to be filtered out. i.e. [s6, s7, s8]
+        gs_dict (dict): The dictionary of all linear and non-linear planetary secular frequencies to be filtered out. Values should be reported in rev/yr. 
+            e.g. gs_dict = {'g8': g8, 's8': s8, 'g8+s8': g8+s8}
+        small_planets_flag (boolean): If True, filteres out the planetary frequencies associated with Venus, Earth, and Mars as well as the giant planets. 
+            Otherwise, this functino only filters out the giant planets. 
+        windows (int): The number of windows to use in estimating the numerical uncertainties. 
+        objname (str, optional): The name of the object as contained in the Simulationarchive.
+        shortfilt (boolean): A parameter which turns the short-period filter for objects on or off. It is recommended that this variable remain True in all cases, though no change should be detected in 99% of cases. 
+        output_arrays (boolean): If True, the resulting outputs include the osculating and filtered tiem arrays of the orbital elements.
+        
+    Returns:
+        
+        
+    """ 
     try:
         p_init = np.sin(inc_init)*np.sin(lan_init)
         q_init = np.sin(inc_init)*np.cos(lan_init)
@@ -2544,6 +2154,9 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     
 
 def check_scatter(t,a,e):
+    """
+    A function that checks whether a small body's orbit experiences a potential planet-corssing orbit, or is scattered, causing a large change in the orbital energy.
+    """
     da = np.gradient(a)
     de = np.abs(da/a)[1:-2]
 

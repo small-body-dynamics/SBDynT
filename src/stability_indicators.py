@@ -130,6 +130,18 @@ class stability_indicators:
         else:
             print('Distance Metric: Undefined')
 
+        if self.Clone_RMS_a != None:
+            sign = ' < ' if self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'] else ' > '
+            print('Clone_RMS_a: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'], '), ', self.Clone_RMS_a, sign ,self.flag_limits['Clone_RMS_a'])
+          
+        if self.Clone_RMS_e != None:  
+            sign = ' < ' if self.Clone_RMS_e < self.flag_limits['Clone_RMS_a'] else ' > '
+            print('Clone_RMS_e: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_e'], '), ', self.Clone_RMS_e, sign ,self.flag_limits['Clone_RMS_e'])
+            
+        if self.Clone_RMS_I != None:
+            sign = ' < ' if self.Clone_RMS_I < self.flag_limits['Clone_RMS_I'] else ' > '
+            print('Clone_RMS_I: (' , self.Clone_RMS_I < self.flag_limits['Clone_RMS_I'], '), ', self.Clone_RMS_I, sign ,self.flag_limits['Clone_RMS_I'])
+
 
 
     def plot_ACFI(self):
@@ -216,12 +228,14 @@ def compute_stability(des=None,times=[], sb_elems=[], clones=0, pe_obj=None,
             ci.Entropy = entropy_calc(a_arr, e_arr, I_arr)
             ci.Power = power_prop_calc(times, e_arr, I_arr, o_arr, O_arr, size = 5, pe_obj = pe_obj)[0]
 
+            
             if(clones > 0):
                 if(len(clone_elems) == 0):
                     logmessage = 'clones > 0, but clone_elems is not provided.\n'
                     logmessage += 'Please supply the clone_elems variable to compute the RMS indicators\n'
                     tools.writelog(logfile,logmessage)
                 else:
+                    diff_a = []; diff_e = []; diff_I = []
                     for i in range(clones):
                         if(i >= len(clone_elems)):
                             logmessage = str(i) + 'is larger than the number of clones in clone_elems\n'
@@ -233,9 +247,12 @@ def compute_stability(des=None,times=[], sb_elems=[], clones=0, pe_obj=None,
                         # calculating an array of diff_* values? so you might need to pre-define diff_*
                         # as empty array sof size (clones) and then index these?
                         ###################################################
-                        diff_a = ((a_arr - clone_elems[i,0])/np.mean(a_arr))**2
-                        diff_e = (e_arr - clone_elems[i,1])**2
-                        diff_I = (np.sin(I_arr) - np.sin(clone_elems[i,2]))**2
+                        diff_a.append(((a_arr - clone_elems[i,0])/np.mean(a_arr))**2)
+                        diff_e.append((e_arr - clone_elems[i,1])**2)
+                        diff_I.append((np.sin(I_arr) - np.sin(clone_elems[i,2]))**2)
+
+                    diff_a = np.array(diff_a); diff_e = np.array(diff_e); diff_I = np.array(diff_I)
+                    
                     ci.Clone_RMS_a = np.sqrt(np.nanmean(diff_a))
                     ci.Clone_RMS_e = np.sqrt(np.nanmean(diff_e))
                     ci.Clone_RMS_sinI = np.sqrt(np.nanmean(diff_I))
