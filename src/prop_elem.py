@@ -8,12 +8,16 @@ import scipy.signal as signal
 from scipy.stats import circmean
 from scipy.fft import fft, ifft, fftfreq
 from scipy.ndimage import convolve1d, gaussian_filter1d
+import random
+import string
+from os import remove
 
 
 # internal modules
 import plotting_scripts
 import tools
 import PEdata
+import run_reb
 
 
 class proper_element_class:
@@ -224,6 +228,176 @@ class proper_element_class:
 
     def plot_angles(self, plot_cos=False, ifreqs={}):
         plotting_scripts.plot_angles(self, plot_cos=plot_cos, ifreqs=ifreqs)
+
+
+
+
+def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
+                     logfile=False,tmax=10e6,tout=500., direction='bf', 
+                     deletefile = True):
+
+    """
+    Integrate a Rebound Simulation in the direction prescribed by the user,
+    specifically built for synthetic proper element computation. 
+
+    inputs:
+        sim (Rebound Simulation): The Rebound Simulation to be used as the initial 
+            starting point for the integration.
+        des (str): Name/designation of the celestial body as contained in the 
+            simulation archive.
+        datadir (optional): string, path for saving any files produced in this 
+            function; defaults to the current directory
+        icfile (optional): boolean or string, default False, if True or a string,
+            the path to the initial conditions of the rebound simulation is the 
+            string or a default filename defined by sbdynt
+            if False, there isn't a set initial conditions simulation archive
+        archivefile (str; optional): name for the simulation
+            archive file that rebound will generate. The default filename is 
+            <des>-simarchive.bin if this variable is not defined.
+        logfile (optional): boolean or string; if True:  will save some messages 
+            to a default log file name or to a file with the name equal to the 
+            string passed or to the screen if 'screen' is passed; (default) if 
+            False nothing is saved (critical errors still printed to screen)
+        deletefile (bool; optional): if set to True and an archivefile with
+            the name/path of archivefile exists, it will be deleted before
+            the new simulation archive file is created. The default
+            is True for this function. If False, snapshots will be appended 
+        tmax (float): The total integration time in years for the small body. The default 
+            is 10e6 years, which is the default for an asteroid run.
+        tout (float): The time interval for the integration outputs to be saved in the 
+            Simulationarchive. The default is set to 500 years, the default for an asteroid run. 
+            The combined tmax + tout default inputs results in a Simulationarchive with 
+            20,000 individual snapshots saved to the Simulationarchive binary file.
+        direction (str = 'bf','forwards', 'backwards'): The direction the integration should be 
+            performed in, with options to do a forwards integration, a backwards integration, or 
+            a combined backwards + forwards integration, which is the default setting. The 
+            combined "bf" option integrates in each direction for half of the tmax setting. e.g. 
+            tmax = 10 Myr years would result in a forwards integration of 5 Myr and a backwards 
+            integration of 5 Myr. 
+
+    outputs:
+        flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
+        sim (Rebound Simulation instance): The final Simulation from the full integration. 
+        Equivalent to the last snapshot in the saved Simulationarchive. 
+    """ 
+
+    ic_file = icfile
+    if(icfile == True):
+        ic_file = tools.ic_file_name(des=des)
+    elif(icfile):
+        ic_file = icfile
+    
+    if(datadir):
+        check_datadir(datadir)
+    if(datadir):
+        ic_file = datadir + '/' + ic_file
+    if(logfile==True):
+        logf = tools.log_file_name(des=des[0])
+    else:
+        logf = logfile
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' +logf
+    
+    if(archivefile==None):
+        archivefile = tools.archive_file_name(des)
+    if(datadir):
+        archivefile = datadir + '/' +archivefile
+        
+    if(direction == 'bf'):
+        #check if there's a saved initial conditions file because we will need to be able
+        #to re-start the simulation later to switch integration directions
+        if(icfile == False):
+            #save the current state to a randomly named file to make sure we don't over-write 
+            #anyhing else in this directory
+            random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+            ic_file = random_string+'.bin'
+            if(datadir):
+                ic_file = datadir + '/' ic_file
+            logmessage = "creating a temporary initial conditions file at " + ic_file
+            tools.writelog(logf,logmessage)                
+        
+        #run the integration forward first
+        rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
+                                            logfile=logf,tmax=(tmax/2),tout=tout, 
+                                            deletefile=deletefile)
+        
+        if(rflag < 1):
+            logmessage = "The forward simulation failed in prop_elem.integrate_for_pe\n"
+            logmessage += "at run_reb.run_simulation\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, sim
+
+        #read in the saved initial state to re-start for the backwards portion of the integration
+        iflag, snew, clones = run_reb.initialize_simulation_from_simarchive(des=des,
+                                                                            archivefile=ic_file,
+                                                                            logfile=logf)
+        if(iflag < 1)
+            logmessage = "Failed to read back in the initial state in prop_elem.integrate_for_pe\n"
+            logmessage += "from the file: " + ic_file
+            logmessage += "at run_reb.initialize_simulation_from_simarchive to restart for the\n"
+            logmessage += "backwards part of the integration\n"
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, snew
+
+        #delete the randomly generate ic file if that was used
+        if(icflag==False):
+            remove(ic_file)
+
+        rflag, snew = run_reb.run_simulation(snew,des=des,archivefile=archivefile,
+                                             logfile=logf,tmax=-(tmax/2),tout=tout,
+                                             deletefile = False)
+
+        if(rflag < 1):
+            logmessage = "The backward simulation failed in prop_elem.integrate_for_pe\n"
+            logmessage += "at run_reb.run_simulation\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, snew
+
+        return 1, sim
+
+
+    elif(direction == 'forwards'):
+        rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
+                                             logfile=logf,tmax=tmax,tout=tout, 
+                                             deletefile=deletefile)
+        if(rflag < 1):
+            logmessage = "The forward simulation failed in prop_elem.integrate_for_pe\n"
+            logmessage += "at run_reb.run_simulation\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, sim
+        else:
+            return 1, sim
+
+    elif(direction == 'backwards'):
+        rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
+                                            logfile=logf,tmax=-tmax,tout=tout, 
+                                            deletefile=deletefile)
+        if(rflag < 1):
+            logmessage = "The backward simulation failed in prop_elem.integrate_for_pe\n"
+            logmessage += "at run_reb.run_simulation\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, sim
+        else:
+            return 1, sim
+
+    else:
+        logmessage = "failed in  prop_elem.integrate_for_pe\n"
+        logmessage += 'direction given not backwards, forwards, or bf.\n'
+        logmessage += 'Call this function again with a valid direction\n'
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)
+        return 0,sim
 
 
 
@@ -2003,7 +2177,7 @@ def hcm_pair(a1, a2, e1, e2, sini1, sini2):
 
 
 def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], small_planets_flag = False, 
-                         output_arrays = False, gs_dict = None):
+                         output_arrays = False, gs_dict = None,logfile=False):
 
     """
     Compute the synthetic proper elements from the given orbital element time arrays for a small body, 
@@ -2033,6 +2207,9 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
           Woerkom 1950 are used instead. 
           Example: {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 
           's7': -2.309e-6, 's8': -5.3395e-7}.
+        logfile (boolean or string, optional): if False, only critical error messages are printed
+          to screen; if a string is passed, log messages are printed to screen (if set to 'screen') or
+          to a file with the path given by the string.
 
     Returns:
         flag (0,1):  0 indicates a failure occurred. 1 indicates a successful function run.
@@ -2042,43 +2219,55 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     """ 
     
     if(des==None):
-        print('You must provide an object designation')
-        print('Failed at prop_elem.calc_proper_elements')
+        logmessage = 'You must provide an object designation\n'
+        logmessage+='Failed at prop_elem.calc_proper_elements'
+        tools.writelog(logfile,logmessage)
+        if(logfile != 'screen'):
+            print(logmessage)             
         return 0, None
 
     proper_object = proper_element_class(des=des)
 
     if len(times) == 0:
-        print('An array of the times associated with the sb_elems was not provided.')
-        print('Please include the times vairable in your function call')
-        print('Failed at prop_elem.calc_proper_elements')
+        logmessage = 'An array of the times associated with the sb_elems was not provided.\n'
+        logmessage += 'Please include the times vairable in your function call\n'
+        logmessage += 'Failed at prop_elem.calc_proper_elements\n'
+        tools.writelog(logfile,logmessage)
+        if(logfile != 'screen'):
+            print(logmessage)                
         return 0, proper_object
 
     if len(sb_elems) == 0:
-        print('No sb_elems were provided, or the array of sb_elems is empty.')
-        print('Failed at prop_elem.calc_proper_elements')
+        logmessage ='No sb_elems were provided, or the array of sb_elems is empty.\n'
+        logmessage += 'Failed at prop_elem.calc_proper_elements\n'
+        tools.writelog(logfile,logmessage)
+        if(logfile != 'screen'):
+            print(logmessage)              
         return 0, proper_object
 
     try:
         if small_planets_flag:
             test = planet_elems['venus']
     except:
-        print('User set small_planets_flag = True, but planet_elems does not contain a')
-        print('"venus" array. Setting small_planets_flag = False for this analysis.')
+        logmessage = 'User set small_planets_flag = True, but planet_elems does not contain a\n'
+        logmessage += '"venus" array. Setting small_planets_flag = False for this analysis.\n'
+        tools.writelog(logfile,logmessage)        
         small_planets_flag = False
     try:
         if small_planets_flag:
             test = planet_elems['earth']
     except:
-        print('User set small_planets_flag = True, but planet_elems does not contain a ')
-        print('"earth" array. Setting small_planets_flag = False for this analysis.')
+        logmessage = 'User set small_planets_flag = True, but planet_elems does not contain a \n'
+        logmessage += '"earth" array. Setting small_planets_flag = False for this analysis.\n'
+        tools.writelog(logfile,logmessage)        
         small_planets_flag = False
     try:
         if small_planets_flag:
             test = planet_elems['mars']
     except:
-        print('User set small_planets_flag = True, but planet_elems does not contain a ')
-        print('"mars" array. Setting small_planets_flag = False for this analysis.')
+        logmessage += 'User set small_planets_flag = True, but planet_elems does not contain a \n'
+        logmessage += '"mars" array. Setting small_planets_flag = False for this analysis.\n'
+        tools.writelog(logfile,logmessage)        
         small_planets_flag = False
             
     osc_elem = {}
@@ -2120,8 +2309,9 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
         g_arr = []
         s_arr = []
         if gs_dict == None:
-            print('Neither orbital element arrays for the planets nor a gs_dict were provided by the user. ')
-            print('Proper elements will be computed using hard coded secular frequencies taken from the literature.')
+            logmessage ='Neither orbital element arrays for the planets nor a gs_dict were provided by the user.\n'
+            logmessage +='Proper elements will be computed using hard coded secular frequencies taken from the literature.\n'
+            tools.writelog(logfile,logmessage)
             if small_planets_flag:
                 gs_dict = {'g5': 3.299e-6 ,'g6': 2.197e-5, 'g7': 2.398e-6, 'g8': 5.022e-7, 's6': -2.032e-5, 
                            's7': -2.309e-6, 's8': -5.3395e-7, 'g2': 7.34474/1296000, 'g3': 17.32832/1296000, 
@@ -2206,8 +2396,11 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
                              windows=5,debug=False,objname=des, rms = True, shortfilt=True)
 
     if(flag <1):
-        print('prop_elem.compute_prop() did not succeed\n')
-        print('failed at prop_elem.calc_proper_elements\n')
+        logmessage = 'prop_elem.compute_prop() did not succeed\n'
+        logmessage += 'failed at prop_elem.calc_proper_elements\n'
+        tools.writelog(logfile,logmessage)
+        if(logfile != 'screen'):
+            print(logmessage)            
         return flag, proper_object
 
     prop_elem = {}
@@ -2336,7 +2529,8 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     for key,val in proper_object.secular_frequencies.items():
         proper_object.secular_frequencies[key] = val*3600*360
 
-        proper_object.secfreq_flags[key] = (abs(val*3600*360) < 0.01, abs(val*3600*360) < 0.05, abs(val*3600*360) < 0.1, abs(val*3600*360) < 0.2)
+        proper_object.secfreq_flags[key] = (abs(val*3600*360) < 0.01, abs(val*3600*360) < 0.05, 
+                                            abs(val*3600*360) < 0.1, abs(val*3600*360) < 0.2)
 
     fam_results = check_family_candidates(proper_object)
 

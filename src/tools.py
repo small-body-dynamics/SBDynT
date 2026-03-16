@@ -91,7 +91,7 @@ def writelog(logfile,logmessage):
     '''
     if(logfile=='screen'):
         print(logmessage)
-    else:
+    elif(logfile):
         with open(logfile,"a") as f:
             f.write(logmessage)
 

@@ -72,8 +72,12 @@ def setup_default_ast_integration(des=None, clones=None, datadir='',save_sbdb=Tr
 
 
     if(iflag < 1):
-        print("failed at asteroid.setup_default_ast_integration()")
-        return flag, None, None, None, None, None
+        logmessage = "failed at asteroid.setup_default_ast_integration()\n"
+        logmessage += "at run_reb.initialize_simulation\n"
+        tools.writelog(logf,logmessage)  
+        if(logf != 'screen'):
+            print(logmessage)
+        return flag, sim, epoch, clones, cloning_method, weights
 
 
     flag = 1
