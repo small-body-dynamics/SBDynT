@@ -312,7 +312,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
             random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
             ic_file = random_string+'.bin'
             if(datadir):
-                ic_file = datadir + '/' ic_file
+                ic_file = datadir + '/' + ic_file
             logmessage = "creating a temporary initial conditions file at " + ic_file
             tools.writelog(logf,logmessage)                
         
@@ -333,7 +333,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
         iflag, snew, clones = run_reb.initialize_simulation_from_simarchive(des=des,
                                                                             archivefile=ic_file,
                                                                             logfile=logf)
-        if(iflag < 1)
+        if(iflag < 1):
             logmessage = "Failed to read back in the initial state in prop_elem.integrate_for_pe\n"
             logmessage += "from the file: " + ic_file
             logmessage += "at run_reb.initialize_simulation_from_simarchive to restart for the\n"

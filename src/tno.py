@@ -4,7 +4,7 @@ import numpy as np
 
 
 def setup_default_tno_integration(des=None, clones=None, datadir='',save_sbdb=True,
-                                  planets=['outer']
+                                  planets=['outer'], 
                                   saveic=True,archivefile=None,logfile=False):
     '''
     Initialize TNO small body simulation using standard defaults for SBDynT

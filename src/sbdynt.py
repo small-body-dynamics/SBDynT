@@ -272,7 +272,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
         pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, 
                                             planet_elems=planet_elems, 
                                             small_planets_flag=small_planets_flag, 
-                                            output_arrays=output_arrays
+                                            output_arrays=output_arrays, 
                                             logfile=logf)
 
         if(pflag < 1):
@@ -304,7 +304,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
                                                              clones=ast_results.clones, 
                                                              pe_obj=ast_results.proper_elements, 
                                                              clone_elems = clone_elems, 
-                                                             output_arrays = output_arrays
+                                                             output_arrays = output_arrays, 
                                                              logfile=ast_results.logfile)
         if(st_flag < 1):
             logmessage = "failure in sbdynt.run_ast when calculating stability indicators\n"
@@ -573,7 +573,7 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
 
     iflag, sim, epoch, clones, cloning_method, weights = \
                 setup_default_tno_integration(des=des, clones=clones,
-                                              planets= tno_results.planets
+                                              planets= tno_results.planets, 
                                               archivefile=tno_results.archivefile,
                                               save_sbdb=tno_results.sbdb_file,
                                               saveic=tno_results.icfile,
