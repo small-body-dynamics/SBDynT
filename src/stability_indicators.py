@@ -132,17 +132,17 @@ class stability_indicators:
 
         if self.Clone_RMS_a != None:
             sign = ' < ' if self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'] else ' > '
-            print('Clone_RMS_a: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'], '), ', 
+            print('Clone_RMS_a: (' , self.Clone_RMS_a > self.flag_limits['Clone_RMS_a'], '), ', 
                   self.Clone_RMS_a, sign ,self.flag_limits['Clone_RMS_a'])
           
         if self.Clone_RMS_e != None:  
             sign = ' < ' if self.Clone_RMS_e < self.flag_limits['Clone_RMS_a'] else ' > '
-            print('Clone_RMS_e: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_e'], '), ', 
+            print('Clone_RMS_e: (' , self.Clone_RMS_a > self.flag_limits['Clone_RMS_e'], '), ', 
                   self.Clone_RMS_e, sign ,self.flag_limits['Clone_RMS_e'])
             
         if self.Clone_RMS_sinI != None:
             sign = ' < ' if self.Clone_RMS_sinI < self.flag_limits['Clone_RMS_sinI'] else ' > '
-            print('Clone_RMS_sinI: (' , self.Clone_RMS_sinI < self.flag_limits['Clone_RMS_sinI'], '), ',
+            print('Clone_RMS_sinI: (' , self.Clone_RMS_sinI > self.flag_limits['Clone_RMS_sinI'], '), ',
                   self.Clone_RMS_sinI, sign ,self.flag_limits['Clone_RMS_sinI'])
 
 

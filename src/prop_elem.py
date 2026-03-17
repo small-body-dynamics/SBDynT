@@ -150,13 +150,13 @@ class proper_element_class:
         # we can add a helper function that prints out the units of the variables instead
         # of storing them in the variable neames
         #######################
-        self.osculating_elements = {'a': np.inf, 'e': np.inf, 'I': np.inf, 'omega': np.inf, 'Omega': np.inf}
-        self.proper_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf, 
-                                'g(rev/yr)': np.inf, 's(rev/yr)': np.inf, 'omega': np.inf, 'Omega': np.inf}
-        self.mean_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf, 
-                              'g(rev/yr)': np.inf, 's(rev/yr)': np.inf}
-        self.proper_errors = {'RMS_a': np.inf, 'RMS_e': np.inf, 'RMS_sinI': np.inf, 'RMS_g("/yr)': np.inf, 
-                              'RMS_s("/yr)': np.inf}
+        self.osculating_elements = {'a': [], 'e': [], 'I': [], 'omega': [], 'Omega': []}
+        self.proper_elements = {'a': [], 'e': [], 'sinI': [], 'g("/yr)': [], 's("/yr)': [], 
+                                'g(rev/yr)': [], 's(rev/yr)': [], 'omega': [], 'Omega': []}
+        self.mean_elements = {'a': [], 'e': [], 'sinI': [], 'g("/yr)': [], 's("/yr)': [], 
+                              'g(rev/yr)': [], 's(rev/yr)': []}
+        self.proper_errors = {'RMS_a': [], 'RMS_e': [], 'RMS_sinI': [], 'RMS_g("/yr)': [], 
+                              'RMS_s("/yr)': []}
         self.proper_indicators = {}
         self.proper_internal = {}
         self.scattered = {'scattered': False, 'scat_time': np.inf, 'scat_ind': np.inf, 'Max delta-E': 0, 
@@ -194,23 +194,23 @@ class proper_element_class:
         print("#Osculating Elements: \t", round(self.osculating_elements['a'][0], 5) ,"\t" , 
               round(self.osculating_elements['e'][0], 5) , "\t" , round(self.osculating_elements['I'][0]*180/np.pi, 5) , 
               "\t N/A    \t N/A" )
-        print("#Mean Elements: \t" , round(self.mean_elements['a'], 5) , "\t" , round(self.mean_elements['e'], 5) , "\t" , 
-              round(np.arcsin(self.mean_elements['sinI'])*180/np.pi, 5) , "\t" , round(self.mean_elements['g("/yr)'], 5) , 
-              "\t" , round(self.mean_elements['s("/yr)'], 5))
-        print("#Proper Elements: \t" , round(self.proper_elements['a'], 5) , "\t" , round(self.proper_elements['e'], 5) , 
-              "\t" , round(np.arcsin(self.proper_elements['sinI'])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'], 5) , 
-              "\t" , round(self.proper_elements['s("/yr)'], 5))
+        print("#Mean Elements: \t" , round(self.mean_elements['a'][0], 5) , "\t" , round(self.mean_elements['e'][0], 5) , "\t" , 
+              round(np.arcsin(self.mean_elements['sinI'][0])*180/np.pi, 5) , "\t" , round(self.mean_elements['g("/yr)'][0], 5) , 
+              "\t" , round(self.mean_elements['s("/yr)'][0], 5))
+        print("#Proper Elements: \t" , round(self.proper_elements['a'][0], 5) , "\t" , round(self.proper_elements['e'][0], 5) , 
+              "\t" , round(np.arcsin(self.proper_elements['sinI'][0])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'][0], 5) , 
+              "\t" , round(self.proper_elements['s("/yr)'][0], 5))
         
-        propa_err = self.proper_errors['RMS_a']
-        prope_err = self.proper_errors['RMS_e']
-        propI_err = np.arcsin(self.proper_errors['RMS_sinI'])*180/np.pi
-        propg_err = self.proper_errors['RMS_g("/yr)']
-        props_err = self.proper_errors['RMS_s("/yr)']
+        propa_err = self.proper_errors['RMS_a'][0]
+        prope_err = self.proper_errors['RMS_e'][0]
+        propI_err = np.arcsin(self.proper_errors['RMS_sinI'][0])*180/np.pi
+        propg_err = self.proper_errors['RMS_g("/yr)'][0]
+        props_err = self.proper_errors['RMS_s("/yr)'][0]
         print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  
               "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
         print()
         if self.scattered['scattered']:
-            print(str(des) + ' may have been scattered during the simulation at t=' +str(self.scattered['scat_time']) + 
+            print(str(self.des) + ' may have been scattered during the simulation at t=' +str(self.scattered['scat_time']) + 
                   ' years, near snapshot #' + str(self.scattered['scat_ind']))
 
         if self.family_results['family_name'] != None:
@@ -305,11 +305,13 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
         ic_file = tools.ic_file_name(des=des)
     elif(icfile):
         ic_file = icfile
+
     
     if(datadir):
-        check_datadir(datadir)
+        tools.check_datadir(datadir)
     if(datadir):
-        ic_file = datadir + '/' + ic_file
+        if(icfile):
+            ic_file = datadir + '/' + ic_file
     if(logfile==True):
         logf = tools.log_file_name(des=des[0])
     else:
@@ -334,7 +336,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
                 ic_file = datadir + '/' + ic_file
             logmessage = "creating a temporary initial conditions file at " + ic_file
             tools.writelog(logf,logmessage)   
-            sim.save(ic_file)
+            sim.save_to_file(ic_file)
         
         #run the integration forward first
         rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
@@ -1825,7 +1827,7 @@ def hcm_pair(a1, a2, e1, e2, sini1, sini2):
 
 
 
-def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], small_planets_flag = False, 
+def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_elems = [], planet_elems = [], small_planets_flag = False, 
                          output_arrays = False, gs_dict = None,logfile=False):
 
     """
@@ -1922,7 +1924,7 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     osc_elem = {}
     mean_elem = {}
     prop_elem = {}
-    ind0 = np.where(times == 0.0)[0]
+    ind0 = np.where(times == 0.0)[0][0]
 
     dt = abs(times[-1]-times[-2])
 
@@ -1935,24 +1937,47 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     o_init = sb_elems[3]
     O_init = sb_elems[4]
         
-    osc_elem['a'] = a_init[ind0]
-    osc_elem['e'] = e_init[ind0]
-    osc_elem['I'] = I_init[ind0]
-    osc_elem['omega'] = o_init[ind0]
-    osc_elem['Omega'] = O_init[ind0]
+    osc_elem['a'] = [a_init[ind0]]
+    osc_elem['e'] = [e_init[ind0]]
+    osc_elem['I'] = [I_init[ind0]]
+    osc_elem['omega'] = [o_init[ind0]]
+    osc_elem['Omega'] = [O_init[ind0]]
 
-    mean_elem['a'] = np.mean(a_init)
-    mean_elem['e'] = np.mean(e_init)
-    mean_elem['sinI'] = np.sin(np.mean(I_init))
+    mean_elem['a'] = [np.mean(a_init)]
+    mean_elem['e'] = [np.mean(e_init)]
+    mean_elem['sinI'] = [np.mean(I_init)]
         
     diffg = np.gradient((o_init+O_init)%(2*np.pi))
     diffs = np.gradient((O_init)%(2*np.pi))
     
-    mean_elem['g(rev/yr)'] = np.median(diffg)/dt/2/np.pi
-    mean_elem['s(rev/yr)'] = np.median(diffs)/dt/2/np.pi
+    mean_elem['g(rev/yr)'] = [np.median(diffg)/dt/2/np.pi]
+    mean_elem['s(rev/yr)'] = [np.median(diffs)/dt/2/np.pi]
     
-    mean_elem['g("/yr)'] = np.median(diffg)/dt*3600*360/2/np.pi
-    mean_elem['s("/yr)'] = np.median(diffs)/dt*3600*360/2/np.pi
+    mean_elem['g("/yr)'] = [np.median(diffg)/dt*3600*360/2/np.pi]
+    mean_elem['s("/yr)'] = [np.median(diffs)/dt*3600*360/2/np.pi]
+
+    if clones > 0:
+        for i in range(clones):
+            osc_elem['a'].append(clone_elems[i,0,ind0])
+            osc_elem['e'].append(clone_elems[i,1,ind0])
+            osc_elem['I'].append(clone_elems[i,2,ind0])
+            osc_elem['omega'].append(clone_elems[i,3,ind0])
+            osc_elem['Omega'].append(clone_elems[i,4,ind0])
+
+            mean_elem['a'].append(np.mean(clone_elems[i,0]))
+            mean_elem['e'].append(np.mean(clone_elems[i,1]))
+            mean_elem['sinI'].append(np.sin(np.mean(clone_elems[i,2])))
+        
+            diffg = np.gradient((clone_elems[i,3]+clone_elems[i,4])%(2*np.pi))
+            diffs = np.gradient((clone_elems[i,4])%(2*np.pi))
+    
+            mean_elem['g(rev/yr)'].append(np.median(diffg)/dt/2/np.pi)
+            mean_elem['s(rev/yr)'].append(np.median(diffs)/dt/2/np.pi)
+    
+            mean_elem['g("/yr)'].append(np.median(diffg)/dt*3600*360/2/np.pi)
+            mean_elem['s("/yr)'].append(np.median(diffs)/dt*3600*360/2/np.pi)
+
+    
 
     if len(planet_elems) == 0:
         g_arr = []
@@ -2044,6 +2069,13 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
                 compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,
                              windows=5,debug=False,objname=des, rms = True, shortfilt=True)
 
+    c_results = []
+    if clones > 0:
+        for i in range(clones):
+            c_results.append(compute_prop(clone_elems[i,0],clone_elems[i,1],clone_elems[i,2],clone_elems[i,3],clone_elems[i,4],times,g_arr,s_arr,gs_dict,
+                              small_planets_flag, windows=5,debug=False,objname=des, rms = True, shortfilt=True))
+            
+
     if(flag <1):
         logmessage = 'prop_elem.compute_prop() did not succeed\n'
         logmessage += 'failed at prop_elem.calc_proper_elements\n'
@@ -2053,24 +2085,42 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
         return flag, proper_object
 
     prop_elem = {}
-    prop_elem['a'] = pes[0]
-    prop_elem['e'] = pes[1]
-    prop_elem['sinI'] = pes[2]
-    prop_elem['g(rev/yr)'] = g
-    prop_elem['s(rev/yr)'] = s
-    prop_elem['g("/yr)'] = g*3600*360
-    prop_elem['s("/yr)'] = s*3600*360
-    prop_elem['omega'] = omega_n[ind0]
-    prop_elem['Omega'] = Omega_n[ind0]
+    prop_elem['a'] = [pes[0]]
+    prop_elem['e'] = [pes[1]]
+    prop_elem['sinI'] = [pes[2]]
+    prop_elem['g(rev/yr)'] = [g]
+    prop_elem['s(rev/yr)'] = [s]
+    prop_elem['g("/yr)'] = [g*3600*360]
+    prop_elem['s("/yr)'] = [s*3600*360]
+    prop_elem['omega'] = [omega_n[ind0]]
+    prop_elem['Omega'] = [Omega_n[ind0]]
     
     prop_errs = {}
-    prop_errs['RMS_a'] = rms_val[0]
-    prop_errs['RMS_e'] = rms_val[1]
-    prop_errs['RMS_sinI'] = rms_val[2]
-    prop_errs['RMS_g(rev/yr)'] = rms_val[3]
-    prop_errs['RMS_s(rev/yr)'] = rms_val[4]
-    prop_errs['RMS_g("/yr)'] = rms_val[3]*3600*360
-    prop_errs['RMS_s("/yr)'] = rms_val[4]*3600*360
+    prop_errs['RMS_a'] = [rms_val[0]]
+    prop_errs['RMS_e'] = [rms_val[1]]
+    prop_errs['RMS_sinI'] = [rms_val[2]]
+    prop_errs['RMS_g(rev/yr)'] = [rms_val[3]]
+    prop_errs['RMS_s(rev/yr)'] = [rms_val[4]]
+    prop_errs['RMS_g("/yr)'] = [rms_val[3]*3600*360]
+    prop_errs['RMS_s("/yr)'] = [rms_val[4]*3600*360]
+
+    if clones > 0:
+        for i in range(clones):
+            prop_elem['a'].append(c_results[i][1][0])
+            prop_elem['e'].append(c_results[i][1][1])
+            prop_elem['sinI'].append(c_results[i][1][2])
+            prop_elem['g(rev/yr)'].append(c_results[i][7])
+            prop_elem['s(rev/yr)'].append(c_results[i][8])
+            prop_elem['g("/yr)'].append(c_results[i][7]*3600*360)
+            prop_elem['s("/yr)'].append(c_results[i][8]*3600*360)
+
+            prop_errs['a'].append(c_results[i][2][0])
+            prop_errs['e'].append(c_results[i][2][1])
+            prop_errs['sinI'].append(c_results[i][2][2])
+            prop_errs['g(rev/yr)'].append(c_results[i][2][3])
+            prop_errs['s(rev/yr)'].append(c_results[i][2][4])
+            prop_errs['g("/yr)'].append(c_results[i][2][3]*3600*360)
+            prop_errs['s("/yr)'].append(c_results[i][2][4]*3600*360)
 
     prop_win_list = {}
     prop_win_list['a_win'] = error_list[:,0]
@@ -2102,8 +2152,8 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     proper_object.proper_indicators['Ecc Filtered Amplitude'] = e_amp
     proper_object.proper_indicators['sinI Filtered Amplitude'] = I_amp
 
-    proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'], prop_errs['RMS_a'],
-                                                                  prop_errs['RMS_e'], prop_errs['RMS_sinI'])
+    proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'][0], prop_errs['RMS_a'][0],
+                                                                  prop_errs['RMS_e'][0], prop_errs['RMS_sinI'][0])
 
     proper_object.proper_internal['Secular Resonant Angle'] = angle_sec_res
     proper_object.proper_internal['Librating Angle'] = librate_angle
@@ -2221,6 +2271,7 @@ def check_scatter(t,a,e):
         
         scat_result['scattered'] = True
         scat_result['scat_time'] = t[scat_ind]
+        scat_result['scat_ind'] = scat_ind
         scat_result['Max delta-E'] = de[scat_ind]
 
     if np.min(q) < scat_result['qlim']:
@@ -2240,7 +2291,7 @@ def check_family_candidates(proper_object):
     family_occupancy = {'family_name': None, 'pairwise_dMet': np.inf}
     prope = proper_object.proper_elements
     
-    if prope['a'] > 20:
+    if prope['a'][0] > 20:
         default_family_file = 'tno_family_centers.txt'
         family_file =  impresources.files(PEdata) / default_family_file 
         fam_df = pd.read_csv(family_file, index_col=0)
@@ -2249,14 +2300,14 @@ def check_family_candidates(proper_object):
     
     for i in range(len(fam_df)):
         fam_obj = fam_df.iloc[i]
-        hcm_cen = hcm_pair(fam_obj['cen_a'], prope['a'], 
-                           fam_obj['cen_e'], prope['e'], 
-                           np.sin(fam_obj['cen_I']/180*np.pi), prope['sinI'])
+        hcm_cen = hcm_pair(fam_obj['cen_a'], prope['a'][0], 
+                           fam_obj['cen_e'], prope['e'][0], 
+                           np.sin(fam_obj['cen_I']/180*np.pi), prope['sinI'][0])
 
-        if( (hcm_cen < fam_obj['hcm_cut']) and (prope['a'] > fam_obj['low_a']) and (prope['a'] < fam_obj['high_a']) 
-                and (prope['e'] > fam_obj['low_e']) and (prope['e'] < fam_obj['high_e']) and 
-                (prope['sinI'] > np.sin(np.pi/180*fam_obj['low_I'])) and 
-                (prope['sinI'] < np.sin(np.pi/180*fam_obj['high_I']))):
+        if( (hcm_cen < fam_obj['hcm_cut']) and (prope['a'][0] > fam_obj['low_a']) and (prope['a'][0] < fam_obj['high_a']) 
+                and (prope['e'][0] > fam_obj['low_e']) and (prope['e'][0] < fam_obj['high_e']) and 
+                (prope['sinI'][0] > np.sin(np.pi/180*fam_obj['low_I'])) and 
+                (prope['sinI'][0] < np.sin(np.pi/180*fam_obj['high_I']))):
             family_occupancy['family_name'] = fam_obj['objname']
             family_occupancy['pairwise_dMet'] = hcm_cen
             break

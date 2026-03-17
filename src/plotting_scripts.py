@@ -470,7 +470,7 @@ def plot_osc_and_prop(prop_elem):
     ax[1].set_ylabel('Ecc',fontsize=14)
     ax[0].set_ylabel('SMA',fontsize=14)
     fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
-    formatter = mticker.StrMethodFormatter('{x:.3f}')
+    formatter = ticker.StrMethodFormatter('{x:.3f}')
     ax[0].yaxis.set_major_formatter(formatter)
     ax[1].yaxis.set_major_formatter(formatter)
     ax[2].yaxis.set_major_formatter(formatter)
@@ -797,7 +797,7 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     #ax[1].legend(loc = 'upper left')
 
     fig.suptitle('Small Body: '+str(objname),fontsize=16)
-    formatter = mticker.StrMethodFormatter('{x:.3f}')
+    formatter = ticker.StrMethodFormatter('{x:.3f}')
     ax[0].yaxis.set_major_formatter(formatter)
     ax[1].yaxis.set_major_formatter(formatter)
     ax[2].yaxis.set_major_formatter(formatter)

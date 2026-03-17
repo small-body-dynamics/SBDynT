@@ -426,7 +426,7 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
             logmessage = 'calculating asteroid proper elements\n'
             writelog(logf,logmessage)  
 
-        pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=input_elems, planet_elems=planet_elems, 
+        pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, planet_elems=planet_elems, 
                                             small_planets_flag=small_planets_flag, output_arrays=output_arrays)
         if(pflag < 1):
             logmessage = "Failed at proper elements calculation stage in sbdynt.analyze_ast_run\n"
