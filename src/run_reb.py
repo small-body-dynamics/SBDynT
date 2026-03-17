@@ -694,9 +694,12 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
         sim.collision_resolve = "merge"
     elif(integrator.lower == 'whfast'.lower):
         sim.integrator = 'whfast'
-        # Our simulations do not modify masses, forces, or number of particles during the run, so turning off safe mode would make this integrator much faster whiel retaining accuracy. Is there any reason not to include this? Only thing I can think of would be a planetary ejection, but at that point you would want the simulation to end anyways. Can confirm through benchmarking that whfast by itself isn't actually any faster (or memory efficient) than mercurius, unless you turn safe mode off, then it's 2-5x faster. I suppose we should still give users the power, but that would require an additional variable in the run_simulation function call. 
+        # Our simulations do not modify masses, forces, or number of particles 
+        # during the run, so turning off safe mode makes this integrator 
+        # much faster while retaining accuracy. 
+        # But user-beware if you modify something else about the integration
+        # that makes this choice bad!!
         sim.ri_whfast.safe_mode = 0
-        
     elif(integrator == 'ias15'):
         sim.integrator = 'ias15'
     else:

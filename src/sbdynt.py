@@ -17,6 +17,9 @@ from prop_elem import *
 from datetime import datetime
 import os
 import rebound
+import random
+import string
+from os import remove
 
 # Globally disable two rebound-specific warnings that come up a lot regarding the 
 # use of simulation archive functions
@@ -31,8 +34,8 @@ class small_body:
     def __init__(self, designation, object_type=None):
         self.designation = designation
         self.object_type = object_type
-        selt.epoch = None
-        self.clones = clones
+        self.epoch = None
+        self.clones = None
         self.cloning_method = None
         self.clone_weights = None
         self.planets = None
@@ -41,7 +44,7 @@ class small_body:
         self.sbdb_file = None
         self.logfile = None
         if(object_type == 'tno'):
-            self.tno_ml_outputs = None
+            self.tno_class = None
 
         self.tmax = None
         self.tout = None
@@ -102,7 +105,8 @@ class small_body:
 
     
 def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, save_sbdb=True,
-            logfile=False, deletefile=False, run_proper=True, run_stability=True, output_arrays=False):
+            logfile=False, deletefile=False, run_proper=True, run_stability=True, 
+            output_arrays=False,integrator='mercurius'):
     """
     Function to do a standard Asteroid analysis run using all default choices
     Initialize, integrate, and perform several different analyses for an asteroid small body contained 
@@ -147,6 +151,10 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
             so the user can have quick access to the time arrays for further analysis or 
             visualization. This speeds up the visualization options for the proper_elements 
             code significantly. 
+        integrator (optional): if not set, the default integrator mercurius is used. But
+            you can set this to 'whfast' to speed up the long proper elements integration.
+            NOTE: The safest thing is to leave this parameter un-set unless you're sure
+            you don't need to worry about close encounters.
 
     outputs:
         flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
@@ -229,16 +237,16 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
     ast_results.cloning_method = cloning_method
     ast_results.clone_weights = weights
 
-    if run_proper:
+    if(run_proper):
         if(logf):
             logmessage = "Running Asteroid integration for the synthetic\n"
             logmessage+= "proper elements calculation\n"
             writelog(logf,logmessage)  
 
-            rflag, sim = integrate_for_pe(sim, des=des, archivefile=ast_results.archivefile,
-                                  icfile=ast_results.icfile,
-                                  logfile=ast_results.logfile, tmax=10e6, tout=500., 
-                                  direction='bf', deletefile=deletefile)
+        rflag, sim = integrate_for_pe(sim, des=des, archivefile=ast_results.archivefile,
+                                      icfile=ast_results.icfile,logfile=ast_results.logfile, 
+                                      tmax=10e6, tout=500., direction='bf', 
+                                      deletefile=deletefile, integrator=integrator)
 
         if(rflag < 1):
             logmessage = "Failed during the integration in sbdynt.run_ast\n"
@@ -253,7 +261,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
             writelog(logf,logmessage)  
 
         reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = \
-                read_archive_for_pe(des=des,datadir=datadir,archivefile=ast_results.archivefile,
+                read_archive_for_pe(des=des,archivefile=ast_results.archivefile,
                                 clones=ast_results.clones,logfile=ast_results.logfile, 
                                 object_type = ast_results.object_type)
 
@@ -269,12 +277,12 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
             logmessage = "calculating asteroid proper elements\n"
             writelog(logf,logmessage)  
 
+        
         pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, 
                                             planet_elems=planet_elems, 
                                             small_planets_flag=small_planets_flag, 
-                                            output_arrays=output_arrays, 
+                                            output_arrays=output_arrays,
                                             logfile=logf)
-
         if(pflag < 1):
             logmessage = "Failed at proper elements calculation stage in sbdynt.run_ast\n"
             logmessage+= "at prop_elem.calc_proper_elements\n"
@@ -304,7 +312,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
                                                              clones=ast_results.clones, 
                                                              pe_obj=ast_results.proper_elements, 
                                                              clone_elems = clone_elems, 
-                                                             output_arrays = output_arrays, 
+                                                             output_arrays = output_arrays,
                                                              logfile=ast_results.logfile)
         if(st_flag < 1):
             logmessage = "failure in sbdynt.run_ast when calculating stability indicators\n"
@@ -317,7 +325,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
     return 1, ast_results, sim
 
 def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
-            logfile=False, run_proper=True, run_stability=False, output_arrays=False):
+            logfile=False, run_proper=True, run_stability=True, output_arrays=False):
     """
     Perform several default analyses on an already existing Simulationarchive for 
     a default asteroid small body simulation.
@@ -390,7 +398,7 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
             logmessage = "failed in sbdynt.analyze_ast_run when trying to read in the archivefile\n"
             logmessage += " to determine how many clones there are using \n"
             logmessage += "run_reb.initialize_simulation_from_simarchive"
-            tools.writelog(logf,logmessage) 
+            writelog(logf,logmessage) 
             if(logf != 'screen'):
                 print(logmessage)
             return 0, ast_results
@@ -408,8 +416,8 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
 
         if(reflag < 1):
             logmessage = "Failed in sbdynt.analyze_ast_run when reading in an integrated simulation for proper elements\n"
-            logmessage += "at tools.read_archive_for_pe\n"
-            tools.writelog(logf,logmessage) 
+            logmessage += "at prop_elem.read_archive_for_pe\n"
+            writelog(logf,logmessage) 
             if(logf != 'screen'):
                 print(logmessage)
             return 0, ast_results
@@ -418,18 +426,20 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
             logmessage = 'calculating asteroid proper elements\n'
             writelog(logf,logmessage)  
 
-        pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, planet_elems=planet_elems, 
+        pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=input_elems, planet_elems=planet_elems, 
                                             small_planets_flag=small_planets_flag, output_arrays=output_arrays)
-
         if(pflag < 1):
             logmessage = "Failed at proper elements calculation stage in sbdynt.analyze_ast_run\n"
-            logmessage = "at prop_elem.calc_proper_elements\n"
+            logmessage += "at prop_elem.calc_proper_elements\n"
             tools.writelog(logf,logmessage) 
             if(logf != 'screen'):
                 print(logmessage)
             return 0, ast_results
 
         ast_results.proper_elements = prope
+
+        if(logf=='screen'):
+            prope.print_results()
             
     elif(run_stability):
         reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,
@@ -438,13 +448,17 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
                                                                             object_type = ast_results.object_type)
         if(reflag < 1):
             logmessage = "Failed in sbdynt.analyze_ast_run when reading in an integrated simulation for stability calc\n"
-            logmessage += "at tools.read_archive_for_pe\n"
-            tools.writelog(logf,logmessage) 
+            logmessage += "at prop_elem.read_archive_for_pe\n"
+            writelog(logf,logmessage) 
             if(logf != 'screen'):
                 print(logmessage)
             return 0, ast_results
         
     if(run_stability):
+
+        if(logf):
+            logmessage = 'calculating asteroid stability indicators\n'
+            writelog(logf,logmessage)         
         stflag, ast_results.stability_indicators = compute_stability(des=des, times=times, sb_elems=sb_elems, clones=clones, 
                                                                    pe_obj=ast_results.proper_elements, clone_elems=clone_elems, 
                                                                    output_arrays=output_arrays)
@@ -455,6 +469,9 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
             if(logf != 'screen'):
                 print(logmessage)
             return 0, ast_results
+        
+        if(logf=='screen'):
+            ast_results.stability_indicators.print_results()
        
     return 1, ast_results
 
@@ -462,9 +479,9 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
         
     
 def run_tno(des=None, clones=None, datadir='', archivefile=None,
-            saveic=True, save_sbdb=True,
-            logfile=False, deletefile=False, run_ML=True, 
-            run_proper=False, run_stability=False, output_arrays=False):
+            saveic=True, save_sbdb=True,logfile=False, deletefile=False,
+            run_ML=True, run_proper=False, run_stability=False, 
+            output_arrays=False,integrator='mercurius'):
     """
     Function to do a standard TNO analysis run using all default choices
     Initialize, Integrate, and perform several different analyses for a TNO small body contained in
@@ -510,7 +527,13 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
             elements and the filtered orbital elements to the proper_elements class object, 
             so the user can have quick access to the time arrays for further analysis or 
             visualization. This speeds up the visualization options for the proper_elements 
-            code significantly. 
+            code significantly.
+        integrator (optional): if not set, the default integrator mercurius is used. But
+            you can set this to 'whfast' to speed up the long proper elements integration.
+            NOTE: mercurius is always used for the ML classifier run since that's short
+            and you really want to resolve those close encounters correctly for scattering 
+            objects. The safest thing is to leave this parameter un-set unless you're sure
+            you don't need to worry about close encounters.
 
     outputs:
         flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
@@ -573,23 +596,37 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
 
     iflag, sim, epoch, clones, cloning_method, weights = \
                 setup_default_tno_integration(des=des, clones=clones,
-                                              planets= tno_results.planets, 
+                                              planets= tno_results.planets,
                                               archivefile=tno_results.archivefile,
                                               save_sbdb=tno_results.sbdb_file,
                                               saveic=tno_results.icfile,
                                               logfile=tno_results.logfile)
     tno_results.clones = clones
+    tno_results.epoch = epoch
     
     if(iflag < 1):
         logmessage = "sbdynt.run_tno Failed at initialization stage\n"
         logmessage += " at tno.setup_default_tno_integration"
-        tools.writelog(logf,logmessage) 
+        writelog(logf,logmessage) 
         if(logf != 'screen'):
             print(logmessage)
-        return 0, tno_results
+        return 0, tno_results, sim
 
     tno_results.cloning_method = cloning_method
     tno_results.clone_weights = weights
+
+    if(run_ML and (run_proper or run_stability) and tno_results.icfile == False):
+        #we will need a saved copy of the initial conditions later
+        #save the current state to a randomly named file to make sure we don't over-write 
+        #anything else in this directory
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        ic_file = random_string+'.bin'
+        if(datadir):
+            ic_file = datadir + '/' + ic_file
+        logmessage = "creating a temporary initial conditions file at " + ic_file
+        tools.writelog(logf,logmessage)
+        sim.save_to_file(ic_file)
+
     
     tno_class = TNO_ML_outputs()
     if(run_ML):
@@ -605,201 +642,290 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
         if(cflag < 1):
             logmessage = "Failed at the machine learning stage of sbdynt.run_tno\n"
             logmessage += "at tno_classifier.run_and_MLclassify_TNO\n"
-            tools.writelog(logf,logmessage) 
+            writelog(logf,logmessage) 
             if(logf != 'screen'):
                 print(logmessage)
-            return 0, tno_results
+            return 0, tno_results, sim
 
         if(logf=='screen'):
             tno_class.print_results()
 
-        tno_results.tno_ml_outputs = tno_class
 
-    if run_proper or run_stability:
-    
-
+    if(run_proper or run_stability):
         if(tno_class.most_common_class == 'scattering'):
-            if(logf):
-                logmessage = "This is most likely a scattering TNO.\n"
-                logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
-                logmessage += "No further integration needed."
-                writelog(logf,logmessage)  
-            
+            logmessage = str(des) + " is most likely a scattering TNO based on the ML classifier.\n"
+            logmessage += "Proper a,e,sini will be given as 10 Myr averages.\n"
+            logmessage += "No further integration needed.\n"
+            logmessage += "If you *really* want to do the proper element integration, re-run this\n"
+            logmessage += "object with run_ML=False\n"
+            writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
             tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
             tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
             tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
-            return tno_results
+            return 2, tno_results, sim
         
         if(logf):
             logmessage = "Running additional forward integrations for the synthetic\n"
-            logmessage+= "proper elements calculation\n"
+            logmessage+= "proper elements and/or stability indicators calculation\n"
             writelog(logf,logmessage)  
 
-        print('Running TNO integration for PE/Stability Indicators')
+        #make sure we don't delete the initial ML integration if it was used
+        if(run_ML==True and deletefile==True):
+            pe_deletefile = False
+        else:
+            pe_deletefile = deletefile
+        rflag, sim = integrate_for_pe(sim,des=des,archivefile=tno_results.archivefile,icfile=ic_file,
+                                      logfile=tno_results.logfile,tmax=150e6,tout=5000., 
+                                      direction='bf', deletefile=pe_deletefile, integrator=integrator)
+        if(rflag < 1):
+            logmessage = "failed in sbdynt.run_tno at the integration for proper elements and\n"
+            logmessage += "stability indicators at prop_elem.integrate_for_pe\n"
+            writelog(logf,logmessage)  
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, tno_results, sim
 
-        rflag, sim = integrate_for_pe(sim, des=des, archivefile=archivefile,datadir=datadir,
-                                       logfile=logfile,tmax=150e6,tout=5000., direction='bf', deletefile = deletefile)
+        if(tno_results.icfile == False):
+            logmessage = "removing the temporary initial conditions file"
+            tools.writelog(logf,logmessage)   
+            remove(ic_file)
+
+        if(logf):
+            logmessage = "Reading in the TNO integration\n"
+            logmessage+= "proper elements and/or stability indicators calculation\n"
+            writelog(logf,logmessage)  
         
-
-        print('Reading TNO integration')
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
-                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
-
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(
+                    des=des,archivefile=tno_results.archivefile,clones=tno_results.clones,
+                    logfile=tno_results.logfile,object_type=tno_results.object_type)
         if(reflag < 1):
-            print("Failed when reading in integrated simulation for proper elements")
-            return tno_results
+            logmessage = "Failed when reading in the integrated simulation for proper elements in sbdynt.run_tno\n"
+            logmessage += "at prop_elem.read_archive_for_pe\n"
+            writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, tno_results, sim
 
-        if run_proper:
-            print('Running TNO PE')
-            pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
+        if(run_proper):
+            if(logf):
+                logmessage = 'Running the TNO proper element calculation'
+                writelog(logf,logmessage) 
 
-            if(pflag < 1):
-                print("Failed at proper elements calculation stage")
-                return tno_results
+            pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, planet_elems=planet_elems, 
+                                                small_planets_flag=small_planets_flag, output_arrays=output_arrays)
 
             tno_results.proper_elements = prope
+            if(pflag < 1):
+                logmessage = "Failed at proper elements calculation stage in sbdynt.run_tno\n"
+                logmessage += "at prop_elem.calc_proper_elements\n"
+                writelog(logf,logmessage) 
+                if(logf != 'screen'):
+                    print(logmessage)                
+                return 0, tno_results, sim
+
+            if(logf=='screen'):
+                prope.print_results()
             
-        if run_stability:
-            reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
-                                        clones=clones,logfile=logfile, object_type = tno_results.object_type)
-    if run_stability:
-        tno_results.stability_indicators = compute_stability(des=des, times = times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
-        
+        if(run_stability):
+            stflag, tno_results.stability_indicators = compute_stability(des=des, times=times, sb_elems=sb_elems, 
+                                                                 clones=tno_results.clones, 
+                                                                 pe_obj=tno_results.proper_elements, 
+                                                                 clone_elems=clone_elems, 
+                                                                 output_arrays=output_arrays)
+            if(stflag < 1):
+                logmessage = "Failed at stability indicators calculation stage in sbdynt.run_tno\n"
+                logmessage += "at stability_indicators.compute_stability\n"
+                writelog(logf,logmessage) 
+                if(logf != 'screen'):
+                    print(logmessage)                
+                return 0, tno_results, sim
+            if(logf=='screen'):
+                tno_results.stability_indicators.print_results()
 
-    return tno_results
+    return 1, tno_results, sim
 
 
-def run_existing_tno(des=None, clones=None, datadir='',archivefile=None,
-            logfile=False, run_ML = False, run_proper=False, run_stability=False, output_arrays = True):
+def analyze_tno_run(des=None, clones=None, datadir='',archivefile=None,
+                    logfile=False, run_ML=True, run_proper=False, run_stability=False, 
+                    output_arrays = True):
     """
-    Perform several dfferent analyses on an already existing Simulationarchive for a TNO small body.
+    Perform several default analyses on an already existing Simulationarchive for 
+    a default tno small body simulation.
+    inputs:
+        des: string, the designation for the object in the archivefile
+        clones (optional): integer, number of clones. Defaults to None, which
+            will let the code figure out how many clones are in the simulation
+        datadir (optional): string, path for finding or saving any files needed or
+            produced in this function; defaults to the current directory
+        logfile (optional): boolean or string; 
+            if True:  will save some messages to a default log file name
+            or to a file with the name equal to the string passed or
+            to the screen if 'screen' is passed 
+            (default) if False nothing is saved
+        archivefile (str; optional): name for the simulation archive file that 
+            contains the rebound simulation that was already run. The default 
+            filename is <des>-simarchive.bin if this variable is not defined.
+        run_ML (boolean): Default True, performs a classification analysis on 
+            the TNO Simulationarchive outputs by way of the tno_classifier algorithm.             
+        run_proper (boolean): Default False, computes synthetic proper elements 
+            from the Simulationarchive outputs. 
+            if False, nothing currently happens in this function
+        run_stability (boolean): Default False, computes stability indicators from the 
+            Simulationarchive outputs of the proper element run. 
+        output_arrays (boolean): Default False; if True, saves the osculating orbital 
+            elements and the filtered orbital elements to the proper_elements class object, 
+            so the user can have quick access to the time arrays for further analysis or 
+            visualization. This speeds up the visualization options for the proper_elements 
+            code significantly. 
 
-    Parameters:
-        des (str): Name/designation of the celestial body as contained in the simulation archive.
-        clones (int): Number of clones to be included in the analysis. Ths number should not exceed the number of cloens contained in the actual Simulationarchive itself. 
-        datadir (str): Directory to save output files to. Is defined with respect to the user's working directory.
-        archivefile (str): Name of the Simulationarchive binary file to be read in. The default filename is *des*-simarchive.bin.
-        logfile (boolean): If True, saves a log file of the run for debugging or benchmarking purposes. 
-        run_ML (boolean): If True, performs a classification analysis on the TNO Simulationarchive outputs by way of the tno_classifier algorithm. Will fail if the Simulationarchive does not have the correct time resolution for the classifier. 
-        run_proper (boolean): If True, computes synthetic proper elements from the Simulationarchive outputs. 
-        run_stability (boolean): If True, computes stability indicators from the Simulationarchive outputs. 
-        output_arrays (boolean): If True, saves the osculating orbital elements and the filtered orbital elements to the proper_elements class object, so the user can have quick access to the time arrays for further analysis or visualization.
-
-
-    Returns:
-        tno_results: An sbdynt.small_body class object, with parameters filled according to the analyses selected to be performed by the user. The most significant variables for users will likely be...
-           - tno_results.tno_ml_outputs (See tno_classifier.TNO_ML_Outputs class for more information)
-           - tno_results.proper_elements (See prop_elem.proper_elements class for more information)
-           - tno_results.stability_indicators (See stability_indicators.stability_indicators class for more information)
-        
-        
+    outputs:
+        flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
+        tno_results: An sbdynt.small_body class object, with parameters filled according to the 
+            analyses selected to be performed by the user, including:
+            - tno_results.tno_ml_outputs (See tno_classifier.TNO_ML_Outputs class for more information)
+            - tno_results.proper_elements (See prop_elem.proper_elements class for more information)
+            - tno_results.stability_indicators (See stability_indicators.stability_indicators class 
+              for more information)        
     """ 
-    if(des == None):
-        print("The designation of a TNO must be provided")
-        return None
 
     if(logfile==True):
         logf = log_file_name(des=des)
     else:
         logf = logfile
-
-    if(datadir):
-        check_datadir(datadir)
-
     if(datadir and logf and logf!='screen'):        
         logf = datadir + '/' +logf
     
-
-    iflag, sim, epoch, clones, cloning_method, weights = \
-                setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
-                                              save_sbdb=False,saveic=True,
-                                              archivefile=archivefile,
-                                              logfile=logfile)
     object_type = 'tno'
+
     #initialize the results class
-    tno_results = small_body(des,object_type,clones)
-    tno_results.planets = ['outer']
-    tno_results.cloning_method = 'Covariance Matrix'
-    tno_results.clone_weights = None
+    tno_results = small_body(des,object_type)
 
-    icfile = ic_file_name(des=des)
-    if(datadir):
-        icfile = datadir + '/' + icfile
-
-    
     if(archivefile==None):
         file = archive_file_name(des=des)
     else:
         file = archivefile
     if(datadir):
         file = datadir + '/' + file
+    
     tno_results.archivefile = file
-    tno_results.icfile = icfile
     tno_results.logfile = logf
 
-    tno_class = TNO_ML_outputs()
-    if run_ML:
-        #'''
-        print('Running TNO ML')
-        cflag, tno_class, sim = run_and_MLclassify_TNO(sim=sim,des=des,clones=clones,
-                                    archivefile=archivefile,datadir=datadir,
-                                    deletefile=False,logfile=logfile, classify_only=True)
+    if(clones == None):
+        #read in the simulation archive to determine the number of clones
+        if(logf):
+            logmessage = "reading in the simulation archive to determine how many clones there are\n"
+            writelog(logf,logmessage)
+        iflag, snew, clones = initialize_simulation_from_simarchive(des=des,archivefile=tno_results.archivefile,
+                                                                    logfile=logf)
+        if(iflag < 1):
+            logmessage = "failed in sbdynt.analyze_tno_run when trying to read in the archivefile\n"
+            logmessage += " to determine how many clones there are using \n"
+            logmessage += "run_reb.initialize_simulation_from_simarchive"
+            writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, tno_results
 
+    tno_results.clones = clones
+    tno_class = TNO_ML_outputs(clones)
+    if(run_ML):
+        if(logf):
+            logmessage = "Running the ML classifier\n";
+            writelog(logf,logmessage)
+        
+        cflag, tno_class, sim = run_and_MLclassify_TNO(des=des,clones=tno_results.clones,
+                                    archivefile=tno_results.archivefile, deletefile=False,
+                                    logfile=tno_results.logfile, classify_only=True)
+
+        tno_results.tno_class = tno_class
         if(cflag < 1):
-            print("Failed at the machine learning stage")
-            return tno_results
+            logmessage = "Failed at the machine learning stage in sbdynt.analyze_tno_run\n"
+            logmessage += "at tno_classifier.run_and_MLclassify_TNO"
+            return 0, tno_results
 
         if(logf=='screen'):
             tno_class.print_results()
 
-        tno_results.tno_ml_outputs = tno_class
-        #'''
-
-    if run_proper or run_stability:
-        print('Reading TNO integration for Proper Elements and/or Chaos')
-        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,datadir=datadir,archivefile=archivefile,
-                                   clones=clones,logfile=logfile, object_type = tno_results.object_type)
-
-        if(reflag < 1):
-            print("Failed when reading in integrated simulation for proper elements")
-            return tno_results
-    
-    if run_proper:
-        print('Running TNO Proper Elements')
-        
-        if(tno_class.most_common_class == 'scattering'):
-            if(logf):
-                logmessage = "This is most likely a scattering TNO.\n"
-                logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
-                logmessage += "No further integration needed."
-                writelog(logf,logmessage)  
+        if(run_proper and tno_class.most_common_class == 'scattering'):
+            logmessage = "This is most likely a scattering TNO.\n"
+            logmessage += "Proper a,e,sini will be 10 Myr averages.\n"
+            logmessage += "If you ran a longer integraiton anyway and want the proper\n"
+            logmessage += "elements, re-run this function with run_ML=False\n"
+            writelog(logf,logmessage)  
+            if(logf != 'screen'):
+                print(logmessage)
             
             tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
             tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
             tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
         
-            return tno_results
-        else:
-                
-            #print('Running TNO PE')
-            pflag, prope = calc_proper_elements(des=des, times = times, sb_elems = sb_elems, 
-                                             planet_elems = planet_elems, small_planets_flag = small_planets_flag, output_arrays = output_arrays)
+            return 2, tno_results
 
-            if(pflag < 1):
-                print("Failed at proper elements calculation stage")
-                return tno_results
+    if(run_proper or run_stability):
+        if(logf):
+            logmessage = 'Reading TNO integration for Proper Elements and/or stability indicators\n'
+            writelog(logf,logmessage)
 
+        reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(
+                des=des,archivefile=tno_results.archivefile,clones=tno_results.clones,
+                logfile=tno_results.logfile, object_type=tno_results.object_type)
+
+        if(reflag < 1):
+            logmessage ="Failed when reading in integrated simulation for proper elements\n"
+            logmessage += "in sbdynt.analyze_tno_run at prop_elem.read_archive_for_pe\n"
+            writelog(logf,logmessage)
+            if(logf != 'screen'):
+                print(logmessage)
+            return 0, tno_results
+    
+        if(run_proper):
+            if(logf):
+                logmessage = 'Calculating proper elements\n'
+                writelog(logf,logmessage)
+            pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, 
+                                                planet_elems=planet_elems, 
+                                                small_planets_flag=small_planets_flag, 
+                                                output_arrays=output_arrays)
+            
             tno_results.proper_elements = prope
             
-    if run_stability:
-        print('Running TNO Chaos Indicators')
-        #print('clone elemes:', clone_elems.shape, clone_elems)
-        tno_results.stability_indicators = compute_stability(des=des, times=times, sb_elems = sb_elems, clones=clones, pe_obj = tno_results.proper_elements, clone_elems = clone_elems, output_arrays = output_arrays)
-        
+            if(pflag < 1):
+                logmessage = "Failed at proper elements calculation stage in \n"
+                logmessage += " sbdynt.analyze_tno_run at prop_elem.calc_proper_elements\n"
+                writelog(logf,logmessage)
+                if(logf != 'screen'):
+                    print(logmessage)
+                return 0, tno_results
 
-    return tno_results
+            if(logf=='screen'):
+                prope.print_results()
+            
+        if(run_stability):
+            if(logf):
+                logmessage = 'Running TNO Stability Indicators'
+                writelog(logf,logmessage)
+        
+            stflag, tno_results.stability_indicators = compute_stability(des=des, times=times, 
+                                                    sb_elems=sb_elems, clones=tno_results.clones, 
+                                                    pe_obj=tno_results.proper_elements, 
+                                                    clone_elems=clone_elems, 
+                                                    output_arrays=output_arrays)
+        
+            if(stflag < 1):
+                logmessage = "Failed at stability indicators calculation stage in \n"
+                logmessage += " sbdynt.analyze_tno_run at stability_indicators.compute_stability\n"
+                writelog(logf,logmessage)
+                if(logf != 'screen'):
+                    print(logmessage)
+                return 0, tno_results
+            
+            if(logfile=='screen'):
+                tno_results.stability_indicators.print_results()
+
+    return 1, tno_results
 
 #function to do a standard small body analysis run using given or default choices
 def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
@@ -838,7 +964,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
             if(logf != 'screen'):
                 print(logmessage)  
             if(logf):           
-                tools.writelog(logf,logmessage)
+                writelog(logf,logmessage)
             object_type = 'ast'
 
         elif(a < 6.):
@@ -851,7 +977,7 @@ def run_sb(des=None, object_type=None, clones=None, datadir='',archivefile=None,
             if(logf != 'screen'):
                 print(logmessage)  
             if(logf):           
-                tools.writelog(logf,logmessage)
+                writelog(logf,logmessage)
             object_type = 'tno'
     
     sb_results = small_body(des,object_type,clones)

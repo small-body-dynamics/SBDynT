@@ -2,6 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import stability_indicators as si
 
+import matplotlib.ticker as ticker
+import math
+
 
 def plot_aei(des=None, datadir='', archivefile=None, 
              a=None, e=None, inc=None, t=None, clones=None,
@@ -411,11 +414,6 @@ def plot_osc_and_prop(prop_elem):
     Ypq = np.fft.fft(pq)
     Ypqn = np.fft.fft(pqn)
 
-    #Ypqn[0] = np.mean((Ypq[1],Ypq[-1]))
-
-    #pqn = np.fft.ifft(Ypqn)
-    #pq_new = pqn
-
     t = prop_elem.time/1e6
     
 
@@ -461,22 +459,17 @@ def plot_osc_and_prop(prop_elem):
     ax[2].hlines(np.mean(np.arcsin(np.abs(pq)))*180/np.pi,xmin=t[0],xmax=t[-1],colors='r',ls='--',alpha=0.75)
 
     
-    
-
-
-    #ax[0].legend(loc = 'lower right')
     ax[0].legend(loc = 'upper right')
     ax[1].legend(loc = 'upper left')
 
     y2,y3 = ax[2].get_ylim()
     ax[2].set_ylim(y2,y3)
     
-    ax[2].set_ylabel(r'Inc ($^{\circ}$)',fontsize=14)
+    ax[2].set_ylabel(r'Inc (deg)',fontsize=14)
 
     ax[1].set_ylabel('Ecc',fontsize=14)
     ax[0].set_ylabel('SMA',fontsize=14)
     fig.suptitle('Small Body: '+str(objname),fontsize=16,x=0.52,y=0.94)
-    import matplotlib.ticker as mticker
     formatter = mticker.StrMethodFormatter('{x:.3f}')
     ax[0].yaxis.set_major_formatter(formatter)
     ax[1].yaxis.set_major_formatter(formatter)
@@ -487,7 +480,6 @@ def plot_osc_and_prop(prop_elem):
     ax[2].tick_params(axis='y', labelsize=11)
 
     fig.tight_layout()
-    #plt.savefig('../data/results/'+str(objname)+'_eccinc_bf.pdf',transparent=True,bbox_inches='tight')
     plt.show()
 
     return 0
@@ -509,9 +501,9 @@ def plot_clone_osc(ci):
         ax[4].plot(t, ci.clone_elems[i,1], alpha=0.3)
         ax[5].plot(t, ci.clone_elems[i,2]*180/np.pi, alpha=0.3)
 
-    ax[0].set_title('SMA (AU)', fontsize=14)
-    ax[1].set_title('Ecc', fontsize=14)
-    ax[2].set_title('Inc ($^{\circ}$)', fontsize=14)
+    ax[0].set_title('a (au)', fontsize=14)
+    ax[1].set_title('e', fontsize=14)
+    ax[2].set_title('inc (deg)', fontsize=14)
 
     ax[0].set_ylabel('Best-fit Orbit')
     ax[3].set_ylabel('Clone Orbits')
@@ -581,9 +573,6 @@ def plot_power(ci, pe_obj = None):
     Ye = np.abs(np.fft.rfft(np.abs(hk)))**2; YI = np.abs(np.fft.rfft(np.abs(pq)))**2
     Yv = np.abs(np.fft.rfft(np.cos(np.angle(hk))))**2; YO = np.abs(np.fft.rfft(np.cos(np.angle(pq))))**2
 
-    #Yhk_sorted = np.argsort(Yhk[1:])[::-1]; Ypq_sorted = np.argsort(Ypq[1:])[::-1]
-    #top3_hk = np.sum(Yhk[Yhk_sorted[:3]+1]); top3_pq = np.sum(Ypq[Ypq_sorted[:3]+1])
-
     top_hk = np.sum(Yhk[gind-5:gind+6]); top_pq = np.sum(Ypq[sind-5:sind+6])
 
     total_hk = np.sum(Yhk); total_pq = np.sum(Ypq)
@@ -606,17 +595,13 @@ def plot_power(ci, pe_obj = None):
     ax[1].set_yscale('log')
 
         
-    #ax[0].axhline(Yhk[0], ls='--', alpha=0.2,c='tab:blue', label=r'Power($\nu=0$)')
-    #ax[1].axhline(Ypq[0], ls='--', alpha=0.2,c='tab:blue')
-    
     ax[0].axhline(total_hk, ls='--', alpha=0.8,c='k', label=r'$\sum{Power}$')
     ax[1].axhline(total_pq, ls='--', alpha=0.8,c='k')
     
     ax[0].axhline(top_hk, ls='--', alpha=0.8,c='tab:orange', label=r'$\sum{Power_{ Proper}}$')
     ax[1].axhline(top_pq, ls='--', alpha=0.8,c='tab:orange')
     
-    import matplotlib.ticker as ticker
-    import math
+
 
     tsort = np.sort(np.abs(t))
     xmax = round(np.log10(dt*len(t)))+1
@@ -635,7 +620,6 @@ def plot_power(ci, pe_obj = None):
     ax[1].set_title('pq Power')
 
     ax[0].legend()
-    #ax[1].legend()
     fig.suptitle('Small Body: '+str(ci.des) + ', Proper Power=' + str(round(power, 2)*100) + '% of the Total Power',fontsize=16,x=0.52,y=0.94)
     fig.tight_layout()
 
@@ -813,7 +797,6 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     #ax[1].legend(loc = 'upper left')
 
     fig.suptitle('Small Body: '+str(objname),fontsize=16)
-    import matplotlib.ticker as mticker
     formatter = mticker.StrMethodFormatter('{x:.3f}')
     ax[0].yaxis.set_major_formatter(formatter)
     ax[1].yaxis.set_major_formatter(formatter)
@@ -896,7 +879,6 @@ def plot_freq_space(prop_elem, ifreqs={}):
         ax[0].axhline(Yhkn[0], ls='--', alpha=0.2,c='tab:orange')
         ax[1].axhline(Ypq[0], ls='--', alpha=0.2,c='tab:blue')
         ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='tab:orange')
-        #ax[1].axhline(Ypqn[0], ls='--', alpha=0.2,c='k')
 
         
         for num, vals in ifreqs.items():
@@ -909,23 +891,15 @@ def plot_freq_space(prop_elem, ifreqs={}):
                 ax[1].axvline(1/freq, alpha=0.35,ls='-.', label=label)
                 ax[1].legend()
     
-        import matplotlib.ticker as ticker
-        import math
 
         tsort = np.sort(np.abs(t))
         xmax = round(np.log10(dt*len(t)))+1
         xmin = round(np.log10(dt))
 
         xrange = 10**np.arange(xmin, xmax)
-        #xticks = np.concatenate((-xrange[::-1], np.array([0])))
-        #xticks = np.concatenate((xticks, xrange))
 
         xticks = np.concatenate((-xrange[::-1], xrange))
         
-        #print(xticks)
-        
-        #thresh = 10**(math.ceil(np.log10(dt)))
-        #locmin = ticker.SymmetricalLogLocator(linthresh=thresh, base=10)
         ax[0].set_xticks(xticks)
 
         fig.supxlabel('Period (yrs)')

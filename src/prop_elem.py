@@ -11,6 +11,7 @@ from scipy.ndimage import convolve1d, gaussian_filter1d
 import random
 import string
 from os import remove
+from importlib import resources as impresources
 
 
 # internal modules
@@ -18,6 +19,12 @@ import plotting_scripts
 import tools
 import PEdata
 import run_reb
+
+
+g2 = 0;g3 = 0;g4 = 0;g5 = 0;g6 = 0;g7 = 0;g8 = 0
+s2 = 0;s3 = 0;s4 = 0;s6 = 0;s7 = 0;s8 = 0
+g_arr = []
+s_arr=[]
 
 
 class proper_element_class:
@@ -134,6 +141,15 @@ class proper_element_class:
         self.planet_freqs = {}
         self.tmax = 0
         self.tout = 0
+        ########################
+        # Dallin, I think we need to make these arrays and not a dictionary so that we can store all the information for
+        # the clones and not just the best-fit orbit
+        # so something like:
+        # self.osculating_elements.a = np.zeros(clones), etc, like in the TNO ML outputs
+        # I don't see an elegant way otherwise to do this
+        # we can add a helper function that prints out the units of the variables instead
+        # of storing them in the variable neames
+        #######################
         self.osculating_elements = {'a': np.inf, 'e': np.inf, 'I': np.inf, 'omega': np.inf, 'Omega': np.inf}
         self.proper_elements = {'a': np.inf, 'e': np.inf, 'sinI': np.inf, 'g("/yr)': np.inf, 's("/yr)': np.inf, 
                                 'g(rev/yr)': np.inf, 's(rev/yr)': np.inf, 'omega': np.inf, 'Omega': np.inf}
@@ -234,7 +250,7 @@ class proper_element_class:
 
 def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
                      logfile=False,tmax=10e6,tout=500., direction='bf', 
-                     deletefile = True):
+                     deletefile=False, integrator='mercurius'):
 
     """
     Integrate a Rebound Simulation in the direction prescribed by the user,
@@ -274,6 +290,9 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
             combined "bf" option integrates in each direction for half of the tmax setting. e.g. 
             tmax = 10 Myr years would result in a forwards integration of 5 Myr and a backwards 
             integration of 5 Myr. 
+        integrator (optional): can be used to specify a choice other than the default of
+            mercurius. NOTE: if you set this to whfast, close encounters won't be correctly 
+            resolved!
 
     outputs:
         flag (0,1): 0 indicates a failure, while 1 indicates a successful run.
@@ -314,12 +333,13 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
             if(datadir):
                 ic_file = datadir + '/' + ic_file
             logmessage = "creating a temporary initial conditions file at " + ic_file
-            tools.writelog(logf,logmessage)                
+            tools.writelog(logf,logmessage)   
+            sim.save(ic_file)
         
         #run the integration forward first
         rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
                                             logfile=logf,tmax=(tmax/2),tout=tout, 
-                                            deletefile=deletefile)
+                                            deletefile=deletefile,integrator=integrator)
         
         if(rflag < 1):
             logmessage = "The forward simulation failed in prop_elem.integrate_for_pe\n"
@@ -343,13 +363,14 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
                 print(logmessage)
             return 0, snew
 
-        #delete the randomly generate ic file if that was used
-        if(icflag==False):
+        if(icfile==False):
+            logmessage = "removing the temporary initial conditions file"
+            tools.writelog(logf,logmessage)   
             remove(ic_file)
 
         rflag, snew = run_reb.run_simulation(snew,des=des,archivefile=archivefile,
                                              logfile=logf,tmax=-(tmax/2),tout=tout,
-                                             deletefile = False)
+                                             deletefile=False, integrator=integrator)
 
         if(rflag < 1):
             logmessage = "The backward simulation failed in prop_elem.integrate_for_pe\n"
@@ -365,7 +386,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
     elif(direction == 'forwards'):
         rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
                                              logfile=logf,tmax=tmax,tout=tout, 
-                                             deletefile=deletefile)
+                                             deletefile=deletefile, integrator=integrator)
         if(rflag < 1):
             logmessage = "The forward simulation failed in prop_elem.integrate_for_pe\n"
             logmessage += "at run_reb.run_simulation\n";
@@ -379,7 +400,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
     elif(direction == 'backwards'):
         rflag, sim = run_reb.run_simulation(sim,des=des,archivefile=archivefile,
                                             logfile=logf,tmax=-tmax,tout=tout, 
-                                            deletefile=deletefile)
+                                            deletefile=deletefile,integrator=integrator)
         if(rflag < 1):
             logmessage = "The backward simulation failed in prop_elem.integrate_for_pe\n"
             logmessage += "at run_reb.run_simulation\n";
@@ -409,7 +430,9 @@ def smooth_fft_convolution(fft_signal, freqs, primary_freqs, time, protect_radiu
     """
     Fast convolutional smoothing of FFT log-power spectrum, excluding primary peaks.
 
-    This function takes an FFT signal, the proper frequencies to be protected, the planetary frequencies to be filtered out, and some other related data, and performs a gaussian_1dfilter on the log10 signal. The funtciton returns the smoothed FFT signal, which corresponds to the proper orbital motion. 
+    This function takes an FFT signal, the proper frequencies to be protected, the planetary frequencies to be 
+    filtered out, and some other related data, and performs a gaussian_1dfilter on the log10 signal. The 
+    function returns the smoothed FFT signal, which corresponds to the proper orbital motion. 
     """
     fft_signal = np.asarray(fft_signal)
     log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
@@ -502,7 +525,9 @@ def smooth_fft_time(fft_signal, freqs, primary_freqs, time, protect_radius_bins_
                     method="gaussian", inc_filt = False, known_planet_freqs = [],freq_tol=2e-7, win=False, 
                     shortfilt = True):
     """
-    This function takes in the FFT of a signal, and smooths the entire FFT. This is used to perform the additional smoothing on the eccentricity and inclination arrays directly, which should retain now long-period terms. 
+    This function takes in the FFT of a signal, and smooths the entire FFT. This is used to perform the 
+    additional smoothing on the eccentricity and inclination arrays directly, which should retain now 
+    long-period terms. 
     """
     fft_signal = np.asarray(fft_signal)
     log_power = 10 * np.log10(np.abs(fft_signal)**2 + 1e-10)
@@ -784,7 +809,8 @@ def hkpq(p_elems):
     
 def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
     """
-    This function finds the proper planetary secular frequencies associated with the planetary orbital elements arrays contained in the planet_elems variable, and the returns the result as a dictionary.
+    This function finds the proper planetary secular frequencies associated with the planetary 
+    orbital elements arrays contained in the planet_elems variable, and the returns the result as a dictionary.
     """
     try:     
         hj,kj,pj,qj = hkpq(planet_elems['jupiter'])
@@ -972,10 +998,14 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
 
 def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_I = True):
     """
-    This function takes a power spectrum for some signal, and the planetary frequencies to filter out of the spectrum.
-    It then performs a simple "filter" by dividing the planetary frequencies not associated with the proper frequency of the planet by some scalar.
+    This function takes a power spectrum for some signal, and the planetary frequencies to 
+    filter out of the spectrum.
+    It then performs a simple "filter" by dividing the planetary frequencies not associated 
+    with the proper frequency of the planet by some scalar.
     The result is a "filtered" power spectrum. 
-    This function is not the robust, comprehensive filter used by SBDynT to compute the proper motion, but is instead used to prepare a signal to find the proper frequency within the signal by reducing the planetary influence first.
+    This function is not the robust, comprehensive filter used by SBDynT to compute the 
+    proper motion, but is instead used to prepare a signal to find the proper frequency 
+    within the signal by reducing the planetary influence first.
     """
     j=0
             
@@ -1019,7 +1049,8 @@ def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_
 def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_dict,small_planets_flag,
                  windows=5,debug=False,objname='', rms = True, shortfilt=True, output_arrays = False):
     """
-    Compute the proper motion for a Solar System small body, given the oscualting orbital elements and the planetary secular frequencies to be filtered out.
+    Compute the proper motion for a Solar System small body, given the oscualting orbital elements and 
+    the planetary secular frequencies to be filtered out.
     Parameters:
         a_init (1D numpy.array): The osculating semi-major axis of the small body.
         e_init (1D numpy.array): The osculating eccentricity of the small body.
@@ -1028,19 +1059,26 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
         lan_init (1D numpy.array, radians): The osculating longitude of the ascending node of the small body.
         t_init (1D numpy.array, years): The array of times/epochs axis of the small body arrays.
 
-        g_arr (list, units=rev/yr): The list of eccentricity planetary secular frequencies to be filtered out. i.e. [g5, g6, g7, g8]
-        s_arr (list, units=rev/yr): The list of inclination planetary secular frequencies to be filtered out. i.e. [s6, s7, s8]
-        gs_dict (dict): The dictionary of all linear and non-linear planetary secular frequencies to be filtered out. Values should be reported in rev/yr. 
+        g_arr (list, units=rev/yr): The list of eccentricity planetary secular frequencies to be 
+            filtered out. i.e. [g5, g6, g7, g8]
+        s_arr (list, units=rev/yr): The list of inclination planetary secular frequencies to be 
+            filtered out. i.e. [s6, s7, s8]
+        gs_dict (dict): The dictionary of all linear and non-linear planetary secular frequencies 
+            to be filtered out. Values should be reported in rev/yr. 
             e.g. gs_dict = {'g8': g8, 's8': s8, 'g8+s8': g8+s8}
-        small_planets_flag (boolean): If True, filteres out the planetary frequencies associated with Venus, Earth, and Mars as well as the giant planets. 
+        small_planets_flag (boolean): If True, filteres out the planetary frequencies associated with 
+            Venus, Earth, and Mars as well as the giant planets. 
             Otherwise, this functino only filters out the giant planets. 
         windows (int): The number of windows to use in estimating the numerical uncertainties. 
         objname (str, optional): The name of the object as contained in the Simulationarchive.
-        shortfilt (boolean): A parameter which turns the short-period filter for objects on or off. It is recommended that this variable remain True in all cases, though no change should be detected in 99% of cases. 
-        output_arrays (boolean): If True, the resulting outputs include the osculating and filtered tiem arrays of the orbital elements.
+        shortfilt (boolean): A parameter which turns the short-period filter for objects on or off. It is 
+            recommended that this variable remain True in all cases, though no change should be detected 
+            in 99% of cases. 
+        output_arrays (boolean): If True, the resulting outputs include the osculating and filtered time 
+            arrays of the orbital elements.
         
     Returns:
-        
+        DALLIN: add return variables list
         
     """ 
     try:
@@ -1570,7 +1608,7 @@ def read_archive_for_pe(des, clones=0, datadir='',archivefile=None, logfile=None
     try:
         sim = rebound.Simulationarchive(file)
     except:
-        logmessage = "failed to read archive file: "+file
+        logmessage = "failed to read archive file: "+file + "\n"
         logmessage += "in prop_elem.read_archive_for_pe\n"
         if(logf != 'screen'):
             print(logmessage)  
@@ -1762,7 +1800,8 @@ def read_archive_for_pe(des, clones=0, datadir='',archivefile=None, logfile=None
         m_elems = m_elems[:,sort_inds]
 
     if vem:
-        planet_elems = {'venus': v_elems, 'earth': e_elems, 'mars': m_elems, 'jupiter': j_elems, 'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
+        planet_elems = {'venus': v_elems, 'earth': e_elems, 'mars': m_elems, 'jupiter': j_elems, 
+                        'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
     else:
         planet_elems = {'jupiter': j_elems, 'saturn': s_elems, 'uranus': u_elems, 'neptune': n_elems}
 
@@ -2063,7 +2102,8 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
     proper_object.proper_indicators['Ecc Filtered Amplitude'] = e_amp
     proper_object.proper_indicators['sinI Filtered Amplitude'] = I_amp
 
-    proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'], prop_errs['RMS_a'], prop_errs['RMS_e'], prop_errs['RMS_sinI'])
+    proper_object.proper_indicators['Distance Metric'] = hcm_calc(prop_elem['a'], prop_errs['RMS_a'],
+                                                                  prop_errs['RMS_e'], prop_errs['RMS_sinI'])
 
     proper_object.proper_internal['Secular Resonant Angle'] = angle_sec_res
     proper_object.proper_internal['Librating Angle'] = librate_angle
@@ -2155,7 +2195,8 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], planet_elems = [], 
 
 def check_scatter(t,a,e):
     """
-    A function that checks whether a small body's orbit experiences a potential planet-corssing orbit, or is scattered, causing a large change in the orbital energy.
+    A function that checks whether a small body's orbit experiences a potential planet-corssing 
+    orbit, or is scattered, causing a large change in the orbital energy.
     """
     da = np.gradient(a)
     de = np.abs(da/a)[1:-2]

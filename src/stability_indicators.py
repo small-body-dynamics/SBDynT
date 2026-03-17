@@ -132,15 +132,18 @@ class stability_indicators:
 
         if self.Clone_RMS_a != None:
             sign = ' < ' if self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'] else ' > '
-            print('Clone_RMS_a: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'], '), ', self.Clone_RMS_a, sign ,self.flag_limits['Clone_RMS_a'])
+            print('Clone_RMS_a: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_a'], '), ', 
+                  self.Clone_RMS_a, sign ,self.flag_limits['Clone_RMS_a'])
           
         if self.Clone_RMS_e != None:  
             sign = ' < ' if self.Clone_RMS_e < self.flag_limits['Clone_RMS_a'] else ' > '
-            print('Clone_RMS_e: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_e'], '), ', self.Clone_RMS_e, sign ,self.flag_limits['Clone_RMS_e'])
+            print('Clone_RMS_e: (' , self.Clone_RMS_a < self.flag_limits['Clone_RMS_e'], '), ', 
+                  self.Clone_RMS_e, sign ,self.flag_limits['Clone_RMS_e'])
             
-        if self.Clone_RMS_I != None:
-            sign = ' < ' if self.Clone_RMS_I < self.flag_limits['Clone_RMS_I'] else ' > '
-            print('Clone_RMS_I: (' , self.Clone_RMS_I < self.flag_limits['Clone_RMS_I'], '), ', self.Clone_RMS_I, sign ,self.flag_limits['Clone_RMS_I'])
+        if self.Clone_RMS_sinI != None:
+            sign = ' < ' if self.Clone_RMS_sinI < self.flag_limits['Clone_RMS_sinI'] else ' > '
+            print('Clone_RMS_sinI: (' , self.Clone_RMS_sinI < self.flag_limits['Clone_RMS_sinI'], '), ',
+                  self.Clone_RMS_sinI, sign ,self.flag_limits['Clone_RMS_sinI'])
 
 
 
@@ -242,11 +245,6 @@ def compute_stability(des=None,times=[], sb_elems=[], clones=0, pe_obj=None,
                             logmessage += 'which is ' + str(len(clone_elems)) + 'Stopping iterating over clone_elems\n'
                             tools.writelog(logfile,logmessage)
                             break
-                        ################################################
-                        # Dallin: I think this might not be coded correctly? this looks like it should be 
-                        # calculating an array of diff_* values? so you might need to pre-define diff_*
-                        # as empty array sof size (clones) and then index these?
-                        ###################################################
                         diff_a.append(((a_arr - clone_elems[i,0])/np.mean(a_arr))**2)
                         diff_e.append((e_arr - clone_elems[i,1])**2)
                         diff_I.append((np.sin(I_arr) - np.sin(clone_elems[i,2]))**2)
@@ -277,11 +275,8 @@ def compute_stability(des=None,times=[], sb_elems=[], clones=0, pe_obj=None,
         print(error_message)
         print(e)
         
-    return ci
+    return 1, ci
         
-
-#def rms_diff_calc(a_arr, e_arr, I_arr, clones=0):
-    
 
 def autocorr(x):
     result = numpy.correlate(x, x, mode='full')
