@@ -279,7 +279,7 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
 
         
         pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, 
-                                            planet_elems=planet_elems, 
+                                            planet_elems=planet_elems, clones = ast_results.clones, clone_elems = clone_elems,
                                             small_planets_flag=small_planets_flag, 
                                             output_arrays=output_arrays,
                                             logfile=logf)
@@ -427,6 +427,7 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
             writelog(logf,logmessage)  
 
         pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, planet_elems=planet_elems, 
+                                            clones = ast_results.clones, clone_elems = clone_elems,
                                             small_planets_flag=small_planets_flag, output_arrays=output_arrays)
         if(pflag < 1):
             logmessage = "Failed at proper elements calculation stage in sbdynt.analyze_ast_run\n"
@@ -444,7 +445,7 @@ def analyze_ast_run(des=None, clones=None, datadir='', archivefile=None,
     elif(run_stability):
         reflag, times, sb_elems, planet_elems, clone_elems, small_planets_flag = read_archive_for_pe(des=des,
                                                                             archivefile=ast_results.archivefile,
-                                                                            clones=ast_results.clones,logfile=logf, 
+                                                                            clones=ast_results.clones, logfile=logf, 
                                                                             object_type = ast_results.object_type)
         if(reflag < 1):
             logmessage = "Failed in sbdynt.analyze_ast_run when reading in an integrated simulation for stability calc\n"
@@ -677,7 +678,7 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
             pe_deletefile = False
         else:
             pe_deletefile = deletefile
-        rflag, sim = integrate_for_pe(sim,des=des,archivefile=tno_results.archivefile,icfile=ic_file,
+        rflag, sim = integrate_for_pe(sim,des=des,archivefile=tno_results.archivefile, icfile=tno_results.icfile,
                                       logfile=tno_results.logfile,tmax=150e6,tout=5000., 
                                       direction='bf', deletefile=pe_deletefile, integrator=integrator)
         if(rflag < 1):
@@ -715,6 +716,7 @@ def run_tno(des=None, clones=None, datadir='', archivefile=None,
                 writelog(logf,logmessage) 
 
             pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, planet_elems=planet_elems, 
+                                                clones=tno_results.clones, clone_elems = clone_elems,
                                                 small_planets_flag=small_planets_flag, output_arrays=output_arrays)
 
             tno_results.proper_elements = prope
@@ -886,7 +888,7 @@ def analyze_tno_run(des=None, clones=None, datadir='',archivefile=None,
                 logmessage = 'Calculating proper elements\n'
                 writelog(logf,logmessage)
             pflag, prope = calc_proper_elements(des=des, times=times, sb_elems=sb_elems, 
-                                                planet_elems=planet_elems, 
+                                                planet_elems=planet_elems, clones=clones, clone_elems = clone_elems,
                                                 small_planets_flag=small_planets_flag, 
                                                 output_arrays=output_arrays)
             

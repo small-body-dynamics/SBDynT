@@ -134,13 +134,14 @@ class proper_element_class:
     
     """
     
-    def __init__(self, des=''):
+    def __init__(self, des='', clones=0):
         
         self.des = des
         self.planets = []
         self.planet_freqs = {}
         self.tmax = 0
         self.tout = 0
+        self.clones = clones
         ########################
         # Dallin, I think we need to make these arrays and not a dictionary so that we can store all the information for
         # the clones and not just the best-fit orbit
@@ -206,6 +207,22 @@ class proper_element_class:
         propI_err = np.arcsin(self.proper_errors['RMS_sinI'][0])*180/np.pi
         propg_err = self.proper_errors['RMS_g("/yr)'][0]
         props_err = self.proper_errors['RMS_s("/yr)'][0]
+
+        if self.clones > 0:
+            for i in self.clones:
+                print()
+                print('Clone Proper Elements')
+                print("Clone #"+str(i)+": \t" , round(self.proper_elements['a'][i+1], 5) , "\t" , round(self.proper_elements['e'][i+1], 5) , 
+                      "\t" , round(np.arcsin(self.proper_elements['sinI'][i+1])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'][i+1], 5) , 
+                      "\t" , round(self.proper_elements['s("/yr)'][i+1], 5))
+
+            rmsa = np.sqrt(np.mean(self.proper_elements['a']**2))
+            rmse = np.sqrt(np.mean(self.proper_elements['e']**2))
+            rmsi = np.sqrt(np.mean(self.proper_elements['sinI']**2))
+            rmsg = np.sqrt(np.mean(self.proper_elements['g("/yr)']**2))
+            rmss = np.sqrt(np.mean(self.proper_elements['s("/yr)']**2))
+            print('RMS-Clones-+Best-fit: \t', round(rmsa, 5), '\t', round(rmse, 5), '\t', round(rmsi, 5), '\t', round(rmsg, 5), '\t', round(rmss, 5))
+        
         print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  
               "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
         print()
@@ -1877,7 +1894,9 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
             print(logmessage)             
         return 0, None
 
-    proper_object = proper_element_class(des=des)
+    proper_object = proper_element_class(des=des, clones=clones)
+
+    
 
     if len(times) == 0:
         logmessage = 'An array of the times associated with the sb_elems was not provided.\n'
@@ -2114,13 +2133,13 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
             prop_elem['g("/yr)'].append(c_results[i][7]*3600*360)
             prop_elem['s("/yr)'].append(c_results[i][8]*3600*360)
 
-            prop_errs['a'].append(c_results[i][2][0])
-            prop_errs['e'].append(c_results[i][2][1])
-            prop_errs['sinI'].append(c_results[i][2][2])
-            prop_errs['g(rev/yr)'].append(c_results[i][2][3])
-            prop_errs['s(rev/yr)'].append(c_results[i][2][4])
-            prop_errs['g("/yr)'].append(c_results[i][2][3]*3600*360)
-            prop_errs['s("/yr)'].append(c_results[i][2][4]*3600*360)
+            prop_errs['RMS_a'].append(c_results[i][2][0])
+            prop_errs['RMS_e'].append(c_results[i][2][1])
+            prop_errs['RMS_sinI'].append(c_results[i][2][2])
+            prop_errs['RMS_g(rev/yr)'].append(c_results[i][2][3])
+            prop_errs['RMS_s(rev/yr)'].append(c_results[i][2][4])
+            prop_errs['RMS_g("/yr)'].append(c_results[i][2][3]*3600*360)
+            prop_errs['RMS_s("/yr)'].append(c_results[i][2][4]*3600*360)
 
     prop_win_list = {}
     prop_win_list['a_win'] = error_list[:,0]
