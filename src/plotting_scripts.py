@@ -417,7 +417,7 @@ def plot_osc_and_prop(prop_elem):
     Ypq = np.fft.fft(pq)
     Ypqn = np.fft.fft(pqn)
 
-    t = prop_elem.time/1e6
+    t = prop_elem.t/1e6
     
 
     fig,ax=plt.subplots(1,3,figsize=(12,4),sharex=True)
@@ -648,7 +648,7 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     Ypq = np.fft.fft(pq)
     Ypqn = np.fft.fft(pqn)
 
-    t = prop_elem.time  
+    t = prop_elem.t
     dt = abs(t[1]-t[0])
 
     fig,ax=plt.subplots(2,2,figsize=(8,7))
@@ -665,11 +665,11 @@ def plot_angles(prop_elem, plot_cos=False, ifreqs={}):
     omegan = (varpin - Omegan)%(2*np.pi)
     phin = (varpin + Omegan)%(2*np.pi)
 
-    g = prop_elem.proper_elements['g(rev/yr)']
-    s = prop_elem.proper_elements['s(rev/yr)']
+    g = prop_elem.proper_elements['g(rev/yr)'][0]
+    s = prop_elem.proper_elements['s(rev/yr)'][0]
     
-    g_s = prop_elem.proper_elements['g(rev/yr)'] - prop_elem.proper_elements['s(rev/yr)']
-    gps = prop_elem.proper_elements['g(rev/yr)'] + prop_elem.proper_elements['s(rev/yr)']
+    g_s = prop_elem.proper_elements['g(rev/yr)'][0] - prop_elem.proper_elements['s(rev/yr)'][0]
+    gps = prop_elem.proper_elements['g(rev/yr)'][0] + prop_elem.proper_elements['s(rev/yr)'][0]
 
     ind0 = np.argmin(abs(t))
     #ind0 = 0
@@ -826,7 +826,7 @@ def plot_freq_space(prop_elem, ifreqs={}):
     hkn = prop_elem.hk_filtered
     pqn = prop_elem.pq_filtered
 
-    t = prop_elem.time
+    t = prop_elem.t
 
     freq = np.fft.fftfreq(len(t), t[1]-t[0])
     freqr = np.fft.rfftfreq(len(t), t[1]-t[0])
@@ -861,13 +861,13 @@ def plot_freq_space(prop_elem, ifreqs={}):
         ax[1].scatter(1/freq, Ypq, s=1)
         ax[1].scatter(1/freq, Ypqn, s=1)
 
-        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'], c='blue', ls='--', alpha=alp, label='g')
+        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'][0], c='blue', ls='--', alpha=alp, label='g')
         ax[0].axvline(1/pf['g5'], c='r', ls='--', alpha=alp, label='g5')
         ax[0].axvline(1/pf['g6'], c='goldenrod', ls='--', alpha=alp, label='g6')
         ax[0].axvline(1/pf['g7'], c='g', ls='--', alpha=alp, label='g7')
         ax[0].axvline(1/pf['g8'], c='purple', ls='--', alpha=alp, label='g8')
         
-        ax[1].axvline(1/prop_elem.proper_elements['s(rev/yr)'], c='blue', ls='--', alpha=alp, label='s')
+        ax[1].axvline(1/prop_elem.proper_elements['s(rev/yr)'][0], c='blue', ls='--', alpha=alp, label='s')
         ax[1].axvline(1/pf['s6'], c='goldenrod', ls='--', alpha=alp, label='s6')
         ax[1].axvline(1/pf['s7'], c='g', ls='--', alpha=alp, label='s7')
         ax[1].axvline(1/pf['s8'], c='purple', ls='--', alpha=alp, label='s8')
@@ -930,14 +930,14 @@ def plot_freq_space(prop_elem, ifreqs={}):
         ax[1].scatter(1/freqr, YI, s=1, label='Unfiltered')
         ax[1].scatter(1/freqr, YIn, s=1, label='Filtered')
 
-        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g5'])), c='r', ls='--', alpha=alp, label='g-g5')
-        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g6'])), c='goldenrod', ls='--', alpha=alp, label='g-g6')
-        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g7'])), c='g', ls='--', alpha=alp, label='g-g7')
-        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'] - pf['g8'])), c='purple', ls='--', alpha=alp, label='g-g8')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'][0] - pf['g5'])), c='r', ls='--', alpha=alp, label='g-g5')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'][0] - pf['g6'])), c='goldenrod', ls='--', alpha=alp, label='g-g6')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'][0] - pf['g7'])), c='g', ls='--', alpha=alp, label='g-g7')
+        ax[0].axvline(abs(1/(prop_elem.proper_elements['g(rev/yr)'][0] - pf['g8'])), c='purple', ls='--', alpha=alp, label='g-g8')
         
-        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s6'])), c='goldenrod', ls='--', alpha=alp, label='s-s6')
-        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s7'])), c='g', ls='--', alpha=alp, label='s-s7')
-        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'] - pf['s8'])), c='purple', ls='--', alpha=alp, label='s-s8')
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'][0] - pf['s6'])), c='goldenrod', ls='--', alpha=alp, label='s-s6')
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'][0] - pf['s7'])), c='g', ls='--', alpha=alp, label='s-s7')
+        ax[1].axvline(abs(1/(prop_elem.proper_elements['s(rev/yr)'][0] - pf['s8'])), c='purple', ls='--', alpha=alp, label='s-s8')
         
         ax[0].axhline(Ye[0], ls='--', alpha=0.2,c='tab:blue')
         ax[0].axhline(Yen[0], ls='--', alpha=0.2,c='tab:orange')
@@ -977,13 +977,13 @@ def plot_freq_space(prop_elem, ifreqs={}):
         ax[1].scatter(1/freqr, YO, s=1, label='Unfiltered')
         ax[1].scatter(1/freqr, YOn, s=1, label='Filtered')
 
-        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'], c='blue', ls='--', alpha=alp, label='g')
+        ax[0].axvline(1/prop_elem.proper_elements['g(rev/yr)'][0], c='blue', ls='--', alpha=alp, label='g')
         ax[0].axvline(1/pf['g5'], c='r', ls='--', alpha=alp, label='g5')
         ax[0].axvline(1/pf['g6'], c='goldenrod', ls='--', alpha=alp, label='g6')
         ax[0].axvline(1/pf['g7'], c='g', ls='--', alpha=alp, label='g7')
         ax[0].axvline(1/pf['g8'], c='purple', ls='--', alpha=alp, label='g8')
         
-        ax[1].axvline(abs(1/prop_elem.proper_elements['s(rev/yr)']), c='blue', ls='--', alpha=alp, label='s')
+        ax[1].axvline(abs(1/prop_elem.proper_elements['s(rev/yr)'][0]), c='blue', ls='--', alpha=alp, label='s')
         ax[1].axvline(abs(1/pf['s6']), c='goldenrod', ls='--', alpha=alp, label='s6')
         ax[1].axvline(abs(1/pf['s7']), c='g', ls='--', alpha=alp, label='s7')
         ax[1].axvline(abs(1/pf['s8']), c='purple', ls='--', alpha=alp, label='s8')
@@ -1035,7 +1035,7 @@ def plot_hkpq(prop_elem):
     hkn = prop_elem.hk_filtered
     pqn = prop_elem.pq_filtered
 
-    t = prop_elem.time
+    t = prop_elem.t
 
     fig,ax = plt.subplots(1,2, figsize=(10,4))
 
