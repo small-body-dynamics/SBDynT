@@ -124,3 +124,129 @@ using mercurius outputting every 5000.0 years
 to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
 starting at 2026-03-17 19:35:38.413736
 finishing at 2026-03-17 19:39:34.011581
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/0UYsPpZw7Nhf.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:54:41.057006
+finishing at 2026-03-18 09:54:43.895708
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/0UYsPpZw7Nhf.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:54:43.907714
+finishing at 2026-03-18 09:54:47.349681
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/lp7zjbDeTiAi.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:56:36.065734
+finishing at 2026-03-18 09:56:39.051331
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/lp7zjbDeTiAi.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:56:39.063336
+finishing at 2026-03-18 09:56:42.310223
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/ZrQ0Kc5rkLj6.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:58:01.779085
+finishing at 2026-03-18 09:58:04.582731
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/ZrQ0Kc5rkLj6.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 09:58:04.598727
+finishing at 2026-03-18 09:58:08.187126
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/mU4u9dfosspB.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:00:16.089351
+finishing at 2026-03-18 10:00:19.819337
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/mU4u9dfosspB.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:00:19.837864
+finishing at 2026-03-18 10:00:23.873767
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/FMW0nAxJNxZN.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:02:27.739067
+finishing at 2026-03-18 10:02:31.580329
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/FMW0nAxJNxZN.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 4 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:02:31.591329
+finishing at 2026-03-18 10:02:35.387078
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/JCFF320YyoUo.binRunning Albion from 500000.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:02:48.931100
+finishing at 2026-03-18 10:02:48.931100
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/JCFF320YyoUo.bin
+simulation is at time 500000.0 years
+integrator is mercurius
+Found Albion and 4 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 500000.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:02:48.951880
+finishing at 2026-03-18 10:02:56.964091
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/v4pHNgh4BNVb.binRunning Albion from 500000.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:07:01.696337
+finishing at 2026-03-18 10:07:01.697337
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/v4pHNgh4BNVb.bin
+simulation is at time 500000.0 years
+integrator is mercurius
+Found Albion and 4 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 500000.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:07:01.714336
+finishing at 2026-03-18 10:07:10.422233
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/cLTPvdDtWhNV.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:13:41.235586
+finishing at 2026-03-18 10:13:45.539636
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/cLTPvdDtWhNV.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 4 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:13:45.561640
+finishing at 2026-03-18 10:13:50.264547
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/KoX3yI8ThsXz.binRunning Albion from 0.0 to 500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:15:08.750620
+finishing at 2026-03-18 10:15:13.692746
+Loaded integration for Albion from ../example-notebooks/advanced_example_sims/KoX3yI8ThsXz.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Albion and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Albion from 0.0 to -500000.0 years 
+using mercurius outputting every 5000.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Albion-simarchive.bin
+starting at 2026-03-18 10:15:13.707179
+finishing at 2026-03-18 10:15:17.251498
