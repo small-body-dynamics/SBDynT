@@ -12,6 +12,8 @@ import random
 import string
 from os import remove
 from importlib import resources as impresources
+import sys
+import os
 
 
 # internal modules
@@ -142,22 +144,18 @@ class proper_element_class:
         self.tmax = 0
         self.tout = 0
         self.clones = clones
-        ########################
-        # Dallin, I think we need to make these arrays and not a dictionary so that we can store all the information for
-        # the clones and not just the best-fit orbit
-        # so something like:
-        # self.osculating_elements.a = np.zeros(clones), etc, like in the TNO ML outputs
-        # I don't see an elegant way otherwise to do this
-        # we can add a helper function that prints out the units of the variables instead
-        # of storing them in the variable neames
-        #######################
-        self.osculating_elements = {'a': [], 'e': [], 'I': [], 'omega': [], 'Omega': []}
-        self.proper_elements = {'a': [], 'e': [], 'sinI': [], 'g("/yr)': [], 's("/yr)': [], 
-                                'g(rev/yr)': [], 's(rev/yr)': [], 'omega': [], 'Omega': []}
-        self.mean_elements = {'a': [], 'e': [], 'sinI': [], 'g("/yr)': [], 's("/yr)': [], 
-                              'g(rev/yr)': [], 's(rev/yr)': []}
-        self.proper_errors = {'RMS_a': [], 'RMS_e': [], 'RMS_sinI': [], 'RMS_g("/yr)': [], 
-                              'RMS_s("/yr)': []}
+        self.osculating_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'I': np.empty(clones+1),
+                                    'omega': np.empty(clones+1), 'Omega': np.empty(clones+1)}
+        self.proper_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'sinI': np.empty(clones+1), 
+                                'g("/yr)': np.empty(clones+1), 's("/yr)': np.empty(clones+1), 
+                                'g(rev/yr)': np.empty(clones+1), 's(rev/yr)': np.empty(clones+1), 
+                                'omega': np.empty(clones+1), 'Omega': np.empty(clones+1)}
+        self.mean_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'sinI': np.empty(clones+1), 
+                              'g("/yr)': np.empty(clones+1), 's("/yr)': np.empty(clones+1), 
+                              'g(rev/yr)': np.empty(clones+1), 's(rev/yr)': np.empty(clones+1)}
+        self.proper_errors = {'RMS_a': np.empty(clones+1), 'RMS_e': np.empty(clones+1), 
+                              'RMS_sinI': np.empty(clones+1), 'RMS_g("/yr)': np.empty(clones+1), 
+                              'RMS_s("/yr)': np.empty(clones+1)}
         self.proper_indicators = {}
         self.proper_internal = {}
         self.scattered = {'scattered': False, 'scat_time': np.inf, 'scat_ind': np.inf, 'Max delta-E': 0, 
@@ -184,6 +182,9 @@ class proper_element_class:
         self.a_filtered = np.array([])
         self.a_windows = np.array([])
 
+        self.sb_elems = np.array([])
+        self.clone_elems = np.array([])
+
         self.t = np.array([])
 
     def print_results(self):
@@ -191,46 +192,56 @@ class proper_element_class:
         print(str(self.des), " Proper Element Results from a ", str(round(self.tmax/1e6)), " Myr integration with outputs every", 
               str(round(self.tout)), "years")
 
-        print("# \t\t\t SMA(AU) \t Ecc    \t Inc(deg) \t g(\"/yr) \t s(\"/yr)")
-        print("#Osculating Elements: \t", round(self.osculating_elements['a'][0], 5) ,"\t" , 
-              round(self.osculating_elements['e'][0], 5) , "\t" , round(self.osculating_elements['I'][0]*180/np.pi, 5) , 
-              "\t N/A    \t N/A" )
-        print("#Mean Elements: \t" , round(self.mean_elements['a'][0], 5) , "\t" , round(self.mean_elements['e'][0], 5) , "\t" , 
-              round(np.arcsin(self.mean_elements['sinI'][0])*180/np.pi, 5) , "\t" , round(self.mean_elements['g("/yr)'][0], 5) , 
-              "\t" , round(self.mean_elements['s("/yr)'][0], 5))
-        print("#Proper Elements: \t" , round(self.proper_elements['a'][0], 5) , "\t" , round(self.proper_elements['e'][0], 5) , 
-              "\t" , round(np.arcsin(self.proper_elements['sinI'][0])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'][0], 5) , 
-              "\t" , round(self.proper_elements['s("/yr)'][0], 5))
-        
-        propa_err = self.proper_errors['RMS_a'][0]
-        prope_err = self.proper_errors['RMS_e'][0]
-        propI_err = np.arcsin(self.proper_errors['RMS_sinI'][0])*180/np.pi
-        propg_err = self.proper_errors['RMS_g("/yr)'][0]
-        props_err = self.proper_errors['RMS_s("/yr)'][0]
+        print("Best-fit orbit")
+        print("%-22s %-10s  %-10s  %-10s   %-10s   %-10s" % ('', '  a (au)', '  ecc', ' inc (deg)', 'g("/yr)','s("/yr)'))
+        print("%-22s %10.6f  %10.6f  %10.6f   %-10s   %-10s" % ('Osculating Elements',
+                                                       self.osculating_elements['a'][0],
+                                                       self.osculating_elements['e'][0],
+                                                       self.osculating_elements['I'][0]*180/np.pi,
+                                                       'N/A','N/A'))
+        print("%-22s %10.6f  %10.6f  %10.6f   %10.6f   %10.6f" % ('Mean Elements',
+                                                       self.mean_elements['a'][0],
+                                                       self.mean_elements['e'][0],
+                                                       np.arcsin(self.mean_elements['sinI'][0])*180/np.pi,
+                                                       self.mean_elements['g("/yr)'][0],
+                                                       self.mean_elements['s("/yr)'][0]))
 
-        print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  
-              "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
+        print("%-22s %10.6f  %10.6f  %10.6f   %10.6f   %10.6f" % ('Proper Elements',
+                                                       self.proper_elements['a'][0],
+                                                       self.proper_elements['e'][0],
+                                                       np.arcsin(self.proper_elements['sinI'][0])*180/np.pi,
+                                                       self.proper_elements['g("/yr)'][0],
+                                                       self.proper_elements['s("/yr)'][0]))
+
+        print("%-22s %10.2e  %10.2e  %10.2e   %10.2e   %10.2e" % ('Proper Errors',
+                                                       self.proper_errors['RMS_a'][0],
+                                                       self.proper_errors['RMS_e'][0],
+                                                       np.arcsin(self.proper_errors['RMS_sinI'][0])*180/np.pi,
+                                                       self.proper_errors['RMS_g("/yr)'][0],
+                                                       self.proper_errors['RMS_s("/yr)'][0]))
+
 
         if self.clones > 0:
             print()
             print('Clone Proper Elements')
             for i in range(self.clones):
-                print("Clone #"+str(i)+": \t" , round(self.proper_elements['a'][i+1], 5) , "\t" , round(self.proper_elements['e'][i+1], 5) , 
-                      "\t" , round(np.arcsin(self.proper_elements['sinI'][i+1])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'][i+1], 5) , 
-                      "\t" , round(self.proper_elements['s("/yr)'][i+1], 5))
 
-            #rmsa = np.sqrt(np.mean(np.array(self.proper_elements['a'])**2))
-            #rmse = np.sqrt(np.mean(np.array(self.proper_elements['e'])**2))
-            #rmsi = np.sqrt(np.mean(np.array(self.proper_elements['sinI'])**2))
-            #rmsg = np.sqrt(np.mean(np.array(self.proper_elements['g("/yr)'])**2))
-            #rmss = np.sqrt(np.mean(np.array(self.proper_elements['s("/yr)'])**2))
-            
+                print("Clone %3d %12s %10.6f  %10.6f  %10.6f   %10.6f   %10.6f" % (i,'',
+                                                       self.proper_elements['a'][i+1],
+                                                       self.proper_elements['e'][i+1],
+                                                       np.arcsin(self.proper_elements['sinI'][i+1])*180/np.pi,
+                                                       self.proper_elements['g("/yr)'][i+1],
+                                                       self.proper_elements['s("/yr)'][i+1]))
+
             rmsa = np.std(np.array(self.proper_elements['a']))
             rmse = np.std(np.array(self.proper_elements['e']))
             rmsi = np.std(np.array(self.proper_elements['sinI']))
+            rmsi = np.arcsin(rmsi)
             rmsg = np.std(np.array(self.proper_elements['g("/yr)']))
             rmss = np.std(np.array(self.proper_elements['s("/yr)']))
-            print('RMS-Clones+Best-fit: \t', round(rmsa, 5), '\t', round(rmse, 5), '\t', round(rmsi, 5), '\t', round(rmsg, 5), '\t', round(rmss, 5))
+            print()
+            print("%-22s %10.2e  %10.2e  %10.2e   %10.2e   %10.2e" % ('RMS(Clones+Best-fit)',
+                                                       rmsa, rmse,rmsi,rmsg,rmss))            
         
         
         print()
@@ -362,7 +373,7 @@ def integrate_for_pe(sim, des=None, archivefile=None,datadir='',icfile=False,
             ic_file = random_string+'.bin'
             if(datadir):
                 ic_file = datadir + '/' + ic_file
-            logmessage = "creating a temporary initial conditions file at " + ic_file
+            logmessage = "creating a temporary initial conditions file at " + ic_file + "\n"
             tools.writelog(logf,logmessage)   
             sim.save_to_file(ic_file)
         
@@ -890,7 +901,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         #Jupiter g
         powers = np.abs(Yhkj)**2
         powers[bad_freq_inds] = 0
-        max_idx, g5, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, g5, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         g_arr.append(g5)
         g_inds.append(max_idx)
         gs_dict['g5'] = g5
@@ -899,7 +911,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         powers = np.abs(Yhks)**2
         powers[bad_freq_inds] = 0
         powers = ind_filt(g_inds,powers,freq,dexl,div_num)
-        max_idx, g6, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, g6, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         g_arr.append(g6)
         g_inds.append(max_idx)
         gs_dict['g6'] = g6
@@ -908,7 +921,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         powers = np.abs(Yhku)**2
         powers[0] = 0
         powers = ind_filt(g_inds,powers,freq,dexl,div_num)
-        max_idx, g7, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, g7, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         g_arr.append(g7)
         g_inds.append(max_idx)
         gs_dict['g7'] = g7
@@ -918,7 +932,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         #powers[bad_freq_inds] = 0
         powers[0] = 0
         powers = ind_filt(g_inds,powers,freq,dexl,div_num)
-        max_idx, g8, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, g8, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         g_arr.append(g8)
         g_inds.append(max_idx)
         gs_dict['g8'] = g8
@@ -926,7 +941,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         #Saturn s
         powers = np.abs(Ypqs)**2
         powers[bad_freq_inds] = 0
-        max_idx, s6, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, s6, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         s_arr.append(s6)
         s_inds.append(max_idx)
         gs_dict['s6'] = s6
@@ -935,7 +951,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         powers = np.abs(Ypqu)**2
         powers[bad_freq_inds] = 0
         powers = ind_filt(s_inds,powers,freq,dexl,div_num)
-        max_idx, s7, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, s7, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         s_arr.append(s7)
         s_inds.append(max_idx)
         gs_dict['s7'] = s7
@@ -944,7 +961,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
         powers = np.abs(Ypqn)**2
         powers[bad_freq_inds] = 0
         powers = ind_filt(s_inds,powers,freq,dexl,div_num)
-        max_idx, s8, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+        max_idx, s8, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
         s_arr.append(s8)
         s_inds.append(max_idx)
         gs_dict['s8'] = s8
@@ -955,7 +973,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers[bad_freq_inds] = 0
             powers = ind_filt(g_inds,powers,freq,dexl,div_num)
                 
-            max_idx, g2, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, g2, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             g_arr.append(g2)
             g_inds.append(max_idx)
             gs_dict['g2'] = g2
@@ -964,7 +983,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers = np.abs(Yhke)**2
             powers[bad_freq_inds] = 0
             powers = ind_filt(g_inds,powers,freq,dexl,div_num) 
-            max_idx, g3, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, g3, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             g_arr.append(g3)
             g_inds.append(max_idx)
             gs_dict['g3'] = g3
@@ -974,7 +994,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers = np.abs(Yhkm)**2
             powers[bad_freq_inds] = 0
             powers = ind_filt(g_inds,powers,freq,dexl,div_num)    
-            max_idx, g4, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, g4, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             g_arr.append(g4)
             g_inds.append(max_idx)
             gs_dict['g4'] = g4
@@ -984,7 +1005,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers = np.abs(Ypqe)**2
             powers[bad_freq_inds] = 0
             powers = ind_filt(s_inds,powers,freq,dexl,div_num)
-            max_idx, s3, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, s3, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             s_arr.append(s3)
             s_inds.append(max_idx)
             gs_dict['s3'] = s3
@@ -994,7 +1016,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers = np.abs(Ypqm)**2
             powers[bad_freq_inds] = 0
             powers = ind_filt(s_inds,powers,freq,dexl,div_num)
-            max_idx, s4, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, s4, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             s_arr.append(s4)
             s_inds.append(max_idx)
             gs_dict['s4'] = s4
@@ -1004,7 +1027,8 @@ def get_planet_freqs(t_init, planet_elems,small_planets_flag = False):
             powers = np.abs(Ypqv)**2
             powers[bad_freq_inds] = 0
             powers = ind_filt(s_inds,powers,freq,dexl,div_num)
-            max_idx, s2, local_power_all, protect_bins = find_local_max_windowed(freq, powers, window_half_dex=dex, window_protect_dex=0.15)
+            max_idx, s2, local_power_all, protect_bins = find_local_max_windowed(freq, powers, 
+                                            window_half_dex=dex, window_protect_dex=0.15)
             s_arr.append(s2)
             s_inds.append(max_idx)
             gs_dict['s2'] = s2
@@ -1183,7 +1207,8 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
 
             power = power_filt(power, g_arr, freq_s, small_planets_flag, dist)
             
-            g_idx, g, local_power_all, protect_g_bins = find_local_max_windowed(freq_s, power, window_half_dex=0.05, window_protect_dex=0.15)
+            g_idx, g, local_power_all, protect_g_bins = find_local_max_windowed(freq_s, power, 
+                                                window_half_dex=0.05, window_protect_dex=0.15)
             if abs(1/g) > 5e5:
                 protect_g_bins = protect_g_bins*5
             
@@ -1194,7 +1219,8 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
 
             power = power_filt(power, s_arr, freq_s, small_planets_flag, dist)
             
-            s_idx, s, local_power_all, protect_s_bins = find_local_max_windowed(freq_s, power, window_half_dex=0.02, window_protect_dex=0.15)
+            s_idx, s, local_power_all, protect_s_bins = find_local_max_windowed(freq_s, power, 
+                                                window_half_dex=0.02, window_protect_dex=0.15)
             if abs(1/s) > 5e5:
                 protect_s_bins = protect_s_bins*2 
             protect_g = np.array([g])
@@ -1794,13 +1820,11 @@ def read_archive_for_pe(des, clones=0, datadir='',archivefile=None, logfile=None
     t_arr = sb_elems[0].copy()
     sortt = np.sort(t_arr)
 
-    dt1 = abs(sortt[-1] - sortt[-2])
-    dt2 = abs(sortt[1] - sortt[0])
-    dt = round(np.mean((dt1,dt2)))
+    dt = round(abs(sortt[-1] - sortt[-2]))
 
 
     test_arr = t_arr.copy()
-    skip_short_res = np.where(test_arr.astype(int) % dt <= dt/1e3)[0]
+    skip_short_res = np.where(test_arr.astype(int) % dt == 0)[0]
     
     # archive may have backwards integration as well, sort and remove the second 0-time point where the array restarts    
     filt_t_arr = t_arr[skip_short_res]
@@ -1857,7 +1881,8 @@ def hcm_pair(a1, a2, e1, e2, sini1, sini2):
 
 
 
-def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_elems = [], planet_elems = [], small_planets_flag = False, 
+def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_elems = [], 
+                         planet_elems = [], small_planets_flag = False, 
                          output_arrays = False, gs_dict = None,logfile=False):
 
     """
@@ -2101,21 +2126,37 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
                 compute_prop(a_init,e_init,I_init,o_init,O_init,times,g_arr,s_arr,gs_dict,small_planets_flag,
                              windows=5,debug=False,objname=des, rms = True, shortfilt=True)
 
-    c_results = []
-    if clones > 0:
-        for i in range(clones):
-            c_results.append(compute_prop(clone_elems[i,0],clone_elems[i,1],clone_elems[i,2],clone_elems[i,3],clone_elems[i,4],times,g_arr,s_arr,gs_dict,
-                              small_planets_flag, windows=5,debug=False,objname=des, rms = True, shortfilt=True))
-            
-
     if(flag <1):
-        logmessage = 'prop_elem.compute_prop() did not succeed\n'
+        logmessage = 'prop_elem.compute_prop() did not succeed for the best fit\n'
         logmessage += 'failed at prop_elem.calc_proper_elements\n'
+        logmessage += 'at compute_prop\n'
         tools.writelog(logfile,logmessage)
         if(logfile != 'screen'):
             print(logmessage)            
         return flag, proper_object
 
+
+
+
+    c_results = []
+    if clones > 0:
+        for i in range(clones):
+            temp_results = compute_prop(clone_elems[i,0],clone_elems[i,1],clone_elems[i,2],clone_elems[i,3],
+                                               clone_elems[i,4],times,g_arr,s_arr,gs_dict,
+                                               small_planets_flag, windows=5,debug=False,objname=des, 
+                                               rms = True, shortfilt=True)
+            if(not temp_results[0]):
+                logmessage = 'prop_elem.compute_prop() did not succeed for clone ' + str(i) + '\n'
+                logmessage += 'failed in prop_elem.calc_proper_elements\n'
+                logmessage += 'at compute_prop\n'
+                tools.writelog(logfile,logmessage)
+                if(logfile != 'screen'):
+                    print(logmessage)            
+                return 0, proper_object
+
+            c_results.append(temp_results)
+            
+    #best-fit results
     prop_elem = {}
     prop_elem['a'] = [pes[0]]
     prop_elem['e'] = [pes[1]]
@@ -2212,7 +2253,6 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
 
         proper_object.sb_elems = sb_elems
         proper_object.clone_elems = clone_elems
-
         proper_object.t = times
 
     proper_object.secular_frequencies = {

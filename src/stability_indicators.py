@@ -1,10 +1,9 @@
 import numpy as np
-import pandas as pd
-import rebound
 import sys
 import os
-import functools
-import json
+from scipy import stats
+from scipy.special import betainc
+
 
 #internal modules
 import tools

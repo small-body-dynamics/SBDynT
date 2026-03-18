@@ -1,7 +1,7 @@
 import rebound
 import numpy as np
 import matplotlib.pyplot as plt
-# local
+# internal
 import tools
 
 

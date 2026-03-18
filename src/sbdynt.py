@@ -14,8 +14,6 @@ from stability_indicators import *
 from prop_elem import *
 
 
-from datetime import datetime
-import os
 import rebound
 import random
 import string

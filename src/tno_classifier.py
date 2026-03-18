@@ -1,18 +1,17 @@
-import sys
 import rebound
 import numpy as np
-import pandas as pd
-import tools
-import run_reb
-import tno
-import resonances
-import machine_learning
-
 from os import path
 from datetime import date
 from pickle import dump
 from pickle import load
 from importlib import resources as impresources
+
+#internal
+import tools
+import run_reb
+import tno
+import resonances
+import machine_learning
 
 
 

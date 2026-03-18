@@ -1,6 +1,8 @@
+import numpy as np
+
+#internal
 import tools
 import run_reb
-import numpy as np
 
 
 def setup_default_ast_integration(des=None, clones=None, datadir='',save_sbdb=True,
