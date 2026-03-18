@@ -1,9 +1,12 @@
+#external
 import matplotlib.pyplot as plt
 import numpy as np
-import stability_indicators as si
-
 import matplotlib.ticker as ticker
 import math
+
+#internal
+import tools
+import stability_indicators as si
 
 
 def plot_aei(des=None, datadir='', archivefile=None, 

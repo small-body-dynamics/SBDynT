@@ -138,3 +138,6 @@ src/MLdata/trained*.pkl
 
 #example output data
 example-notebooks/outputs-from-example-notebooks
+example-notebooks/Advanced-Features-and-Tools/outputs-from-advanced-example-notebooks
+example-notebooks/outputs-from-example-notebooks/*
+example-notebooks/Advanced-Features-and-Tools/outputs-from-advanced-example-notebooks/*

@@ -293,6 +293,9 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
             
         ast_results.proper_elements = prope
 
+        if(logf=='screen'):
+            prope.print_results()
+
     else:
         logmessage = "run_proper wasn't selected in sbdynt.run_ast \n"
         logmessage += "right now that means nothing happens, so returning\n"
@@ -321,6 +324,11 @@ def run_ast(des=None, clones=None, datadir='',archivefile=None, saveic=True, sav
             if(logf != 'screen'):
                 print(logmessage)                  
             return 0, ast_results, sim
+
+        if(logf=='screen'):
+            ast_results.stability_indicators.print_results()
+
+
 
     return 1, ast_results, sim
 

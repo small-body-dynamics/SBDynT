@@ -108,9 +108,7 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, \
-              res_image_probability, probability_of_primary_class, ",end ="")
-        #print("probability_of_", end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
         for n in range(nclas):
             class_string =  self.classes_dictionary[n]
             if(class_string == 'class-det'):
@@ -136,8 +134,7 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, \
-              res_image_probability, probability_of_primary_class, ",end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
         print("probability_of_", end ="")
         for n in range(nclas):
             class_string =  self.classes_dictionary[n]

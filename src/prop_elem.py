@@ -184,7 +184,7 @@ class proper_element_class:
         self.a_filtered = np.array([])
         self.a_windows = np.array([])
 
-        self.time = np.array([])
+        self.t = np.array([])
 
     def print_results(self):
 
@@ -269,6 +269,9 @@ class proper_element_class:
 
     def plot_angles(self, plot_cos=False, ifreqs={}):
         plotting_scripts.plot_angles(self, plot_cos=plot_cos, ifreqs=ifreqs)
+
+    def plot_clones(self):
+        plotting_scripts.plot_clone_osc(self)
 
 
 
@@ -1791,11 +1794,13 @@ def read_archive_for_pe(des, clones=0, datadir='',archivefile=None, logfile=None
     t_arr = sb_elems[0].copy()
     sortt = np.sort(t_arr)
 
-    dt = round(abs(sortt[-1] - sortt[-2]))
+    dt1 = abs(sortt[-1] - sortt[-2])
+    dt2 = abs(sortt[1] - sortt[0])
+    dt = round(np.mean((dt1,dt2)))
 
 
     test_arr = t_arr.copy()
-    skip_short_res = np.where(test_arr.astype(int) % dt == 0)[0]
+    skip_short_res = np.where(test_arr.astype(int) % dt <= dt/1e3)[0]
     
     # archive may have backwards integration as well, sort and remove the second 0-time point where the array restarts    
     filt_t_arr = t_arr[skip_short_res]
@@ -2205,7 +2210,10 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
         proper_object.a_filtered = a_filt
         proper_object.a_windows = a_wins
 
-        proper_object.time = times
+        proper_object.sb_elems = sb_elems
+        proper_object.clone_elems = clone_elems
+
+        proper_object.t = times
 
     proper_object.secular_frequencies = {
         'g-g5': g-g5, 'g-g6': g-g6, 'g-g7': g-g7, 'g-g8': g-g8,
