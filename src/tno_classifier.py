@@ -108,7 +108,8 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, \
+              res_image_probability, probability_of_primary_class, ",end ="")
         #print("probability_of_", end ="")
         for n in range(nclas):
             class_string =  self.classes_dictionary[n]
@@ -135,7 +136,8 @@ class TNO_ML_outputs:
         print("#Shared by %f percent of clones\n#" % percentage)
 
         nclas = len(self.classes_dictionary)
-        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, res_image_probability, probability_of_primary_class, ",end ="")
+        print("Clone_number, most_probable_G08_class, p, q, m, n, phi_std_rad, phi_delta_rad, \
+              res_image_probability, probability_of_primary_class, ",end ="")
         print("probability_of_", end ="")
         for n in range(nclas):
             class_string =  self.classes_dictionary[n]
@@ -155,17 +157,69 @@ class TNO_ML_outputs:
                    self.clone_confidence[n]),end ="")
             for j in range(nclas):
                 print("%e, " % self.class_probs[n][j] ,end ="")
-            print("%e, %e, %e, " % (self.features.a_mean[n], self.features.e_mean[n], self.features.i_mean[n]), end = "")
-            print("%e, %e, %e, " % (self.features.a_stddev[n], self.features.e_stddev[n], self.features.i_stddev[n]), end = "")
+            print("%e, %e, %e, " % (self.features.a_mean[n], self.features.e_mean[n], 
+                                    self.features.i_mean[n]), end = "")
+            print("%e, %e, %e, " % (self.features.a_stddev[n], self.features.e_stddev[n], 
+                                    self.features.i_stddev[n]), end = "")
             print("\n",end ="")
 
 #################################################################
-def run_and_MLclassify_TNO(sim=None, des=None, clones=None, 
-                            datadir='', archivefile=None, 
-                            deletefile=False,logfile=False,
-                            classify_only=False,related_clones=True):
+def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
+                           save_sbdb=True, datadir='', archivefile=None, 
+                           deletefile=False, logfile=False,
+                           classify_only=False, related_clones=True):
     '''
-    add documentation here...
+    inputs:
+        sim (optional, Rebound Simulation instance): if the user has initialized a custom 
+            simulation, this should contain the 4 giant planets plus a TNO and its clones
+            Otherwise this routine will initialize a simulation on its own based on querying
+            JPL's SBDB
+        des: string, the designation for the object in the SBDB or the provided simulation
+        clones (optional): integer, number of clones. Defaults to None, which will
+            result in adding two, 3-sigma outlying clones in semimajor axis.
+            If set to 0, only the best fit orbit is run
+            If set to any integer, that many clones will be sampled in a Guassian
+            manner from the orbit-fit covariance matrix
+        datadir (optional): string, path for saving any files produced in this 
+            function; defaults to the current directory
+        saveic (optional): boolean or string; 
+            (default) if True:  will save a rebound file with the simulation 
+            state that can be used to restart later either to a default 
+            file name or to a file with the name equal to the string passed
+            if False nothing is saved
+        logfile (optional): boolean or string; 
+            if True:  will save some messages to a default log file name
+            or to a file with the name equal to the string passed or
+            to the screen if 'screen' is passed 
+            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string; 
+            (default) if True:  will save a pickle file with the results of the 
+            JPL SBDB query either to a default file name or to a file
+            with the name equal to the string passed
+            if False nothing is saved
+        archivefile (str; optional): name for the simulation
+            archive file that rebound will generate. The default filename is 
+            <des>-simarchive.bin if this variable is not defined.
+        deletefile (boolean): Default False; if True, deletes any previous 
+            Simulationarchive at archivefile
+        classify_only (boolean): default False, which will result in running
+            the correct integration for the classifier to analyse. 
+            If True, it is assumed that archivefile contains the relevant simulation
+            and only the classification will be run
+        related_clones (boolean): default True which means the test particles in the
+            simulation are all sampled from one observed object's covariance matrix.
+            If one clone is determined to be resonant, this flag ensures that an even
+            more thorough resonance check is done on all the clones. 
+            If False (used for, e.g., a simulation with a bunch of unrelated test 
+            particles), the decision to check resonance angles for one clone is 
+            unaffected by the results for other clones
+
+    outputs:
+        flag (integer): 0 for failure, 1 for success
+        tno_class: the tno classification results python class TNO_ML_outputs (see 
+            above)
+        sim: the rebound simulation instance at its final state
+            
     '''
     flag = 0
 
@@ -174,46 +228,73 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
         print("failed at machine_learning.run_and_MLclassify_TNO()")
         return flag, None, sim
 
+    if(datadir and classify_only == False):
+        tools.check_datadir(datadir)
+
+    #define names/paths to all the files to be saved
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+        print(logf)
+    else:
+        logf = logfile
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+    if(archivefile==None):
+        archivefile = tools.archive_file_name(des)
+    if(datadir):
+        archivefile = datadir + '/' +archivefile
+    ic_file = saveic
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+        if(datadir):
+            ic_file = datadir + '/'  +ic_file
+    sbdb_file = save_sbdb
+    if(save_sbdb):
+        if(save_sbdb == True):
+            sbdb_file = tools.orbit_solution_file(des)
+        if(datadir):
+            sbdb_file = datadir + '/' + sbdb_file
+
 
     if(sim == None and classify_only == False):
         #initialize a default simulation
+        if(logf):
+            logmessage = "No simulation was provided to machine_learning.run_and_MLclassify_TNO\n"
+            logmessage += "so initializing a default TNO run for " + str(des) + "\n"
+            tools.writelog(logf,logmessage) 
+
         iflag, sim, epoch, clones, cloning_method, weights = \
-                tno.setup_default_tno_integration(des=des, clones=clones, datadir=datadir,
-                        save_sbdb=False,saveic=False,archivefile=archivefile,logfile=logfile)
+                tno.setup_default_tno_integration(des=des, clones=clones, 
+                        save_sbdb=sbdb_file,saveic=ic_file,archivefile=archivefile,logfile=logf)
         if(iflag < 1):
-            print("Failed at simulation initialization stage")
-            print("failed at machine_learning.run_and_MLclassify_TNO()")    
+            logmessage = "Failed at simulation initialization stage in\n"
+            logmessage += "machine_learning.run_and_MLclassify_TNO at\n" 
+            logmessage += "tno.setup_default_tno_integration\n"
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
             return flag, None, sim
 
-
-    if(datadir):
-        tools.check_datadir(datadir)
-
-    if(logfile==True):
-        logf = tools.log_file_name(des=des)
-    else:
-        logf=logfile
-    if(datadir and logf and logf!='screen'):        
-        logf = datadir + '/' +logf
-
-    if(archivefile == None):
-        archivefile = tools.archive_file_name(des=des)
-    
-    if(datadir):
-        archivefile = datadir + "/" + archivefile
-
     if(classify_only==True and clones==None):
+        if(logf):
+            logmessage = "Reading in the last simulation snapshot to determine how many\n"
+            logmessage += "clones are in the simulation\n"
+            tools.writelog(logf,logmessage) 
         try:
             sa = rebound.Simulationarchive(archivefile)
         except:
-            print("tno_classifier.run_and_MLclassify_TNO failed")
-            print("Problem reading the simulation archive file:")
-            print(archivefile)
+            logmessage = "tno_classifier.run_and_MLclassify_TNO failed because\n"
+            logmessage += "there was a problem reading the simulation archive file: "
+            logmessage += archivefile + "\n"
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)
             return flag, None, sim
+
         ntp_max = sa[0].N - sa[0].N_active
         clones = ntp_max - 1
 
-    flag = 0
     #make an empty set of classification outputs 
     tno_class = TNO_ML_outputs(clones)
 
@@ -221,16 +302,22 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     clf = machine_learning.TNO_ML_classifier()
     cflag = clf.initialize_classifiers()
     if(cflag<1):
-        print("failed to initialize machine learning classifier")
-        print("failed at tno_classifier.run_and_MLclassify_TNO()")
+        logmessage = "failed to initialize machine learning classifier in\n"
+        logmessage += "tno_classifier.run_and_MLclassify_TNO\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)
         return flag, None, sim
     res_index = -1
     for i in range(len(clf.classes_dictionary)):
         if (clf.classes_dictionary[i] == 'Nresonant'):
             res_index=i
     if(res_index < 0):
-        print("failed to find 'Nresonant' in the classifier dictionary")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        logmessage = "failed to find 'Nresonant' in the classifier dictionary\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)        
         return flag, None, sim
 
     tno_class.classes_dictionary = clf.classes_dictionary
@@ -241,11 +328,19 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     if(not classify_only):    
         tmin = sim.t
         tmax = sim.t + 0.5e6
+        if(logf):
+            logmessage = "Running the 0.5 Myr short classification integration\n"
+            tools.writelog(logf,logmessage) 
+
         rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=50.,archivefile=archivefile,
-                                        deletefile=deletefile, logfile=logfile)
+                                            deletefile=deletefile, logfile=logf)
         if(rflag < 1):
-            print("The short integration for the TNO machine learning failed")
-            print("failed at machine_learning.run_and_MLclassify_TNO()")
+            logmessage = "The short integration for the TNO machine learning failed\n"
+            logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+            logmessage += "at run_reb.run_simulation\n"
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)                   
             return flag, None, sim
     else:
         tmin = 0.
@@ -254,25 +349,41 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     rflag, a_short, ec_short, inc_short, node_short, peri_short, ma_short, t_short = \
             tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
-        print("Unable to read the output for the short integration")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        logmessage = "Unable to read the small body output for the short integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.read_sa_for_sbody\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)                   
         return flag, None, sim
 
-    pomega_short = peri_short+ node_short 
+    pomega_short = peri_short + node_short 
     lambda_short = ma_short + peri_short+ node_short 
     q_short = a_short*(1.-ec_short)
     
     rflag, apl_short, ecpl, incpl, nodepl, peripl, mapl, tpl = \
             tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
+        logmessage = "Unable to read Neptune's output for the short integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.read_sa_by_hash\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)        
         return flag, None, sim
+
     lambda_pl_short = mapl + nodepl + peripl
 
     rflag, xr, yr, zr, vxr, vyr, vzr, tr = \
             tools.calc_rotating_frame(des=des,planet='neptune', 
                                       archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
-        print("Unable to calculate the rotating frame for the short integration")
+        logmessage ="Unable to calculate the rotating frame for the short integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.calc_rotating_frame\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)        
         return flag, None, sim
 
     rrf_short = np.sqrt(xr*xr + yr*yr + zr*zr)
@@ -304,15 +415,28 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             all_classified = 0  
     if(all_classified):
         tno_class.determine_most_common_classification()
+        logmessage ="All clones were classifiable as scattering or not TNOs based on the\n"
+        logmessage += "short integration alone. Returning early from machine_learning.run_and_MLclassify_TNO\n";
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)     
         return 2, tno_class, sim
 
     #continue at lower resolution to 10 Myr
     if(not classify_only):
         tmax = sim.t + 9.5e6
         tmin = sim.t + 0.001e6 
+        if(logf):
+            logmessage = "Running the classification integration to 10 Myr\n"
+            tools.writelog(logf,logmessage)         
         rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=1000.,archivefile=archivefile,
-                                        deletefile=False,logfile=logfile)
+                                        deletefile=False,logfile=logf)
         if(rflag < 1):
+            logmessage ="The long integration in machine_learning.run_and_MLclassify_TNO() failed\n"
+            logmessage += "at run_reb.run_simulation\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)                
             return flag, None, sim
     else:
         tmin = .5001e6
@@ -323,6 +447,12 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     rflag, a, ec, inc, node, peri, ma, t = \
             tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
+        logmessage = "Unable to read the small body output for the long integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.read_sa_for_sbody\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)                          
         return flag, None, sim    
     pomega = peri+ node 
     lambda_t = ma + peri+ node 
@@ -330,6 +460,12 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     rflag, apl, ecpl, incpl, nodepl, peripl, mapl, tpl = \
             tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
+        logmessage = "Unable to read Neptune's output for the long integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.read_sa_by_hash\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)        
         return flag, None, sim
     lambda_pl = mapl + nodepl + peripl
 
@@ -338,6 +474,12 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             tools.calc_rotating_frame(des=des,planet='neptune',archivefile=archivefile,
                                       clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
+        logmessage ="Unable to calculate the rotating frame for the short integration\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at tools.calc_rotating_frame\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)              
         return flag, None, sim
 
     rrf = np.sqrt(xr*xr + yr*yr + zr*zr)
@@ -376,12 +518,13 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     fflag, tno_class.features = machine_learning.calc_ML_features(t_long,a_long,ec_long,
                                    inc_long,node_long,peri_long,
                                    pomega_long,q_long,rrf_long,phirf_long,tiss_long,
-                                    t_short,a_short,ec_short,inc_short,
-                                    node_short,peri_short,pomega_short,q_short,
-                                    rrf_short,phirf_short,tiss_short,clones=clones)
+                                   t_short,a_short,ec_short,inc_short,
+                                   node_short,peri_short,pomega_short,q_short,
+                                   rrf_short,phirf_short,tiss_short,clones=clones,
+                                   logfile=logf)
     if (fflag<1):
         #check to see if this is just a wildly scattering object 
-        #x, 2-d numpy array of size/shape ([clones+1,nout])
+        #which is often why the above fails
         a_min = np.amin(a_long,axis=1)
         a_max = np.amax(a_long,axis=1)
         a_mean = np.mean(a_long,axis=1)
@@ -394,18 +537,36 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
                 all_classified = 0  
         if(all_classified):
             tno_class.determine_most_common_classification()
+            logmessage ="All clones were classifiable as scattering or not TNOs based on the\n"
+            logmessage += "basic time-series data (no ML needed).\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)    
             return 2, tno_class, sim
         
-        print("failed to calculate data features")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
-        return flag, None, sim
+        logmessage = "failed to calculate data features\n"
+        logmessage +="failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at machine_learning.calc_ML_features\n";
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)            
+        
+        return flag, tno_class, sim
+
+    if(logf):
+        logmessage = "running the machine learning classifier on the simulation data features\n"
+        tools.writelog(logf,logmessage) 
 
     #apply the base classifier
     try:
         tno_class.class_probs = clf.G08_classifier.predict_proba(tno_class.features.return_features_list())
     except:
-        print("failed to apply the base G08 classifier")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        logmessage = "failed to successfully apply the base G08 classifier\n"
+        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "at clf.G08_classifier.predict_proba()\n"
+        tools.writelog(logf,logmessage) 
+        if(logf != 'screen'):
+            print(logmessage)            
         return flag, tno_class, sim
 
     tno_class.set_initial_clone_classification()
@@ -431,10 +592,15 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
                     img_clf=clf.phi_classifier,
                     time=t_long, lambda_pl=lambda_pl_long, lambda_tp=lambda_long[n],
                     node=node_long[n], pomega=pomega_long[n], apl=a_pl_long, a = a_long[n],
-                    incbar=tno_class.features.i_mean[n])
+                    incbar=tno_class.features.i_mean[n],
+                    logfile=logf)
             if(rflag < 1):
-                print("failed to classify resonance angle for clone %d" % n)
-                print("failed at machine_learning.run_and_MLclassify_TNO()")
+                logmessage += "the resonance angle classifier failed at clone " +str(n) +"\n";
+                logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+                logmessage += "at  machine_learning.run_res_angle_classifier\n"
+                tools.writelog(logf,logmessage) 
+                if(logf != 'screen'):
+                    print(logmessage)                    
                 return flag, tno_class, sim
 
             tno_class.res_p[n] = p_id
@@ -466,7 +632,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
             tno_class.res_phi_std[n] = sigma_phi_id
             tno_class.res_phi_delta[n] = delta_phi_id
 
-            #make adjustments based on the resonant angle check
+            #make adjustments to classifications based on the resonant angle check
             if(predicted_class != 'Nresonant' and angle_prob >= 0.999):
                 #it sure looks resonant. As long as it isn't a more strongly scattering object
                 if(not (predicted_class == 'scattering' and tno_class.features.a_delta[n] > 2.5) ):
@@ -492,8 +658,6 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
                 temp = np.argsort(tno_class.class_probs[n])
                 tno_class.clone_classification[n] = clf.classes_dictionary[temp[1]]
                 tno_class.clone_confidence[n] = -1
-
-
             if(tno_class.clone_classification[n] == 'Nresonant' and tno_class.features.a_delta[n] > 2.5
                 and delta_phi_id > 6.2):
                 #switch to scattering if delta-a is very large and it's not a cleanly librating resonant angle
@@ -502,7 +666,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
     
 
     #For clones that are sampled from the same object, we will
-    #reloop through the clones to check for the already confidently idenfied resonances
+    #reloop through the clones to check for the already confidently identified resonances
     #(this helps id some of the higher order resonances that don't always trigger the angle check)
     #This is skipped if the clones are just a simulation model and not actually related
     if(related_clones==True):
@@ -511,8 +675,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
                 and res_check_performed[n] < 1.):
                 for i in range(1,len(pres)):
                     phi = pres[i]*lambda_long[n] - qres[i]*lambda_pl_long - mres[i]*pomega_long[n] - nres[i]*node_long[n]
-                    cflag, angle_prob, sigma_phi, delta_phi = machine_learning.check_angle(clf.phi_classifier,t_long,phi,-1.)
-                    #print(n, pres[i], qres[i], mres[i], nres[i], cflag, angle_prob, sigma_phi, delta_phi)
+                    cflag, angle_prob, sigma_phi, delta_phi = machine_learning.check_angle(clf.phi_classifier,t_long,phi,-1.,logfile=logf)
                     if(angle_prob > 0.999 and (sigma_phi < 1.6 or delta_phi < 6.2)):
                         #change the classification to resonant
                         tno_class.clone_classification[n] = 'Nresonant'
@@ -548,7 +711,13 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,
 
 ################################################################
 def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=None,node=None,
-                             pomega=None,apl=None,a=None,incbar=None):
+                             pomega=None,apl=None,a=None,incbar=None,logfile=False):
+    '''
+    Produces plots of a large number of resonant angles and runs them through a 
+    ML classifier to determine if the resonant angle is librating or not
+    '''
+
+    logf=logfile
 
     flag = 0
 
@@ -591,9 +760,13 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
     if(prmax > 1.0 and prmin < 1.0):
         #check for coorbital resonance
         phi = lambda_tp - lambda_pl
-        cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob)
+        cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob,logfile=logf)
         if(not(cflag)):
-            print("machine_learning.run_res_angle_classifier failed")
+            logmessage = "machine_learning.run_res_angle_classifier failed\n";
+            logmessage += "at machine_learning.check_angle\n";
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)                
             return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
         if(prob > 0.5):
             flag = 1
@@ -613,8 +786,11 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
         #get the next nearest, lowest order resonances to check
         ftflag, num, denom, new_check_q, new_check_p, n_check = resonances.farey_tree(num, denom, prmin, prmax)
         if(not(ftflag)):
-            print("in tno_classifier.run_res_angle_classifier, there was a failure in")
-            print("resonances.farey_tree call")
+            logmessage = "tno_classifier.run_res_angle_classifier had a problem at\n";
+            logmessage += "resonances.farey_tree call (so resonance check might be incomplete)"
+            tools.writelog(logf,logmessage) 
+            if(logf != 'screen'):
+                print(logmessage)                
             break
         if(ftflag == 2):
             #we've hit the end of the tree
@@ -651,10 +827,14 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
                     continue
             nr=0.
             phi = pr*lambda_tp - qr*lambda_pl - mr_e*pomega
-            cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob)
+            cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob,logfile=logf)
             reschecks+=1
             if(not(cflag)):
-                print("tno_classifier.run_res_angle_classifier failed")
+                logmessage = "tno_classifier.run_res_angle_classifier failed\n";
+                logmessage += "at machine_learning.check_angle for e-type resonance\n"
+                tools.writelog(logf,logmessage) 
+                if(logf != 'screen'):
+                    print(logmessage)                    
                 return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
             if(prob > 0.5):
                 res_flag = 1
@@ -671,10 +851,14 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
                 mr = mr_e - 2
                 nr = 2                
                 phi = pr*lambda_tp - qr*lambda_pl - mr*pomega - nr*node
-                cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob)
+                cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob,logfile=logf)
                 reschecks+=1
                 if(not(cflag)):
-                    print("tno_classifier.run_res_angle_classifier failed")
+                    logmessage = "tno_classifier.run_res_angle_classifier failed\n";
+                    logmessage += "at machine_learning.check_angle for n=2 resonance\n"
+                    tools.writelog(logf,logmessage) 
+                    if(logf != 'screen'):
+                        print(logmessage)                       
                     return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
                 
                 if( (prob > 0.5 and res_flag == 0) or (prob > max_prob and res_flag == 1) ):
@@ -705,10 +889,15 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
                 nr = 4
                 while(mr>=0):
                     phi = pr*lambda_tp - qr*lambda_pl - mr*pomega - nr*node
-                    cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob)
+                    cflag, prob, sigma_phi, delta_phi = machine_learning.check_angle(img_clf,time,phi,max_prob,logfile=logf)
                     reschecks+=1
                     if(not(cflag)):
                         print("tno_classifier.run_res_angle_classifier failed")
+                        logmessage = "tno_classifier.run_res_angle_classifier failed\n";
+                        logmessage += "at machine_learning.check_angle for high-order mixed resonance\n"
+                        tools.writelog(logf,logmessage) 
+                        if(logf != 'screen'):
+                            print(logmessage)   
                         return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
                     if( (prob > 0.5 and res_flag == 0) or (prob > max_prob and res_flag == 2) ):
                         res_flag = 3
@@ -743,7 +932,6 @@ def run_res_angle_classifier(img_clf=None,time=None,lambda_pl=None,lambda_tp=Non
 
     if(res_flag == 0):
         flag = 2
-        #return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id
     elif(flag == 0):
         flag = 1
     
