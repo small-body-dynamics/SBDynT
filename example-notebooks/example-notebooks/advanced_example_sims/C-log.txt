@@ -40,3 +40,87 @@ using mercurius outputting every 500.0 years
 to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
 starting at 2026-03-17 14:29:37.894073
 finishing at 2026-03-17 14:29:40.663117
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/buQEj5XcYCbi.binRunning Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:10:26.623680
+finishing at 2026-03-17 19:10:30.935372
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/buQEj5XcYCbi.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:10:30.961661
+finishing at 2026-03-17 19:10:35.231448
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/MM68tW7Oxz1C.binRunning Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:11:39.638624
+finishing at 2026-03-17 19:11:43.866615
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/MM68tW7Oxz1C.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:11:43.882458
+finishing at 2026-03-17 19:11:48.267450
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/hM06GirqfHDe.binRunning Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:12:56.253062
+finishing at 2026-03-17 19:13:00.721361
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/hM06GirqfHDe.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:13:00.742889
+finishing at 2026-03-17 19:13:05.038442
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/OfFtnYjcMonU.binRunning Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:14:02.052250
+finishing at 2026-03-17 19:14:06.342891
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/OfFtnYjcMonU.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:14:06.363933
+finishing at 2026-03-17 19:14:10.551594
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/wwdFlLR9YWWE.binRunning Ceres from 0.0 to 25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:16:21.749580
+finishing at 2026-03-17 19:16:25.837136
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/wwdFlLR9YWWE.bin
+simulation is at time 0.0 years
+integrator is ias15
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 0.0 to -25000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:16:25.855638
+finishing at 2026-03-17 19:16:30.165019
+creating a temporary initial conditions file at ../example-notebooks/advanced_example_sims/j4G5Ylq5elyv.binRunning Ceres from 25000.0 to 2500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:17:32.828243
+finishing at 2026-03-17 19:24:34.756594
+Loaded integration for Ceres from ../example-notebooks/advanced_example_sims/j4G5Ylq5elyv.bin
+simulation is at time 25000.0 years
+integrator is mercurius
+Found Ceres and 2 clones in the simulation
+removing the temporary initial conditions fileRunning Ceres from 25000.0 to -2500000.0 years 
+using mercurius outputting every 500.0 years 
+to simulation archivefile ../example-notebooks/advanced_example_sims/Ceres-simarchive.bin
+starting at 2026-03-17 19:24:34.777598
+finishing at 2026-03-17 19:31:46.110898

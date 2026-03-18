@@ -208,23 +208,31 @@ class proper_element_class:
         propg_err = self.proper_errors['RMS_g("/yr)'][0]
         props_err = self.proper_errors['RMS_s("/yr)'][0]
 
+        print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  
+              "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
+
         if self.clones > 0:
-            for i in self.clones:
-                print()
-                print('Clone Proper Elements')
+            print()
+            print('Clone Proper Elements')
+            for i in range(self.clones):
                 print("Clone #"+str(i)+": \t" , round(self.proper_elements['a'][i+1], 5) , "\t" , round(self.proper_elements['e'][i+1], 5) , 
                       "\t" , round(np.arcsin(self.proper_elements['sinI'][i+1])*180/np.pi, 5) , " \t" , round(self.proper_elements['g("/yr)'][i+1], 5) , 
                       "\t" , round(self.proper_elements['s("/yr)'][i+1], 5))
 
-            rmsa = np.sqrt(np.mean(self.proper_elements['a']**2))
-            rmse = np.sqrt(np.mean(self.proper_elements['e']**2))
-            rmsi = np.sqrt(np.mean(self.proper_elements['sinI']**2))
-            rmsg = np.sqrt(np.mean(self.proper_elements['g("/yr)']**2))
-            rmss = np.sqrt(np.mean(self.proper_elements['s("/yr)']**2))
-            print('RMS-Clones-+Best-fit: \t', round(rmsa, 5), '\t', round(rmse, 5), '\t', round(rmsi, 5), '\t', round(rmsg, 5), '\t', round(rmss, 5))
+            #rmsa = np.sqrt(np.mean(np.array(self.proper_elements['a'])**2))
+            #rmse = np.sqrt(np.mean(np.array(self.proper_elements['e'])**2))
+            #rmsi = np.sqrt(np.mean(np.array(self.proper_elements['sinI'])**2))
+            #rmsg = np.sqrt(np.mean(np.array(self.proper_elements['g("/yr)'])**2))
+            #rmss = np.sqrt(np.mean(np.array(self.proper_elements['s("/yr)'])**2))
+            
+            rmsa = np.std(np.array(self.proper_elements['a']))
+            rmse = np.std(np.array(self.proper_elements['e']))
+            rmsi = np.std(np.array(self.proper_elements['sinI']))
+            rmsg = np.std(np.array(self.proper_elements['g("/yr)']))
+            rmss = np.std(np.array(self.proper_elements['s("/yr)']))
+            print('RMS-Clones+Best-fit: \t', round(rmsa, 5), '\t', round(rmse, 5), '\t', round(rmsi, 5), '\t', round(rmsg, 5), '\t', round(rmss, 5))
         
-        print("#Proper Errors: \t", f"{propa_err:.3e}", "\t", f"{prope_err:.3e}",  "\t",   f"{propI_err:.3e}",  
-              "\t",  f"{propg_err:.3e}", "\t", f"{props_err:.3e}")
+        
         print()
         if self.scattered['scattered']:
             print(str(self.des) + ' may have been scattered during the simulation at t=' +str(self.scattered['scat_time']) + 
