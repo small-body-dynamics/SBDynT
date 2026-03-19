@@ -221,7 +221,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
 
     if(des == None):
         print("The designation of the small body must be provided")
-        print("failed at machine_learning.run_and_MLclassify_TNO()")
+        print("failed at tno_classifier.run_and_MLclassify_TNO()")
         return flag, None, sim
 
     if(datadir and classify_only == False):
@@ -256,7 +256,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
     if(sim == None and classify_only == False):
         #initialize a default simulation
         if(logf):
-            logmessage = "No simulation was provided to machine_learning.run_and_MLclassify_TNO\n"
+            logmessage = "No simulation was provided to tno_classifier.run_and_MLclassify_TNO\n"
             logmessage += "so initializing a default TNO run for " + str(des) + "\n"
             tools.writelog(logf,logmessage) 
 
@@ -265,7 +265,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
                         save_sbdb=sbdb_file,saveic=ic_file,archivefile=archivefile,logfile=logf)
         if(iflag < 1):
             logmessage = "Failed at simulation initialization stage in\n"
-            logmessage += "machine_learning.run_and_MLclassify_TNO at\n" 
+            logmessage += "tno_classifier.run_and_MLclassify_TNO at\n" 
             logmessage += "tno.setup_default_tno_integration\n"
             tools.writelog(logf,logmessage) 
             if(logf != 'screen'):
@@ -310,7 +310,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             res_index=i
     if(res_index < 0):
         logmessage = "failed to find 'Nresonant' in the classifier dictionary\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
             print(logmessage)        
@@ -332,7 +332,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
                                             deletefile=deletefile, logfile=logf)
         if(rflag < 1):
             logmessage = "The short integration for the TNO machine learning failed\n"
-            logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+            logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
             logmessage += "at run_reb.run_simulation\n"
             tools.writelog(logf,logmessage) 
             if(logf != 'screen'):
@@ -346,7 +346,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage = "Unable to read the small body output for the short integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.read_sa_for_sbody\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -361,7 +361,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage = "Unable to read Neptune's output for the short integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.read_sa_by_hash\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -375,7 +375,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
                                       archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage ="Unable to calculate the rotating frame for the short integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.calc_rotating_frame\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -412,7 +412,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
     if(all_classified):
         tno_class.determine_most_common_classification()
         logmessage ="All clones were classifiable as scattering or not TNOs based on the\n"
-        logmessage += "short integration alone. Returning early from machine_learning.run_and_MLclassify_TNO\n";
+        logmessage += "short integration alone. Returning early from tno_classifier.run_and_MLclassify_TNO\n";
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
             print(logmessage)     
@@ -428,7 +428,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
         rflag, sim = run_reb.run_simulation(sim,des=des,tmax=tmax,tout=1000.,archivefile=archivefile,
                                         deletefile=False,logfile=logf)
         if(rflag < 1):
-            logmessage ="The long integration in machine_learning.run_and_MLclassify_TNO() failed\n"
+            logmessage ="The long integration in tno_classifier.run_and_MLclassify_TNO() failed\n"
             logmessage += "at run_reb.run_simulation\n";
             tools.writelog(logf,logmessage) 
             if(logf != 'screen'):
@@ -444,7 +444,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             tools.read_sa_for_sbody(des=des,archivefile=archivefile,clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage = "Unable to read the small body output for the long integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.read_sa_for_sbody\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -457,7 +457,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             tools.read_sa_by_hash(obj_hash='neptune',archivefile=archivefile,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage = "Unable to read Neptune's output for the long integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.read_sa_by_hash\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -471,7 +471,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
                                       clones=clones,tmin=tmin,tmax=tmax)
     if(rflag < 1):
         logmessage ="Unable to calculate the rotating frame for the short integration\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at tools.calc_rotating_frame\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -541,7 +541,7 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
             return 2, tno_class, sim
         
         logmessage = "failed to calculate data features\n"
-        logmessage +="failed in machine_learning.run_and_MLclassify_TNO()\n"
+        logmessage +="failed in tno_classifier.run_and_MLclassify_TNO()\n"
         logmessage += "at machine_learning.calc_ML_features\n";
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
@@ -558,8 +558,8 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
         tno_class.class_probs = clf.G08_classifier.predict_proba(tno_class.features.return_features_list())
     except:
         logmessage = "failed to successfully apply the base G08 classifier\n"
-        logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
-        logmessage += "at clf.G08_classifier.predict_proba()\n"
+        logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
+        logmessage += "at call to clf.G08_classifier.predict_proba()\n"
         tools.writelog(logf,logmessage) 
         if(logf != 'screen'):
             print(logmessage)            
@@ -592,8 +592,8 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
                     logfile=logf)
             if(rflag < 1):
                 logmessage += "the resonance angle classifier failed at clone " +str(n) +"\n";
-                logmessage += "failed in machine_learning.run_and_MLclassify_TNO()\n"
-                logmessage += "at  machine_learning.run_res_angle_classifier\n"
+                logmessage += "failed in tno_classifier.run_and_MLclassify_TNO()\n"
+                logmessage += "at  tno_classifier.run_res_angle_classifier\n"
                 tools.writelog(logf,logmessage) 
                 if(logf != 'screen'):
                     print(logmessage)                    
