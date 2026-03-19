@@ -73,7 +73,7 @@ class stability_indicators:
     def __init__(self, des=''):
 
         self.des = des
-        self.flag_limits = {'ACFI' : 0.75, 'Entropy' : 0.95, 'Power': 0.9, 'Distance_metric': (10,100), 
+        self.flag_limits = {'ACFI' : 0.75, 'Entropy' : 0.95, 'Power': 0.6, 'Distance_metric': (10,100), 
                             'Clone_RMS_a': 0.01, 'Clone_RMS_e': 0.01, 'Clone_RMS_sinI': 0.01}
 
         
@@ -92,7 +92,7 @@ class stability_indicators:
         self.clone_elems = []
 
     def print_results(self):
-        print('Small Body:' + str(self.des) + ', Stability Indicator Results')
+        print('Small Body: ' + str(self.des) + ', Stability Indicator Results')
         if self.ACFI != None:
             sign = ' < ' if self.ACFI < self.flag_limits['ACFI'] else ' > '
             print('ACFI: (' , self.ACFI < self.flag_limits['ACFI'], '), ', self.ACFI, sign ,self.flag_limits['ACFI'])
@@ -136,7 +136,7 @@ class stability_indicators:
           
         if self.Clone_RMS_e != None:  
             sign = ' < ' if self.Clone_RMS_e < self.flag_limits['Clone_RMS_a'] else ' > '
-            print('Clone_RMS_e: (' , self.Clone_RMS_a > self.flag_limits['Clone_RMS_e'], '), ', 
+            print('Clone_RMS_e: (' , self.Clone_RMS_e > self.flag_limits['Clone_RMS_e'], '), ', 
                   self.Clone_RMS_e, sign ,self.flag_limits['Clone_RMS_e'])
             
         if self.Clone_RMS_sinI != None:
@@ -255,16 +255,16 @@ def compute_stability(des=None,times=[], sb_elems=[], clones=0, pe_obj=None,
                     ci.Clone_RMS_sinI = np.sqrt(np.nanmean(diff_I))
 
         if(pe_obj != None):
-            if(len(pe_obj.proper_elements['a']) > 0):
+            if(pe_obj.proper_elements['a'][0] > 0):
                 try:
-                    ci.Distance_metric = hcm_calc(pe_obj.proper_elements['a'][0], pe_obj.proper_errors['RMS_a'][0], 
+                    ci.Distance_metric = prop_elem.hcm_calc(pe_obj.proper_elements['a'][0], pe_obj.proper_errors['RMS_a'][0], 
                                           pe_obj.proper_errors['RMS_e'][0], pe_obj.proper_errors['RMS_sinI'][0])
                 except Exception as err:
                     logmessage = str(err)
                     logmessage += '-> pe_obj.proper_elements and/or pe_obj.proper_errors does not contain valid\n'
                     logmessage += 'inputs to compute the Distance metric.\n'
                     tools.writelog(logfile,logmessage)
-            
+                
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]

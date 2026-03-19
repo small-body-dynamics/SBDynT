@@ -146,10 +146,10 @@ class proper_element_class:
         self.clones = clones
         self.osculating_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'I': np.empty(clones+1),
                                     'omega': np.empty(clones+1), 'Omega': np.empty(clones+1)}
-        self.proper_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'sinI': np.empty(clones+1), 
-                                'g("/yr)': np.empty(clones+1), 's("/yr)': np.empty(clones+1), 
-                                'g(rev/yr)': np.empty(clones+1), 's(rev/yr)': np.empty(clones+1), 
-                                'omega': np.empty(clones+1), 'Omega': np.empty(clones+1)}
+        self.proper_elements = {'a': np.zeros(clones+1), 'e': np.zeros(clones+1), 'sinI': np.zeros(clones+1), 
+                                'g("/yr)': np.zeros(clones+1), 's("/yr)': np.zeros(clones+1), 
+                                'g(rev/yr)': np.zeros(clones+1), 's(rev/yr)': np.zeros(clones+1), 
+                                'omega': np.zeros(clones+1), 'Omega': np.zeros(clones+1)}
         self.mean_elements = {'a': np.empty(clones+1), 'e': np.empty(clones+1), 'sinI': np.empty(clones+1), 
                               'g("/yr)': np.empty(clones+1), 's("/yr)': np.empty(clones+1), 
                               'g(rev/yr)': np.empty(clones+1), 's(rev/yr)': np.empty(clones+1)}
