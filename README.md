@@ -1,11 +1,11 @@
 # SBDynT
-We are developing a well-documented, open-source Python package, the Small Body Dynamics Tool (SBDynT), that can be used to calculate a variety of dynamical parameters and determine dynamical characterizations and classifications from integrations of a solar system small body’s orbital evolution.
+The Small Body Dynamics Tool (SBDynT) is an open-source python tool that can be used to easily investigate a solar system small body’s orbital evolution.
 
-### Current state of development
-This code is still in development! Most of the main structures are in place, but thigs could still change. Functions currently available are shown in the demonstration notebook in the example-notebooks directory. These include a machine learning classifier for transneptunian objects (TNOs), the start of standard synthetic proper elements calcaultion tool (currently implemented on this branch only for TNOs! expansion coming very soon!), and useful tools to initialize rebound simulations and generate clones of any observed small body's orbit over its orbit uncertainties using JPL's orbit fit and associated covariance matrix.
+### SBDynT V1.0
+SBDynT has reached its first release. Available functions are shown in the demonstration notebook in the example-notebooks directory. These include routines to easily run a standard set of dynamical analyses for main belt asteroids and transneptunian objects (TNOs). These routines initialize Rebound simualtions based on any observed small body, including producing clones that sample the small body's orbit-fit uncertainties as given by JPL's Small Body Database and automatically querying JPL Horizons for planet positions at the orbit-fit epoch. The Rebound simulations are then run over dynamically relevant timescales and the outputs are analyzed. The available analyses include synthetic proper orbital elements, stability indicators, and, for TNOs, detailed machine learning dynamical classifications including identification of mean motion resonant angles. The analyses can be run in an automated way with default choices, but they are also highly customizeable. Many of the available functions within SBDynT are highlighted in the demonstration notebooks in the example-notebooks directory. 
 
 ### Requirements and installation
-Currently, to use SBDynT, download the repository and either place it in your path or add the following to your python code:<br>
+Download the repository and either place it in your path or add the following to your python code where you will run SBDynT:<br>
 import sys<br>
 sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
 
