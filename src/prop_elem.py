@@ -236,7 +236,7 @@ class proper_element_class:
             rmsa = np.std(np.array(self.proper_elements['a']))
             rmse = np.std(np.array(self.proper_elements['e']))
             rmsi = np.std(np.array(self.proper_elements['sinI']))
-            rmsi = np.arcsin(rmsi)
+            rmsi = np.arcsin(rmsi)*180/np.pi
             rmsg = np.std(np.array(self.proper_elements['g("/yr)']))
             rmss = np.std(np.array(self.proper_elements['s("/yr)']))
             print()
@@ -2186,6 +2186,8 @@ def calc_proper_elements(des=None, times= [], sb_elems = [], clones = 0, clone_e
             prop_elem['s(rev/yr)'].append(c_results[i][8])
             prop_elem['g("/yr)'].append(c_results[i][7]*3600*360)
             prop_elem['s("/yr)'].append(c_results[i][8]*3600*360)
+            prop_elem['omega'].append(c_results[i][4][ind0])
+            prop_elem['Omega'].append(c_results[i][5][ind0])
 
             prop_errs['RMS_a'].append(c_results[i][2][0])
             prop_errs['RMS_e'].append(c_results[i][2][1])
