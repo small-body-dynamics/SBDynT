@@ -3,12 +3,11 @@ import numpy as np
 # local
 import horizons_api
 import tools
-
 from datetime import datetime
 
 
 def add_planets(sim, planets=['all'],
-                epoch=2459580.5):
+                epoch=2459580.5, logfile='screen'):
     """
     inputs:
         sim: empty rebound simulation instance
@@ -29,9 +28,13 @@ def add_planets(sim, planets=['all'],
 
     #check to see if the sim already has particles in it
     if(sim.N > 0):
-        print("run_reb.add_planets failed")
-        print("This rebound simulation instance already has particles in it!")
-        print("run_reb.add_planets can only accept an empty rebound simulation instance")
+        logmessage = "run_reb.add_planets failed\n"
+        logmessage += "This rebound simulation instance already has particles in it!\n"
+        logmessage += "run_reb.add_planets can only accept an empty rebound simulation instance\n"
+        if(logfile != 'screen'):
+            print(logmessage)
+        if(logfile):
+            tools.writelog(logfile,logmessage)  
         return flag, sim, 0.,0.,0.,0.,0.,0.
 
     sim.units = ('yr', 'AU', 'Msun')
@@ -42,6 +45,8 @@ def add_planets(sim, planets=['all'],
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
 
@@ -68,8 +73,8 @@ def add_planets(sim, planets=['all'],
 
     sim.dt = const.dt[0]
 
-    # add the mass of any not-included planets to the sun
     msun = const.SS_GM[0]
+    # add the mass of any not-included planets to the sun
     # work from Neptune in to also set the largest allowable timestep
     for i in range(8, 0, -1):
         if (not(planet_id[i] in planets)):
@@ -100,10 +105,14 @@ def add_planets(sim, planets=['all'],
         tsim.add(m=1.0, x=0., y=0., z=0., vx=0., vy=0., vz=0.)
         for pl in notplanets:
             pflag, mass, radius, [x, y, z], [vx, vy, vz] = \
-                horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
+                horizons_api.query_horizons_planets(obj=pl, epoch=epoch, logfile=logfile)
             if(pflag < 1):
-                print("run_reb.add_planets failed at \
-                    horizons_api.query_horizons_planets for ", pl)
+                logmessage = "run_reb.add_planets failed at "
+                logmessage += "horizons_api.query_horizons_planets for " +str(pl)
+                if(logfile != 'screen'):
+                    print(logmessage)
+                if(logfile):    
+                    tools.writelog(logfile,logmessage)                  
                 return flag, sim, 0.,0.,0.,0.,0.,0.
             tsim.add(m=mass, r=radius, x=x, y=y, z=z, vx=vx, vy=vy, vz=vz)
         # calculate the barycenter of the sun + missing planets
@@ -119,10 +128,14 @@ def add_planets(sim, planets=['all'],
     # missing planets
     for pl in planets:
         pflag, mass, radius, [x, y, z], [vx, vy, vz] = \
-            horizons_api.query_horizons_planets(obj=pl, epoch=epoch)
+            horizons_api.query_horizons_planets(obj=pl, epoch=epoch,logfile=logfile)
         if(pflag < 1):
-            print("run_reb.add_planets failed failed at \
-                  horizons_api.query_horizons_planets for ", pl)
+            logmessage = "run_reb.add_planets failed at "
+            logmessage += "horizons_api.query_horizons_planets for " +str(pl)
+            if(logfile != 'screen'):
+                print(logmessage)  
+            if(logfile):           
+                tools.writelog(logfile,logmessage)              
             return flag, sim, 0.,0.,0.,0.,0.,0.
         # correct for the missing planets
         x += sx; y += sy; z += sz
@@ -132,10 +145,11 @@ def add_planets(sim, planets=['all'],
 
     sim.N_active = npl
     flag = 1
+    
     return flag, sim, sx, sy, sz, svx, svy, svz
 
 
-def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='Gaussian',
+def initialize_simulation(planets=['all'], des=None, clones=None, cloning_method='Gaussian',
                           datadir='', saveic=False, logfile=False, save_sbdb=False):
     """
     inputs:
@@ -191,9 +205,12 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         return flag, epoch, sim
 
     if(logfile==True):
-        logfile = tools.log_file_name(des=des)
-    if(datadir and logfile and logfile!='screen'):        
-        logfile = datadir + '/' +logfile
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
 
 
     # make sure planets is a list and make all planet names lowercase
@@ -202,6 +219,8 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
 
@@ -211,6 +230,8 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
     sim.units = ('yr', 'AU', 'Msun')
 
     # set up small body variables
+    if(clones == None):
+        clones = 0
     ntp = 1 + clones
     sbx = np.zeros(ntp)
     sby = np.zeros(ntp)
@@ -226,22 +247,34 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
                                            datadir=datadir, logfile=logfile, 
                                            save_sbdb=save_sbdb)
     if(sflag < 1):
-        print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
+        logmessage = "run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return flag, 0., sim
     
     if(logfile):
         logmessage = "simulation epoch: " + str(epoch) + "\n"
-        tools.writelog(logfile,logmessage)
+        tools.writelog(logf,logmessage)
 
 
     # add the planets and return the position/velocity corrections for
     # missing planets
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
-                epoch=epoch)
+                epoch=epoch, logfile=logf)
+
     if(apflag < 1):
-        print("run_reb.initialize_simulation failed at run_reb.add_planets")
+        logmessage = "run_reb.initialize_simulation failed at run_reb.add_planets"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):    
+            tools.writelog(logf,logmessage)            
         return flag, 0., sim
     
+    if(clones == None):
+        clones=0
+
     if(clones > 0):
         for i in range(0, ntp):
             if(i == 0):
@@ -272,9 +305,9 @@ def initialize_simulation(planets=['all'], des=None, clones=0, cloning_method='G
         if(datadir):
             ic_file = datadir + '/'  +ic_file
         sim.save_to_file(ic_file)
-        if(logfile):
+        if(logf):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
-            tools.writelog(logfile,logmessage)
+            tools.writelog(logf,logmessage)
     flag = 1
 
     if(cloning_method=='Gaussian'):
@@ -310,22 +343,31 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
     """
     flag = 0
 
-    if(des == None):
-        print("The designation of one or more small bodies must be provided")
-        print("failed in run_reb.initialize_simulation_at_epoch()")
-        return flag, 0.,sim
 
     if(datadir):
         tools.check_datadir(datadir)
-
+    
     if(logfile==True):
-        logfile = tools.log_file_name(des=des[0])
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' +logfile
+        logf = tools.log_file_name(des=des[0])
+    else:
+        logf = logfile
 
-    if(logfile):
-        logmessage = "simulation epoch: " + epoch + "\n"
-        tools.writelog(logfile,logmessage)
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' +logf
+
+    if(logf):
+        logmessage = "initializing at simulation epoch: " + str(epoch) + "\n"
+        tools.writelog(logf,logmessage)
+
+    if(des == None):
+        logmessage = "The designation of one or more small bodies must be provided\n"
+        logmessage += "failed in run_reb.initialize_simulation_at_epoch()"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return flag, 0.,sim
+
 
     # make sure planets is a list and make all planet names lowercase
     if not (type(planets) is list):
@@ -333,6 +375,8 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
     planets = [pl.lower() for pl in planets]
     if(planets == ['outer']):
         planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']        
     if(planets == ['all']):
         planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
     
@@ -355,18 +399,26 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
 
     # get the small body's position and velocity
     flag, sbx, sby, sbz, sbvx, sbvy, sbvz = \
-        horizons_api.query_sb_from_horizons(des=des, epoch=epoch)
+        horizons_api.query_sb_from_horizons(des=des, epoch=epoch,logfile=logf)
     if (flag < 1):
-        print("run_reb.initialize_simulation_at_epoch failed at "
-              "horizons_api.query_sb_from_horizons")
+        logmessage = "run_reb.initialize_simulation_at_epoch failed at \n"
+        logmessage += "horizons_api.query_sb_from_horizons\n"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return flag, 0., sim
 
     # add the planets and return the position/velocity corrections for
     # missing planets
     apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
-                epoch=epoch)
+                epoch=epoch, logfile=logf)
     if(apflag < 1):
-        print("run_reb.initialize_simulation_at_epoch failed at run_reb.add_planets")
+        logmessage = "run_reb.initialize_simulation_at_epoch failed at run_reb.add_planets"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
         return flag, 0., sim
 
 
@@ -376,7 +428,6 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
         sbx[i] += sx; sby[i] += sy; sbz[i] += sz
         sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
         sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                
                 vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
 
     sim.move_to_com()
@@ -389,11 +440,185 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
         if(datadir):
             ic_file = datadir + '/' +ic_file
         sim.save_to_file(ic_file)
-        if(logfile):
+        if(logf):
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
-            tools.writelog(logfile,logmessage)    
+            tools.writelog(logf,logmessage)    
 
     return 1, epoch, sim
+
+
+
+def initialize_simulation_from_sv(planets=['all'], des=None, clones=None, epoch = 268100.0,
+                                  sv = [0,0,0,0,0,0], cov = None, cloning_method='Gaussian',
+                                  datadir='', saveic=False, logfile=False, save_sbdb=False):
+    """
+    inputs:
+        planets (optional): string list, list of planet names - defaults to all
+        des: string, small body designation
+        clones (optional): integer, number of clones. Defaults to 0
+        cloning_method (optional): string,  defaults to standard Guassian sampling
+                           if set to 'find_3_sigma' the first two
+                           returned clones will be approximately 3-
+                           sigma min and max semimajor axis clones
+                           if clones>2, the rest will be sampled in a Guassian manner
+        datadir (optional): string, path for saving any files produced in this 
+                           function; defaults to the current directory
+        saveic (optional): boolean or string; 
+                           if True:  will save a rebound file with the simulation 
+                           state that can be used to restart later either to a default 
+                           file name or to a file with the name equal to the string passed
+                           (default) if False nothing is saved
+        logfile (optional): boolean or string; 
+                            if True:  will save some messages to adefault log file name
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed 
+                            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string; 
+                           if True:  will save a pickle file with the results of the 
+                           JPL SBDB query either to a default file name or to a file
+                           with the name equal to the string passed
+                           (default) if False nothing is saved
+                           
+
+    outputs:
+        flag: integer, 0 if failed, 1 if successful
+        epoch: float, date of the simulation start (JD)
+        sim: rebound simulation instance with planets and test particles added
+             with adjustments for missing major perturbers
+        weights (optional output, triggered by use of non-default cloning_method):
+            numpy array of weights for the clones added to the simulation
+            in the default sampling method, clones are equally weighted, so we need
+            not output weights
+            when cloning_method = 'find_3_sigma' and nclones > 2, the weights of the
+            two extreme clones are set to 0 and the rest to 1
+    """
+    
+    flag = 0
+
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):        
+        logf = datadir + '/' +logf
+
+    if(des == None):
+        logmessage = "run_reb.initialize_simulation_from_sv failed\n"
+        logmessage += "The designation of the small body must be provided\n"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return flag, epoch, sim
+
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
+    planets = [pl.lower() for pl in planets]
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['all']):
+        planets = ['mercury', 'venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+
+
+    # initialize simulation variable
+    sim = rebound.Simulation()
+    sim.units = ('yr', 'AU', 'Msun')
+
+    # set up small body variables
+    if(clones == None):
+        clones=0
+    ntp = 1 + clones
+    sbx = np.zeros(ntp)
+    sby = np.zeros(ntp)
+    sbz = np.zeros(ntp)
+    sbvx = np.zeros(ntp)
+    sbvy = np.zeros(ntp)
+    sbvz = np.zeros(ntp)
+
+    # get the small body's position and velocity
+    x,y,z,vx,vy,vz = sv
+
+    try:
+        sbx,sby,sbz,sbvx,sbvy,sbvz = np.random.multivariate_normal(sv, cov, clones).T
+    except Exception as err:
+        print(err)
+        print(sv, cov, clones)
+        return
+
+    vx = vx*365.25; vy = vy*365.25; vz = vz*365.25
+    sbvx = sbvx*365.25; sbvy = sbvy*365.25; sbvz = sbvz*365.25
+    
+    sbx = np.concatenate(([x], sbx)); sby = np.concatenate(([y], sby)); sbz = np.concatenate(([z], sbz))
+    sbvx = np.concatenate(([vx], sbvx)); sbvy = np.concatenate(([vy], sbvy)); sbvz = np.concatenate(([vz], sbvz))
+    
+    #if(sflag < 1):
+    #    print("run_reb.initialize_simulation failed at horizons_api.query_sb_from_jpl")
+    #    return flag, 0., sim
+    
+    if(logf):
+        logmessage = "simulation epoch: " + str(epoch) + "\n"
+        tools.writelog(logf,logmessage)
+
+
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+    #print('epoch',epoch)
+    apflag, sim, sx, sy, sz, svx, svy, svz = add_planets(sim, planets=planets,
+                epoch=epoch, logfile=logf)
+    if(apflag < 1):
+        logmessage = "run_reb.initialize_simulation_from_sv failed at run_reb.add_planets"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return flag, 0., sim
+    
+    if(clones > 0):
+        for i in range(0, ntp):
+            if(i == 0):
+                #first clone is always just the best-fit orbit
+                #and the hash is not numbered
+                sbhash = str(des)
+            else:
+                sbhash = str(des) + '_' + str(i)
+            # correct for the missing planets
+            sbx[i] += sx; sby[i] += sy; sbz[i] += sz
+            sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
+            sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
+                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
+    else:
+        sbx += sx; sby += sy; sbz += sz
+        sbvx += svx; sbvy += svy; sbvz += svz
+        sbhash = des 
+        sim.add(m=0., x=sbx, y=sby, z=sbz,
+                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
+
+    sim.move_to_com()
+
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+        else:
+            ic_file = saveic
+        if(datadir):
+            ic_file = datadir + '/'  +ic_file
+        sim.save_to_file(ic_file)
+        if(logf):
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            tools.writelog(logf,logmessage)
+    flag = 1
+
+    if(cloning_method=='Gaussian'):
+        return 1, epoch, sim
+    else:
+        return 1, epoch, sim, weights
 
 
 def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
@@ -434,28 +659,32 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
             state at tmax
     """
     flag = 0
+    
+    if(logfile==True):
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        tools.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' +logf
+
+    if(des == None):
+        logmessage = "You must provide a designation/small body name (used to set default file names)"
+        logmessage += "failed at run_reb.run_simulation"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)
+        return flag, sim
+
     if(archivefile==None):
-        if(des == None):
-            print("You must provide either an archivefile name or a designation ")
-            print("that can be used to generate a default archivefile name")
-            print("failed at run_reb.run_simulation")
-            return flag, sim
         archivefile = tools.archive_file_name(des)
     
     if(datadir):
-        tools.check_datadir(datadir)
         archivefile = datadir + '/' +archivefile
-
-    if(logfile==True):
-        if(des == None):
-            print("You must provide either a logfile name (or logfile='screen') or ")
-            print("a designation that can be used to generate a default logfile name")
-            print("failed at run_reb.run_simulation")
-            return flag, sim        
-        logfile = tools.log_file_name(des=des)
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' +logfile
-
 
     #check for integrator choice and set any required extra parameters
     if(integrator.lower == 'mercurius'.lower):
@@ -465,6 +694,12 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
         sim.collision_resolve = "merge"
     elif(integrator.lower == 'whfast'.lower):
         sim.integrator = 'whfast'
+        # Our simulations do not modify masses, forces, or number of particles 
+        # during the run, so turning off safe mode makes this integrator 
+        # much faster while retaining accuracy. 
+        # But user-beware if you modify something else about the integration
+        # that makes this choice bad!!
+        sim.ri_whfast.safe_mode = 0
     elif(integrator == 'ias15'):
         sim.integrator = 'ias15'
     else:
@@ -477,22 +712,21 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
     #set up the simulation archive 
     sim.save_to_file(archivefile, interval=tout,
                      delete_file=deletefile)
-    if(logfile):
+    if(logf):
         logmessage = "Running " + des + " from " + str(tmin) + " to " + str(tmax) +" years \n"
         logmessage +="using " + integrator + " outputting every " + str(tout) +" years \n"
         logmessage += "to simulation archivefile " + archivefile + "\n"
         now = datetime.now()
         logmessage +="starting at " + str(now) + "\n"
-        tools.writelog(logfile,logmessage)
-        logmessage=''
+        tools.writelog(logf,logmessage)
 
     #run until tmax
     sim.integrate(tmax)
 
-    if(logfile):
+    if(logf):
         now = datetime.now()
-        logmessage ="finishing at " + str(now) + "\n"
-        tools.writelog(logfile,logmessage)
+        logmessage = "finishing at " + str(now) + "\n"
+        tools.writelog(logf,logmessage)
 
     flag = 1
 
@@ -524,18 +758,21 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
     """
     flag = 0
 
-    if(des == None):
-        print("The designation of one or more small bodies must be provided")
-        print("run_reb.initialize_simulation_from_simarchive failed")
-        return flag, None, 0
-
     if(logfile==True):
-        logfile = tools.log_file_name(des=des)
-    if(datadir):
-        tools.check_datadir(datadir)
-    if(datadir and logfile and logfile!='screen'):
-        logfile = datadir + '/' +logfile
-    logmessage = ''
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' +logf       
+
+    if(des == None):
+        logmessage = "run_reb.initialize_simulation_from_simarchive failed\n"
+        logmessage += "The designation of one or more small bodies must be provided\n"
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)        
+        return flag, None, 0
 
     #try all the potential default file names if the archive file is not 
     #specified
@@ -554,10 +791,14 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
             try:
                 sim = rebound.Simulation(archivefile2)
             except RuntimeError:
-                print("run_reb.initialize_simulation_from_simarchive failed")
-                print("couldn't read the simulation archive file from either default: ")
-                print(archivefile)
-                print(archivefile2)
+                logmessage = "run_reb.initialize_simulation_from_simarchive failed\n"
+                logmessage += "couldn't read the simulation archive file from either default: "
+                logmessage += str(archivefile) + "\n";
+                logmessage += str(archivefile2)
+                if(logf != 'screen'):
+                    print(logmessage)
+                if(logf):
+                    tools.writelog(logf,logmessage)                       
                 return flag, None, 0
 
     else:
@@ -567,17 +808,20 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
         try:
             sim = rebound.Simulation(archivefile)
         except RuntimeError:
-            print("run_reb.initialize_simulation_from_simarchive failed")
-            print("couldn't read the simulation archive file: ")
-            print(archivefile)
+            logmessage = "run_reb.initialize_simulation_from_simarchive failed\n"
+            logmessage += "couldn't read the simulation archive file: " + str(archivefile)
+            if(logf != 'screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)     
             return flag, None, 0
 
-    if(logfile):
+    if(logf):
         time = sim.t
-        logmessage += "Loaded integration for " + str(des) + " from " + archivefile + "\n"
+        logmessage = "Loaded integration for " + str(des) + " from " + archivefile + "\n"
         logmessage += "simulation is at time " + str(time) + " years\n";
         logmessage +="integrator is " + sim.integrator + "\n"
-        tools.writelog(logfile,logmessage)
+        tools.writelog(logf,logmessage)
         logmessage = ''
 
 
@@ -592,22 +836,22 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
             try:
                 p = sim.particles[str(d)]
             except:
-                print("failed to find the following object in the simulation:")
-                print(str(d))
-                logmessage+= str(d) + " not in the simulation\n"
+                logmessage = "failed to find the following object in the simulation: "+str(d)
+                if(logf != 'screen'):
+                    print(logmessage)
+                if(logf):
+                    tools.writelog(logf,logmessage)                    
                 nfound+=-1
         if(nfound == 0):
-            print("run_reb.initialize_simulation_from_simarchive failed")
-            print("couldn't find any of the small bodies in the simulation from: ")
-            print(archivefile)
-            if(logfile):
-                logmessage+="couldn't find any of the small bodies in the simulation\n"
-                tools.writelog(logfile,logmessage)
+            logmessage = "run_reb.initialize_simulation_from_simarchive failed\n"
+            logmessage += "couldn't find any of the small bodies in the simulation from: "+str(archivefile)
+            if(logf != 'screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)              
             return flag, None, 0
         elif(nfound < ntp):
             flag = 2
-            if(logfile):
-                tools.writelog(logfile,logmessage)
             return flag, sim, clones
         else:
             flag = 1
@@ -621,8 +865,11 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
         try:
             p = sim.particles[str(des)]
         except:
-            print("failed to find the best-fit in the simulation")
-            logmessage+="Failed to find best-fit of " + str(des) + " in the simulation\n"
+            logmessage = "Failed to find best-fit of " + str(des) + " in the simulation\n"
+            if(logf != 'screen'):
+                print(logmessage)
+            if(logf):
+                tools.writelog(logf,logmessage)                  
             nfound+=-1
         for i in range(1,ntp):
             sbhash = str(des) + '_' + str(i)
@@ -630,29 +877,29 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
             try:
                 p = sim.particles[sbhash]
             except:
-                print("missing clone %d from the simulation" % j)
-                logmessage+="missing clone " + str(j) + "from the simulation\n"
+                logmessage = "missing clone " + str(j) + "from the simulation\n"
+                if(logf != 'screen'):
+                    print(logmessage)
+                if(logf):
+                    tools.writelog(logf,logmessage)                      
                 n_found+=-1
 
     if(nfound == 0):
-        print("run_reb.initialize_simulation_from_simarchive failed")
-        print("couldn't find any of the small bodies in the simulation from: ")
-        print(archivefile)
-        if(logfile):
-            logmessage+="couldn't find any of the small bodies in the simulation\n"
-            tools.writelog(logfile,logmessage)
+        logmessage = "run_reb.initialize_simulation_from_simarchive failed\n"
+        logmessage += "couldn't find any of the small bodies in the simulation from: "+str(archivefile)
+        if(logf != 'screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)      
         return flag, None, 0
     elif(nfound < ntp):
         flag = 2
-        if(logfile):
-            logmessage+="some of the small bodies were missing\n"            
-            tools.writelog(logfile,logmessage)
         return flag, sim, clones
     
     #everything went as expected
     flag = 1
-    logmessage+="Found " + str(des) + " and " + str(clones) + " clones in the simulation\n"
-    if(logfile):
-        tools.writelog(logfile,logmessage)            
+    if(logf):
+        logmessage = "Found " + str(des) + " and " + str(clones) + " clones in the simulation\n"
+        tools.writelog(logf,logmessage)            
     return flag, sim, clones
     

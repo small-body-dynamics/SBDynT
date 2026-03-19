@@ -1,32 +1,29 @@
 import sys
 import numpy as np
-import pandas as pd
+from os import path
+from os import remove
+from pickle import dump
+from pickle import load
+
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.linear_model import SGDClassifier
+from skimage.feature import hog
+from skimage.io import imread
+
+from importlib import resources as impresources
+import random
+import string
+from datetime import date
+
+#internal
 import tools
 import run_reb
 import MLdata
 import tno
 import resonances
-
-from os import path
-from os import remove
-
-import matplotlib.pyplot as plt
-
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.linear_model import SGDClassifier
-
-from skimage.feature import hog
-from skimage.io import imread
-
-from datetime import date
-from pickle import dump
-from pickle import load
-from importlib import resources as impresources
-
-import random
-import string
 
 
 '''
@@ -161,7 +158,7 @@ class TNO_ML_classifier:
                     with open(self.phi_training_testing_data, 'rb') as f:
                         [label_train,hog_train,label_test,hog_test] = load(f)
                 except:
-                    print("Error loading the training/testind data for the phi classifier from:")
+                    print("Error loading the training/testing data for the phi classifier from:")
                     print(self.phi_training_testing_data)
                     print("Please check the file and try again.")
                     return 0
@@ -593,9 +590,9 @@ class TNO_ML_features:
 
 
 
-def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
-        time_short,a_short,ec_short,inc_short,node_short,argperi_short,\
-        pomega_short,q_short,rh_short,phirf_short,tn_short,clones=0,):
+def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,
+        time_short,a_short,ec_short,inc_short,node_short,argperi_short,
+        pomega_short,q_short,rh_short,phirf_short,tn_short,clones=0,logfile=False):
     """
     calculate ML  data features from the short and long time-series
     of a TNO integration
@@ -624,6 +621,8 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
         rh_short: 2-d np array, heliocentric distance in au at times=time_short 
         phirf_short: 2-d np array, angle from Neptune in the rotating frame in radians at times=time_short 
         tn_short: 2-d np array, tisserand parameter with respect to Neptune at times=time_short
+
+        logfile (string): if set, will print log messages to a file or to screen
 
     outputs:
         flag, integer: 0 if failed, 1 if suceeded
@@ -666,23 +665,31 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
     delta_length_short = np.abs( (time_short[-1] - time_short[0]) - 0.5e6)
 
     if(delta_nlong > 10 or delta_nshort > 10 or delta_length_long > 1e4 or delta_length_long > 5e2):
-        print("The length and output cadence of the provided data series are not sufficiently close")
-        print("to that expected for the TNO machine learning classifier. The classifier was trained")
-        print("on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and")
-        print("2) a longer, 10 Myr integration with outputs every 1000 years.")
-        print("delta_nlong, delta_nshort, delta_length_long, delta_length_short")
-        print(delta_nlong, delta_nshort, delta_length_long, delta_length_short)
-        print("Failed at machine_learning.calc_ML_features()")
+        logmessage = "Failed in machine_learning.calc_ML_features\n"
+        logmessage += "The length and output cadence of the provided data series are not sufficiently close"
+        logmessage += "to that expected for the TNO machine learning classifier. The classifier was trained"
+        logmessage += "on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and"
+        logmessage += "2) a longer, 10 Myr integration with outputs every 1000 years."
+        logmessage += "delta_nlong, delta_nshort, delta_length_long, delta_length_short"
+        logmessage += f"{delta_nlong:.4f} {delta_nshort:.4f} {delta_length_long:.4f} {delta_length_short:.4f}\n\n"
+        logmessage +="Failed at machine_learning.calc_ML_features()\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)            
         return flag, None
     if(delta_nlong > 0 or delta_nshort > 0 or delta_length_long > 5. or delta_length_long > 100.):
-        print("Warning: The length and output cadence of the provided data series are not identical")
-        print("to that expected for the TNO machine learning classifier. The classifier was trained")
-        print("on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and")
-        print("2) a longer, 10 Myr integration with outputs every 1000 years.")
-        print("delta_nlong, delta_nshort, delta_length_long, delta_length_short")
-        print(delta_nlong, delta_nshort, delta_length_long, delta_length_short)
-        print("The provided time series are close, so the code will proceed, but consider adjusting")
-        print("your integrations to exactly match those criteria.")
+        logmessage = "Warning in machine_learning.calc_ML_features\n"
+        logmessage += "Warning: The length and output cadence of the provided data series are not identical"
+        logmessage += "to that expected for the TNO machine learning classifier. The classifier was trained"
+        logmessage += "on two time series: 1) a short, 0.5 Myr integration with outputs every 50 years and"
+        logmessage += "2) a longer, 10 Myr integration with outputs every 1000 years."
+        logmessage += "delta_nlong, delta_nshort, delta_length_long, delta_length_short"
+        logmessage += f"{delta_nlong:.4f} {delta_nshort:.4f} {delta_length_long:.4f} {delta_length_short:.4f}\n"
+        logmessage += "The provided time series are close, so the code will proceed, but consider adjusting"
+        logmessage += "your integrations to exactly match those criteria."
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)            
         flag = 2
 
 
@@ -753,8 +760,12 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
     try:
         adot = (a[:,1:] - a[:,:-1])/dt
     except:
-        print("problem in calculating the long simulation time derivatives, probably")
-        print("because the same time output is included in the arrays twice")
+        logmessage = "problem in calculating the long simulation time derivatives\n"
+        logmessage += "probably because the same time output is included in the arrays twice\n"
+        logmessage += "Failed in machine_learning.calc_ML_features\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)            
         return flag, f
     edot = (ec[:,1:] - ec[:,:-1])/dt
     idot = (inc[:,1:] - inc[:,:-1])/dt
@@ -785,8 +796,12 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
     try:
         adot = (a_short[:,1:] - a_short[:,:-1])/dt
     except:
-        print("problem in calculating the long simulation time derivatives, probably")
-        print("because the same time output is included in the arrays twice")
+        logmessage = "problem in calculating the short simulation time derivatives\n"
+        logmessage += "probably because the same time output is included in the arrays twice\n"
+        logmessage += "Failed in machine_learning.calc_ML_features\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)              
         return flag, f
 
     edot = (ec_short[:,1:] - ec_short[:,:-1])/dt
@@ -931,7 +946,7 @@ def calc_ML_features(time,a,ec,inc,node,argperi,pomega,q,rh,phirf,tn,\
 
 
     
-def check_angle(img_clf, time, phi, max_prob=0.):
+def check_angle(img_clf, time, phi, max_prob=0.,logfile=False):
     '''
     Generates the images and data features for the phi classifier
     then runs the classifier to get the probability the angle is
@@ -943,6 +958,8 @@ def check_angle(img_clf, time, phi, max_prob=0.):
         time, 1-d numpy array: time values from a 1e7 year integration
         phi, 1-d numpy array: phi values from a 1e7 year integration
         max_prob, float: the highest-probability resonance angle so far
+        logfile (string): if set, will print log messages to a file or to screen
+
     outputs: 
         flag, integer:  0 for failure, 1 for success
         prob, float: the probability that phi is librating according to img_clf
@@ -964,19 +981,32 @@ def check_angle(img_clf, time, phi, max_prob=0.):
     img2 = random_string+'.png' #'180centered.png'
 
 
-    iflag, phi, phi0 = make_ml_phi_plots(phi,time,img1,img2)
+    iflag, phi, phi0 = make_ml_phi_plots(phi,time,img1,img2,logfile=logfile)
     if(not(iflag)):
-        print("machine_learning.check_angle failed")
+        logmessage = "Failed in machine_learning.check_angle\n"
+        logmessage += "at machine_learning.make_ml_phi_plots\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)            
         return flag, prob, sigma_phi, delta_phi
-    hflag, comb_hog = calc_ml_combined_hog(img1,img2)
+    hflag, comb_hog = calc_ml_combined_hog(img1,img2,logfile=logfile)
     if(not(hflag)):
-        print("machine_learning.check_angle failed")
+        logmessage = "Failed in machine_learning.check_angle\n"
+        logmessage += "at machine_learning.calc_ml_combined_hog\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)             
         return flag, prob, sigma_phi, delta_phi
     
     try:
         class_probs = img_clf.predict_proba([comb_hog])
     except:
-        print("machine_learning.check_angle failed at the image classifier")
+        logmessage = "Failed in machine_learning.check_angle\n"
+        logmessage += "when trying to apply the image classifier\n"
+        logmessage += "at img_clf.predict_proba\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)             
         return flag, prob, sigma_phi, delta_phi
 
     prob = class_probs[0][1]
@@ -1002,7 +1032,7 @@ def check_angle(img_clf, time, phi, max_prob=0.):
 #################################################################
 # Functions needed for the resonance angle search
 #################################################################
-def make_ml_phi_plots(phi,time,img1,img2):
+def make_ml_phi_plots(phi,time,img1,img2,logfile=False):
     '''
     Makes the plots that the ML image classifier uses to determine
     if a resonant angle is librating or not
@@ -1014,6 +1044,8 @@ def make_ml_phi_plots(phi,time,img1,img2):
                       for phi vs time, phi running from -pi to pi
         img2, string: name/path for image file to be saved to
                       for phi vs time, phi running from 0 to 2pi
+        logfile (string): if set, will print log messages to a file or to screen
+                      
     outputs:
         flag, integer: 0 for failure, 1 for success
         phi, 1-d numpy array of resonant angle values from 0-2pi
@@ -1038,16 +1070,21 @@ def make_ml_phi_plots(phi,time,img1,img2):
     try:
         ax.scatter(time,phi0,s=5,c='k')
     except:
-        print("problem in machine_learning.make_ml_phi_plots")
-        print("couldn't make the -pi to pi plot of phi")
+        logmessage = "Failed in machine_learning.make_ml_phi_plots\n"
+        logmessage += "couldn't make the -pi to pi plot of phi\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, phi, phi0
     ax.set_axis_off()
     try:
         plt.savefig(img1,dpi=200)
     except:
-        print("problem in machine_learning.make_ml_phi_plots")
-        print("couldn't save the -pi to pi plot of phi to file:")
-        print(img1)
+        logmessage = "Failed in machine_learning.make_ml_phi_plots\n"
+        logmessage += "couldn't save the -pi to pi plot of phi to file: " + img1
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, phi, phi0
 
     plt.close('all')
@@ -1062,23 +1099,28 @@ def make_ml_phi_plots(phi,time,img1,img2):
     try:
         ax.scatter(time,phi,s=5,c='k')
     except:
-        print("problem in machine_learning.make_ml_phi_plots")
-        print("couldn't make the 0 to 2pi plot of phi")
+        logmessage = "Failed in machine_learning.make_ml_phi_plots\n"
+        logmessage += "couldn't make the 0 to 2pi plot of phi\n"
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, phi, phi0
     ax.set_axis_off()
     try:
         plt.savefig(img2,dpi=200)
     except:
-        print("problem in machine_learning.make_ml_phi_plots")
-        print("couldn't save the 0 to 2pi plot of phi to file:")
-        print(img2)
+        logmessage = "Failed in machine_learning.make_ml_phi_plots\n"
+        logmessage += "couldn't save the 0 to 2pi plot of phi to file: " + img2
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, phi, phi0        
     plt.close('all')
     flag = 1
     return flag, phi, phi0
 
 
-def calc_ml_combined_hog(img1,img2):
+def calc_ml_combined_hog(img1,img2,logfile=False):
     '''
     Calculates the HOG (histogram of oriented gradients) for the 
     resonant angle plots. This is the data feature the image 
@@ -1089,6 +1131,8 @@ def calc_ml_combined_hog(img1,img2):
                       for phi vs time, phi running from -pi to pi
         img2, string: name/path for image file showing
                       for phi vs time, phi running from 0 to 2pi
+        logfile (string): if set, will print log messages to a file or to screen
+                      
     outputs:
         flag, integer: 0 for failure, 1 for success
         comb_hog, numpy array: concatenated HOG values for the two
@@ -1107,9 +1151,11 @@ def calc_ml_combined_hog(img1,img2):
     try:
         read1 = imread(img1, as_gray=True)
     except:
-        print("problem in machine_learning.calc_ml_combined_hog")
-        print("could not read the first image: ")
-        print(img1)
+        logmessage = "Failed in machine_learning.calc_ml_combined_hog\n"
+        logmessage +="could not read the first image: " + img1
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, [0.]
 
     try:
@@ -1118,17 +1164,21 @@ def calc_ml_combined_hog(img1,img2):
                    orientations=ori, visualize=False, 
                    block_norm='L1-sqrt')
     except:
-        print("problem in machine_learning.calc_ml_combined_hog")
-        print("could not calculate the HOG for the first image: ")
-        print(img1)
+        logmessage = "Failed in machine_learning.calc_ml_combined_hog"
+        logmessage += "could not calculate the HOG for the first image: " + img1
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, [0.]
 
     try:    
         read2 = imread(img2, as_gray=True)
     except:
-        print("problem in machine_learning.calc_ml_combined_hog")
-        print("could not read the second image: ")
-        print(img2)
+        logmessage = "Failed in machine_learning.calc_ml_combined_hog\n"
+        logmessage +="could not read the second image: " + img2
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, [0.]
 
     try:
@@ -1137,9 +1187,11 @@ def calc_ml_combined_hog(img1,img2):
                    orientations=ori, visualize=False, 
                    block_norm='L1-sqrt')
     except:
-        print("problem in machine_learning.calc_ml_combined_hog")
-        print("could not calculate the HOG for the second image: ")
-        print(img2)
+        logmessage = "Failed in machine_learning.calc_ml_combined_hog\n"
+        logmessage += "could not calculate the HOG for the second image: " + img2
+        tools.writelog(logfile,logmessage) 
+        if(logfile != 'screen'):
+            print(logmessage)               
         return flag, [0.]
 
     comb_hog = np.append(hog2,hog1)
@@ -1449,8 +1501,7 @@ def rotating_frame_features(rh,phirf):
             nstd_peri, ndel_peri, rzperi_max, n_apo_empty, nstd_apo, ndel_apo, rzapo_max
 
 
-##########################################################################################################
-##########################################################################################################
+
 
 
 

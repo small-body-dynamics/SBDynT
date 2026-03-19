@@ -1,7 +1,7 @@
 import rebound
 import numpy as np
 import matplotlib.pyplot as plt
-# local
+# internal
 import tools
 
 
@@ -104,7 +104,6 @@ def read_sa_for_resonance(des = None, archivefile=None,planet=None,
         print("resonances.read_sa_for_resonance failed")
         return 0,[[0.],],[[0.],],[[0.],],[[0.],],[0.]
         
-
     nout = len(sa)
 
     if(nout <2):
@@ -217,7 +216,6 @@ def read_sa_for_resonance(des = None, archivefile=None,planet=None,
         aperi = aperi[:,0:it]
         ma = ma[:,0:it]
         phi = phi[:,0:it]
-
 
     
     flag = 1
@@ -354,14 +352,9 @@ def plot_resonance(des=None, archivefile=None,datadir='',clones=None,planet=None
         xwidth= 5
 
     if(tmin == None):
-        tmin = t[0]
+        tmin = np.amin(t)
     if(tmax == None):
-        tmax = t[-1]
-    #correct for backwards integrations
-    if(tmax < tmin):
-        temp = tmax
-        tmax = tmin
-        tmin = temp
+        tmax = np.amax(t)
 
     deltat = tmax-tmin
     timelabel = "time (yr)"
@@ -822,8 +815,5 @@ def farey_tree(num, denom, prmin, prmax):
 
     n_check = len(new_check_p)
     return flag, num, denom,new_check_q, new_check_p, n_check 
-
-
-
 
 

@@ -9,7 +9,7 @@ Currently, to use SBDynT, download the repository and either place it in your pa
 import sys<br>
 sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
 
-The following packages must be installed:<br>
+The following packages must be installed (note that the required rebound package has its own dependencies):<br>
 python -- Version 3.9+<br>
 rebound -- Version 4+<br>
 numpy<br>
@@ -17,22 +17,30 @@ scipy<br>
 pandas<br>
 matplotlib<br>
 astroquery<br>
-sklearn<br>
+scikit-learn<br>
+scikit-image<br>
 pickle<br>
 importlib<br>
 os<br>
 datetime<br>
-
+pytest<br>
 
 ### Contact information
 Kat Volk, kat.volk@gmail.com
+
+### Publications
+When using any aspect of SBDynT, please cite Spencer et al., under review (will update with link upon paper acceptance)
+
+The main TNO machine learning classifier is described in [Volk and Malhotra 2025](https://ui.adsabs.harvard.edu/abs/2025mlsm.book..173V/abstract). A follow-up paper is in the works to fully describe the resonant angle identification classifier.
+
+The proper elements and chaos indicators are described in Spencer et al., under review
 
 ### Contributors
 Code has been directly contributed to this repository by:
 - [Kat Volk](https://github.com/katvolk)
 - [Dallin Spencer](https://github.com/dallinspencer)
 
-We have also modified code originally written by [Rachel Smullen](https://github.com/rsmullen) from the [KBO_Classifier](https://github.com/rsmullen/KBO_Classifier) repository
+We have also adapted some code originally written by [Rachel Smullen](https://github.com/rsmullen) from the [KBO_Classifier](https://github.com/rsmullen/KBO_Classifier) repository
 
 Development of these tools also include contributions from Renu Malhotra, Darin Ragozzine, Federica Spoto, Severance Graham, Henry Hsieh, and Marco Micheli.
 

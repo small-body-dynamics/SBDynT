@@ -91,7 +91,7 @@ def writelog(logfile,logmessage):
     '''
     if(logfile=='screen'):
         print(logmessage)
-    else:
+    elif(logfile):
         with open(logfile,"a") as f:
             f.write(logmessage)
 
@@ -300,6 +300,21 @@ def arraymod2pi0(x):
     if(oned):
         mx = mx[0]
     return mx
+
+
+#############################################################
+#############################################################
+# Returns the index of the median element for odd-length arrays,
+# or one of the middle elements for even-length arrays.
+#############################################################
+def argmedian(x):
+    """
+    input:
+        x, 1-d array
+    output:
+        integer, index of the median element
+    """
+    return np.argpartition(x, len(x) // 2)[len(x) // 2]
 
 
 
