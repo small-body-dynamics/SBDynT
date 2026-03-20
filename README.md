@@ -26,7 +26,8 @@ datetime<br>
 pytest<br>
 
 ### Contact information
-Kat Volk, kat.volk@gmail.com
+Kat Volk, kat.volk@gmail.com <br>
+Dallin Spencer, dallinspencer@gmail.com
 
 ### Publications
 When using any aspect of SBDynT, please cite Spencer et al., under review (will update with link upon paper acceptance)
