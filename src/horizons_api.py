@@ -534,7 +534,7 @@ def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
                 tq[0:2] = q[0:2]
                 ttp[0:2] = tp[0:2]
                 tnode[0:2] = node[0:2]
-                targperi[0] = argperi[0:2]
+                targperi[0:2] = argperi[0:2]
                 tinc[0:2] = inc[0:2]
                 ecc = tecc.copy()
                 q = tq.copy()

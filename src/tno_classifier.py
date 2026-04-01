@@ -230,7 +230,6 @@ def run_and_MLclassify_TNO(sim=None, des=None, clones=None,  saveic=True,
     #define names/paths to all the files to be saved
     if(logfile==True):
         logf = tools.log_file_name(des=des)
-        print(logf)
     else:
         logf = logfile
     if(datadir and logf and logf!='screen'):        
