@@ -108,7 +108,7 @@ def add_planets(sim, planets=['all'],
                 horizons_api.query_horizons_planets(obj=pl, epoch=epoch, logfile=logfile)
             if(pflag < 1):
                 logmessage = "run_reb.add_planets failed at "
-                logmessage += "horizons_api.query_horizons_planets for " +str(pl)
+                logmessage += "horizons_api.query_horizons_planets for " +str(pl) +"\n"
                 if(logfile != 'screen'):
                     print(logmessage)
                 if(logfile):    
@@ -252,7 +252,11 @@ def initialize_simulation(planets=['all'], des=None, clones=None, cloning_method
             print(logmessage)
         if(logf):
             tools.writelog(logf,logmessage)
-        return flag, 0., sim
+        if(cloning_method == 'find_3_sigma'):
+            return flag, 0., sim, weights
+        else:
+            return flag, 0., sim
+
     
     if(logfile):
         logmessage = "simulation epoch: " + str(epoch) + "\n"

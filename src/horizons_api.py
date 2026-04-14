@@ -496,28 +496,86 @@ def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
         if(find_3_sigma):
             #sample the covariance matrix 6000 times, sort by semimajor
             #axis and pull the top and bottom ~0.1% as 3-sigma values
+            nsample = 6000
+            if(clones > nsample):
+                nsample = clones
+
             tecc, tq, ttp, tnode, targperi, tinc = \
-                np.random.multivariate_normal(mean, covmat, 6000).T
+                np.random.multivariate_normal(mean, covmat, nsample).T
+
+            if( (tecc<0).any() or (tecc>1).any() or (tinc<0).any() or (tinc>180).any() ):
+                logmessage = "Warning: when sampling from the covariance matrix in horizons_api.query_sb_from_jpl, \n"
+                logmessage += "either eccentricities outside the required 0-1 range were generated or inclinations\n"
+                logmessage += "outside the range 0-180 degrees were generated. We will discard these and resample\n"
+                logmessage += "until we have all clones meet constraints, but this means the clones are not a\n"
+                logmessage += "simple Gaussian distribution\n"
+                if(logf != 'screen'):
+                    print(logmessage)  
+                if(logf):           
+                    tools.writelog(logf,logmessage)
+                
+                #use a mask to select only the e and i ranges we want
+                mask1 = np.logical_and(tecc>=0, tecc<1)
+                tecc = tecc[mask1]
+                tq = tq[mask1]
+                ttp = ttp[mask1]
+                tnode = tnode[mask1]
+                targperi = targperi[mask1]
+                tinc = tinc[mask1]
+
+                mask2 = np.logical_and(tinc>=0, tinc<=180)
+                tecc = tecc[mask2]
+                tq = tq[mask2]
+                ttp = ttp[mask2]
+                tnode = tnode[mask2]
+                targperi = targperi[mask2]
+                tinc = tinc[mask2]
+
+                if(len(tecc) < clones):
+                    #need to increase the sample size 
+                    n_new = 10*(clones - len(tecc))
+                    t2ecc, t2q, t2tp, t2node, t2argperi, t2inc = \
+                        np.random.multivariate_normal(mean, covmat,n_new).T
+                    
+                    mask1 = np.logical_and(t2ecc>=0, t2ecc<1)
+                    tecc = t2ecc[mask1]
+                    t2q = t2q[mask1]
+                    t2tp = t2tp[mask1]
+                    t2node = t2node[mask1]
+                    t2argperi = t2argperi[mask1]
+                    t2inc = t2inc[mask1]
+
+                    mask2 = np.logical_and(t2inc>=0, t2inc<=180)
+                    t2ecc = t2ecc[mask2]
+                    t2q = t2q[mask2]
+                    t2tp = t2tp[mask2]
+                    t2node = t2node[mask2]
+                    t2argperi = t2argperi[mask2]
+                    t2inc = t2inc[mask2]
+
+
+                    tecc = np.append(tecc,t2ecc)
+                    tq = np.append(tq,t2q)
+                    ttp = np.append(ttp,t2tp)
+                    tnode = np.append(tnode,t2node)
+                    targperi = np.append(targperi,t2argperi)
+                    tinc = np.append(tinc,t2inc)
+                    if(len(tecc) < clones):
+                        logmessage = "The orbit covariance matrix produces too many  values outside\n"
+                        logmessage += "the expected ranges for e and i. Failed in horizons_api.query_sb_from_jpl\n"
+                        if(logf != 'screen'):
+                            print(logmessage)  
+                        if(logf):           
+                            tools.writelog(logf,logmessage)
+                        return flag, 0., 0., 0., 0., 0., 0., 0., 0.  
+
+            #search for the 3-sigma min- and max-a clones
             tempa = tq/(1.-tecc)
             sorted_a_index = np.argsort(tempa)
-            #check to make sure the 3-sigma orbits are e=0-1
-            #if not, find ones that are
-            if(tecc[sorted_a_index[8]] < 0):
-                stop=0
-                for i in range(0,5991):
-                    if(ecc[sorted_a_index[i]] >= 0 and stop == 0):
-                        c1 = sorted_a_index[i]
-                        stop = 1
-            else:
-                c1 = sorted_a_index[8]
-            if(tecc[sorted_a_index[5991]] > 1.):
-                stop=0
-                for i in range(5999,8,-1):
-                    if(ecc[sorted_a_index[i]] < 1. and stop == 0):
-                        c2 = sorted_a_index[i]
-                        stop = 1
-            else:
-                c2 = sorted_a_index[5991]
+
+            n_outliers = int(np.rint(0.9973*len(tempa)))
+            c1 = sorted_a_index[n_outliers - int(n_outliers/2)]
+            c2 =  sorted_a_index[len(tempa) - int(n_outliers/2)]
             
             ecc = np.array([tecc[c1],tecc[c2]])
             q = np.array([tq[c1],tq[c2]])
@@ -525,23 +583,23 @@ def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
             node = np.array([tnode[c1],tnode[c2]])
             argperi = np.array([targperi[c1],targperi[c2]])
             inc = np.array([tinc[c1],tinc[c2]])
-            
+
             if(clones > 2):
-                #sample the rest of the clones 
-                tecc, tq, ttp, tnode, targperi, tinc = \
-                    np.random.multivariate_normal(mean, covmat, clones).T
-                tecc[0:2] = ecc[0:2]
-                tq[0:2] = q[0:2]
-                ttp[0:2] = tp[0:2]
-                tnode[0:2] = node[0:2]
-                targperi[0:2] = argperi[0:2]
-                tinc[0:2] = inc[0:2]
-                ecc = tecc.copy()
-                q = tq.copy()
-                tp = ttp.copy()
-                argperi = targperi.copy()
-                node = tnode.copy()
-                inc = tinc.copy()
+                #remove those outliers
+                tecc = np.delete(tecc,[c1,c2])
+                tq = np.delete(tq,[c1,c2])
+                ttp = np.delete(ttp,[c1,c2])
+                tnode = np.delete(tnode,[c1,c2])
+                targperi = np.delete(targperi,[c1,c2])
+                tinc = np.delete(tinc,[c1,c2])
+
+                #add in the number of desired additional clones
+                ecc = np.append(ecc,tecc[0:clones-2])
+                q = np.append(q,tq[0:clones-2])
+                tp = np.append(tp,ttp[0:clones-2])
+                node = np.append(node,tnode[0:clones-2])
+                argperi = np.append(argperi,targperi[0:clones-2])
+                inc = np.append(inc,tinc[0:clones-2])
                 #set the weights of the 3-sigma clones to zero so the gaussian
                 #clones can still be used later to calculate clone statistics
                 weights[1] = 0.
@@ -549,6 +607,79 @@ def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
         else:
             ecc, q, tp, node, argperi, inc = \
                 np.random.multivariate_normal(mean, covmat, clones).T
+
+            if( (ecc<0).any() or (ecc>1).any() or (inc<0).any() or (inc>180).any() ):
+                logmessage = "Warning: when sampling from the covariance matrix in horizons_api.query_sb_from_jpl, \n"
+                logmessage += "either eccentricities outside the required 0-1 range were generated or inclinations\n"
+                logmessage += "outside the range 0-180 degrees were generated. We will discard these and resample\n"
+                logmessage += "until we have all clones meet constraints, but this means the clones are not a\n"
+                logmessage += "simple Gaussian distribution\n"
+                if(logf != 'screen'):
+                    print(logmessage)  
+                if(logf):           
+                    tools.writelog(logf,logmessage)
+                
+                #use a mask to select only the e and i ranges we want
+                mask1 = np.logical_and(ecc>=0, ecc<1)
+                ecc = ecc[mask1]
+                q = q[mask1]
+                tp = tp[mask1]
+                node = node[mask1]
+                argperi = argperi[mask1]
+                inc = inc[mask1]
+
+                mask2 = np.logical_and(inc>=0, inc<=180)
+                ecc = ecc[mask2]
+                q = q[mask2]
+                tp = tp[mask2]
+                node = node[mask2]
+                argperi = argperi[mask2]
+                inc = inc[mask2]
+
+                #need to increase the sample size 
+                n_new = 10*(clones - len(ecc))
+                tecc, tq, ttp, tnode, targperi, tinc = \
+                    np.random.multivariate_normal(mean, covmat,n_new).T
+                
+                mask1 = np.logical_and(tecc>=0, tecc<1)
+                mask2 = np.logical_and(tinc>=0, tinc<=180)
+
+                tecc = tecc[mask1]
+                tq = tq[mask1]
+                ttp = ttp[mask1]
+                tnode = tnode[mask1]
+                targperi = targperi[mask1]
+                tinc = tinc[mask1]
+
+                tecc = tecc[mask2]
+                tq = tq[mask2]
+                ttp = ttp[mask2]
+                tnode = tnode[mask2]
+                targperi = targperi[mask2]
+                tinc = tinc[mask2]
+
+
+                ecc = np.append(ecc,tecc)
+                q = np.append(q,tq)
+                tp = np.append(tp,ttp)
+                node = np.append(node,tnode)
+                argperi = np.append(argperi,targperi)
+                inc = np.append(inc,tinc)
+                if(len(ecc) < clones):
+                    logmessage = "The orbit covariance matrix produces too many  values outside\n"
+                    logmessage += "the expected ranges for e and i. Failed in horizons_api.query_sb_from_jpl\n"
+                    if(logf != 'screen'):
+                        print(logmessage)  
+                    if(logf):           
+                        tools.writelog(logf,logmessage)
+                    return flag, 0., 0., 0., 0., 0., 0., 0., 0.  
+
+                ecc = ecc[0:clones]
+                q = q[0:clones]
+                tp = tp[0:clones]
+                node = node[0:clones]
+                argperi = argperi[0:clones]
+                inc = inc[0:clones]
         
         node = node*deg2rad
         argperi = argperi*deg2rad
@@ -579,8 +710,8 @@ def query_sb_from_jpl(des=None, clones=None, cloning_method='Gaussian',
                                 node=node[j], argperi=argperi[j], ma=ma)
             if(i < 1):
                 logmessage = "horizons_api.query_sb_from_jpl failed\n"
-                logmessage += "failed to convert to cartesiann inside cloning" 
-                logmessage += "part of query_sb_from_jpl for clone "+str(j)
+                logmessage += "failed to convert to cartesiann inside cloning\n" 
+                logmessage += "part of query_sb_from_jpl for clone "+str(j) + "\n"
                 if(logf != 'screen'):
                     print(logmessage)  
                 if(logf):           
@@ -733,7 +864,7 @@ def query_sb_from_horizons(des=None, epoch=2459580.5, logfile='screen'):
 
 
 
-def get_orbit_cov_from_jpl(des=None, clones=10000):
+def get_orbit_cov_from_jpl(des=None, clones=10000, logfile='screen'):
     """
     Get the orbit and covariance matrix of a small body from JPL's small
     body database browser and query Horizons for the value of GM that goes
@@ -751,6 +882,7 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
                 [a, e, inc, node, argpari, mean_anomaly]
 
     """
+    flag = 0
     pdes, destype = tools.mpc_designation_translation(des)
 
     try:
@@ -758,9 +890,13 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
         # orbit and associated covariance matrix
         obj = SBDB.query(pdes, full_precision=True, covariance='mat', phys=True)
     except:
-        print("horizons_api.get_orbit_cov_from_jpl failed")
-        print("first attempted JPL small body database browser query failed, returning:")
-        print(obj)
+        logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+        logmessage += "first attempted JPL small body database browser query failed, returning:\n"
+        logmessage += obj 
+        if(logfile != 'screen'):
+            print(logmessage)
+        if(logfile):
+            tools.writelog(logfile,logmessage)                  
         return flag, 0., 0., 0., 0.
 
     #some objects can't be found with their packed designation, 
@@ -778,35 +914,20 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
             # orbit and associated covariance matrix
             obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
         except:
-            print("horizons_api.get_orbit_cov_from_jpl failed")
-            print("second attempted JPL small body database browser query failed, returning:")
-            print(obj)
+            logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+            logmessage +="second attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if(logfile != 'screen'):
+                print(logmessage)
+            if(logfile):
+                tools.writelog(logfile,logmessage)                    
             return flag, 0., 0., 0., 0.
 
-    #some objects can't be found with their packed designation, 
-    #so let's be sure the above didn't return an error code
-    errorcode = None
-    try:
-        errorcode = obj['code']
-    except KeyError:
-        errorcode = None
-    
-    if(errorcode == 200):
-        #try querying from the user-input version of the designation
-        try:
-            # query the JPL small body database browser for the best-fit
-            # orbit and associated covariance matrix
-            obj = SBDB.query(des, full_precision=True, covariance='mat', phys=True)
-        except:
-            print("horizons_api.get_orbit_cov_from_jpl failed")
-            print("second attempted JPL small body database browser query failed, returning:")
-            print(obj)
-            return flag, 0., 0., 0., 0.
 
     #check to see if the user-provided designation is the same type as the primary one
     #if the user gave a provisional designation, but the object is numbered, the SBDB
     #query won't return the most up-to-date orbit (even though the darned system knows
-    #the provisional designation corresponds to the numbered object...grr
+    #the provisional designation corresponds to the numbered object...grr)
 
     sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj['object']['des'])
     if(sbdbdestype != destype):
@@ -814,10 +935,14 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
             newdes = obj['object']['des']
             obj = SBDB.query(newdes, full_precision=True, covariance='mat', phys=True)   
         except:
-            print("horizons_api.get_orbit_cov_from_jpl failed")
-            print("The user-provided designation was not the most up to date designation")            
-            print("third attempted JPL small body database browser query failed, returning:")
-            print(obj) 
+            logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+            logmessage += "The user-provided designation was not the most up to date designation\n"            
+            logmessage += "but the third attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj 
+            if(logfile != 'screen'):
+                print(logmessage)
+            if(logfile):
+                tools.writelog(logfile,logmessage)                     
             return flag, 0., 0., 0., 0.
 
 
@@ -848,9 +973,12 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
     try:
         data = json.loads(response.text)
     except ValueError:
-        print("horizons_api.query_sb_from_jpl failed")
-        print("Unable to decode JSON results from Horizons API request")
-        flag = 0
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "Unable to decode JSON results from Horizons API request\n"
+        if(logfile != 'screen'):
+            print(logmessage)
+        if(logfile):
+            tools.writelog(logfile,logmessage)                 
         return flag, 0., 0., 0., 0.
     
     # this is the GM in au^2/day^2
@@ -858,10 +986,13 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
         gmpart = data["result"].split("Keplerian GM")[1]
         gm = np.float64(gmpart.split("\n")[0].split()[1])
     except:
-        print("horizons_api.query_sb_from_jpl failed")
-        print("\nunable to pull the GM value from the horizons results:\n")
-        print(data["result"])
-        flag = 0
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "unable to pull the GM value from the horizons results:\n"
+        logmessage += data["result"]
+        if(logfile != 'screen'):
+            print(logmessage)
+        if(logfile):
+            tools.writelog(logfile,logmessage)                 
         return flag, 0., 0., 0., 0.
 
         
@@ -879,8 +1010,9 @@ def get_orbit_cov_from_jpl(des=None, clones=10000):
     meanorb = [bfa, bfecc, i0, O0, w0, ma0]
     clones_mat = np.array([ta, tecc, tinc*deg2rad, tnode*deg2rad, targperi*deg2rad, tma])
     covorb = np.cov(clones_mat, rowvar=True)
-       
-    return 1, epoch, gm, meanorb, covorb
+    
+    flag = 1
+    return flag, epoch, gm, meanorb, covorb
 
 
 def query_sbbd_for_a(des=None,logfile='screen'):
