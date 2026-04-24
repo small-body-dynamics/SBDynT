@@ -174,6 +174,8 @@ def read_sa_for_resonance(des = None, archivefile=None,planet=None,
 
         t[it] = sim.t
 
+        #track how many clones are still in the simulation
+        found_any = 0
         for j in range(0,ntp):
             #the hash format for clones
             tp_hash = str(des) + "_" + str(j)
@@ -184,9 +186,9 @@ def read_sa_for_resonance(des = None, archivefile=None,planet=None,
             try:
                 tp = sim.particles[tp_hash]
             except:
-                print("resonances.read_sa_for_resonance failed")
-                print("Problem finding a particle with that hash in the archive")
-                return 0, a, e, inc, node, aperi, ma, phi, t, ''
+                continue
+
+            found_any = 1
             o = tp.orbit(com)
             a[j,it] = o.a
             e[j,it] = o.e
@@ -202,7 +204,13 @@ def read_sa_for_resonance(des = None, archivefile=None,planet=None,
                 pt = pt - float(n)*o.Omega - float(r)*(o_pl.Omega+o_pl.omega) - float(s)*o_pl.Omega
             pt = np.mod(pt,2.*np.pi)
             phi[j,it] = pt
+
+        if(found_any == 0):
+            #if we didn't find any clones, then we are done
+            #and can break out of the loop
+            break            
         it+=1
+
     if(it==0):
         print("resonances.read_sa_for_resonance failed")
         print("There were no simulation archives in the desired time range")
