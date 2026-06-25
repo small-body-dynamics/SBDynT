@@ -1756,7 +1756,7 @@ def read_archive_for_pe(des, clones=0, datadir='',archivefile=None, logfile=None
             except:
                 continue
             c_name = des+'_'+str(j+1)
-            clone = sim[i].particles[c_name].orbit(com)
+            clone = particles[c_name].orbit(com)
             clone_elems[j,0,i] = clone.a
             clone_elems[j,1,i] = clone.e
             clone_elems[j,2,i] = clone.inc
