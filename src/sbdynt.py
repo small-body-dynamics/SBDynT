@@ -848,7 +848,7 @@ def analyze_tno_run(des=None, clones=None, datadir='',archivefile=None,
                                     archivefile=tno_results.archivefile, deletefile=False,
                                     logfile=tno_results.logfile, classify_only=True)
 
-        tno_results.tno_class = tno_class
+        tno_results.tno_ml_outputs = tno_class
         if(cflag < 1):
             logmessage = "Failed at the machine learning stage in sbdynt.analyze_tno_run\n"
             logmessage += "at tno_classifier.run_and_MLclassify_TNO"
