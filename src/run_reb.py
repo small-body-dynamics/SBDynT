@@ -89,7 +89,7 @@ def add_planets(sim, planets=['all'],
     # sun's radius in au
     radius = const.SS_r[0]
     sim.add(m=msun, r=radius, x=0., y=0., z=0.,
-            vx=0., vy=0., vz=0., hash='sun')
+            vx=0., vy=0., vz=0., name='sun')
 
     # set the initial correction for the included planets'
     # position and velocities to zero
@@ -141,7 +141,7 @@ def add_planets(sim, planets=['all'],
         x += sx; y += sy; z += sz
         vx += svx; vy += svy; vz += svz
         sim.add(m=mass, r=radius, x=x, y=y, z=z,
-                vx=vx, vy=vy, vz=vz, hash=pl)
+                vx=vx, vy=vy, vz=vz, name=pl)
 
     sim.N_active = npl
     flag = 1
@@ -291,13 +291,13 @@ def initialize_simulation(planets=['all'], des=None, clones=None, cloning_method
             sbx[i] += sx; sby[i] += sy; sbz[i] += sz
             sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
             sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
+                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], name=sbhash)
     else:
         sbx += sx; sby += sy; sbz += sz
         sbvx += svx; sbvy += svy; sbvz += svz
         sbhash = des 
         sim.add(m=0., x=sbx, y=sby, z=sbz,
-                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
+                vx=sbvx, vy=sbvy, vz=sbvz, name=sbhash)
 
     sim.move_to_com()
 
@@ -432,7 +432,7 @@ def initialize_simulation_at_epoch(planets=['all'], des=None, epoch=2459580.5,
         sbx[i] += sx; sby[i] += sy; sbz[i] += sz
         sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
         sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
+                vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], name=sbhash)
 
     sim.move_to_com()
 
@@ -596,13 +596,13 @@ def initialize_simulation_from_sv(planets=['all'], des=None, clones=None, epoch 
             sbx[i] += sx; sby[i] += sy; sbz[i] += sz
             sbvx[i] += svx; sbvy[i] += svy; sbvz[i] += svz
             sim.add(m=0., x=sbx[i], y=sby[i], z=sbz[i],
-                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], hash=sbhash)
+                    vx=sbvx[i], vy=sbvy[i], vz=sbvz[i], name=sbhash)
     else:
         sbx += sx; sby += sy; sbz += sz
         sbvx += svx; sbvy += svy; sbvz += svz
         sbhash = des 
         sim.add(m=0., x=sbx, y=sby, z=sbz,
-                vx=sbvx, vy=sbvy, vz=sbvz, hash=sbhash)
+                vx=sbvx, vy=sbvy, vz=sbvz, name=sbhash)
 
     sim.move_to_com()
 
@@ -694,7 +694,7 @@ def run_simulation(sim, des=None, tmax=0, tout=0, archivefile=None,
     if(integrator.lower == 'mercurius'.lower):
         sim.integrator = 'mercurius'
         sim.collision = "direct"
-        sim.ri_mercurius.hillfac = 3.
+        # sim.ri_mercurius.hillfac = 3.
         sim.collision_resolve = "merge"
     elif(integrator.lower == 'whfast'.lower):
         sim.integrator = 'whfast'
@@ -824,7 +824,7 @@ def initialize_simulation_from_simarchive(des=None, archivefile=None,
         time = sim.t
         logmessage = "Loaded integration for " + str(des) + " from " + archivefile + "\n"
         logmessage += "simulation is at time " + str(time) + " years\n";
-        logmessage +="integrator is " + sim.integrator + "\n"
+        logmessage += "integrator is " + str(sim.integrator) + "\n"
         tools.writelog(logf,logmessage)
         logmessage = ''
 
