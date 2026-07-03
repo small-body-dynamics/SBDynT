@@ -28,6 +28,8 @@ jobs:
 
     # Step 3: Run all test files inside the tests/ folder
     - name: Run tests
+      env:
+          PYTHONPATH: src
       run: |
         # If you use pytest (recommended):
         pytest tests/
