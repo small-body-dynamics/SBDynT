@@ -2,7 +2,9 @@ import pytest
 import numpy as np
 import sys
 import numpy.testing as npt
+
 sys.path.insert(0, '../src')
+from horizons_api import query_sb_from_horizons
 
 @pytest.mark.parametrize(
     "test, expected, expect_raises",
@@ -14,9 +16,7 @@ sys.path.insert(0, '../src')
             None,
         ),
     ])
-
 def test_query_horizons_sb(test, expected, expect_raises):
-    from horizons_api import query_sb_from_horizons
     xe = np.zeros(1)
     ye = np.zeros(1)
     ze = np.zeros(1)

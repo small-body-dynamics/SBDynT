@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 import sys
 import numpy.testing as npt
-sys.path.insert(0, '../src')
 
+sys.path.insert(0, '../src')
+from horizons_api import query_horizons_planets
 
 @pytest.mark.parametrize(
     "test, expected, expect_raises",
@@ -33,9 +34,7 @@ sys.path.insert(0, '../src')
             KeyError,
         ),
     ])
-
 def test_query_horizons_planets(test, expected, expect_raises):
-    from horizons_api import query_horizons_planets
     xe = np.zeros(3)
     ve = np.zeros(3)
     xt = np.zeros(3)
