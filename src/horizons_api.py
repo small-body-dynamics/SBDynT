@@ -59,7 +59,7 @@ def query_horizons_planets(obj=None, epoch=2459580.5, logfile='screen'):
             print(logmessage)
         if(logfile):
             tools.writelog(logfile,logmessage)                
-        return flag, 0., 0., [0.,0.,0.], [0.,0.,0.]
+        raise
 
 
     # import the following hard-coded constants:
