@@ -25,6 +25,16 @@ os<br>
 datetime<br>
 pytest<br>
 
+```
+# Install them by:
+pip install requeriments.tex
+
+# Or use a virtual environment:
+python -m venv .venv
+source .venv/bin/activate
+pip install requeriments.tex
+```
+
 ### Contact information
 Kat Volk, kat.volk@gmail.com <br>
 Dallin Spencer, dallinspencer@gmail.com
