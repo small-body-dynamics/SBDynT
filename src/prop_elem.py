@@ -1082,13 +1082,13 @@ def power_filt(power, p_arr, freq_s, small_planets_flag = False, dist = 1, e_or_
             j += 1
     else:
         j=0
-        for i in s_arr[:num_p-1]:
+        for i in p_arr[:num_p-1]:
             if j==0 or j==1:
                 mult = 100
             else:
                 mult = 20
             if small_planets_flag == False and j == 2:
-                mult = 100
+                mult = 1000
             ind = np.argmin(abs(freq_s-i))
             power[ind-dist:ind+dist+1] = power[ind-dist:ind+dist+1]/mult
             j += 1
@@ -1205,7 +1205,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             window_half_dex = window_dex / 2
             n_bins = len(power)
 
-            power = power_filt(power, g_arr, freq_s, small_planets_flag, dist)
+            power = power_filt(power, g_arr, freq_s, small_planets_flag, dist, e_or_I = True)
             
             g_idx, g, local_power_all, protect_g_bins = find_local_max_windowed(freq_s, power, 
                                                 window_half_dex=0.05, window_protect_dex=0.15)
@@ -1217,7 +1217,7 @@ def compute_prop(a_init,e_init,inc_init,aop_init,lan_init,t_init,g_arr,s_arr,gs_
             power = np.abs(Ypq_s)**2
             power[abs(1/freq_s) > time_mag/2] = 0
 
-            power = power_filt(power, s_arr, freq_s, small_planets_flag, dist)
+            power = power_filt(power, s_arr, freq_s, small_planets_flag, dist, e_or_I = False)
             
             s_idx, s, local_power_all, protect_s_bins = find_local_max_windowed(freq_s, power, 
                                                 window_half_dex=0.02, window_protect_dex=0.15)
