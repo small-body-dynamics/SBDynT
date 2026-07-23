@@ -1,0 +1,76 @@
+# This workflow will run daily at 06:45.
+# It will install Python dependencies and run tests with a variety of Python versions.
+# See documentation for help debugging smoke test issues:
+#    https://lincc-ppt.readthedocs.io/en/latest/practices/ci_testing.html#version-culprit
+
+name: Unit test smoke test
+
+on:
+
+  # Runs this workflow automatically
+  schedule:
+    - cron: 45 6 * * *
+    
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        uv pip install --system -e .[dev]
+        if [ -f requirements.txt ]; then uv pip install --system -r requirements.txt; fi
+    - name: List dependencies
+      run: |
+        pip list
+    - name: Run unit tests with pytest
+      run: |
+        python -m pytest
+    - name: Send status to author's email      
+      if: ${{ failure() }} && github.event_name != 'workflow_dispatch' }} # Only email if the workflow failed and was not manually started. Customize this as necessary.
+      uses: dawidd6/action-send-mail@v3
+      with:
+        # Required mail server address if not connection_url:
+        server_address: smtp.gmail.com
+        # Server port: (uses TLS by default if server_port is 465)
+        server_port: 465
+
+        # Mail server username:
+        username: ${{secrets.MAIL_USERNAME}}
+        # Mail server password:
+        password: ${{secrets.MAIL_PASSWORD}}
+        # Required recipients' addresses:
+        to: kat.volk@gmail.com
+
+        # Required mail subject:
+        subject: Smoke test ${{ job.status }} in ${{github.repository}}
+        # Required sender full name:
+        from: GitHub Actions Report
+        # Optional body:
+        html_body: |
+          <!DOCTYPE html>
+          <html>
+          <body>
+          <h3>Smoke test ${{ job.status }}</h3>
+          <p>The smoke test in <b>${{ github.repository }}</b> has completed with result: <b>${{ job.status }}</b></p>
+          <p><a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          </a></p>
+          </body>
+          </html>
+          

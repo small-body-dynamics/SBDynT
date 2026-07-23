@@ -1,0 +1,28 @@
+# Changes here will be overwritten by Copier
+_commit: v2.2.0
+_src_path: gh:lincc-frameworks/python-project-template
+author_email: kat.volk@gmail.com
+author_name: Kat Volk
+create_example_module: false
+custom_install: library
+enforce_style:
+- black
+failure_notification:
+- email
+include_benchmarks: true
+include_docs: true
+include_notebooks: true
+mypy_type_checking: none
+package_name: sbdynt
+project_description: The Small Body Dynamics Tool (SBDynT) is an open-source python
+    tool that can be used to easily investigate a solar system small body’s orbital
+    evolution.
+project_license: none
+project_name: SBDynT
+project_organization: small-body-dynamics
+python_versions:
+- '3.9'
+- '3.10'
+- '3.11'
+- '3.12'
+test_lowest_version: direct

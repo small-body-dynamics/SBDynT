@@ -1,0 +1,1114 @@
+# external modules to be imported
+from astroquery.jplsbdb import SBDB
+import numpy as np
+import requests
+import json
+from pickle import dump
+
+
+# internal modules
+from sbdynt import tools
+
+
+def query_horizons_planets(obj=None, epoch=2459580.5, logfile="screen"):
+    """
+    Get the heliocentric position and velocity of a major planet from
+    JPL Horizons via web API request
+
+    inputs:
+        obj: string, major planet name (not case sensitive)
+        epoch (optional): float, JD date, defaults to Jan 1, 2022
+
+    outputs:
+        flag: integer, 0 if nothing was queried,
+                       1 if query is successful)
+        m: float, object mass (in solar masses)
+        r: float, object radius (in au)
+        x: np array, cartesian heliocentric positions (in au)
+        v: np array, cartesian heliocentric velocities (in au/year)
+        all return values set to 0 if unsuccessful
+    """
+
+    flag = 0
+
+    if obj == None:
+        logmessage = "A planet name must be provided\n"
+        logmessage += "horizons_api.query_horizons_planets failed"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
+
+    obj = obj.lower()
+    # define the planet-id numbers used by Horizons for the barycenter
+    # of each major planet in the solar system
+    planet_id = {
+        "sun": 0,
+        "mercury": 1,
+        "venus": 2,
+        "earth": 3,
+        "mars": 4,
+        "jupiter": 5,
+        "saturn": 6,
+        "uranus": 7,
+        "neptune": 8,
+    }
+    # initialize the x and v return variables to zero.
+    x = np.zeros(3)
+    v = np.zeros(3)
+
+    # exit if the object isn't one of the major planets
+    try:
+        des = str(planet_id[obj])
+    except:
+        logmessage = "horizons_api.query_horizons_planets failed\n"
+        logmessage += "provided object is not one of the major planets"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]
+
+    # import the following hard-coded constants:
+    # Planet physical parameters
+    # SS_GM[0:9] in km^3 s^–2
+    # SS_r[0:9] all in au
+    from sbdynt import hard_coded_constants as const
+
+    # calculate planet masses in solar masses
+    mass = const.SS_GM[planet_id[obj]] / const.SS_GM[planet_id["sun"]]
+    rad = const.SS_r[planet_id[obj]]
+
+    # we don't actually need to query for the Sun because
+    # we are working in heliocentric coordinates
+    if obj == "sun":
+        flag = 1
+        return flag, mass, rad, x, v
+
+    # build the url to query horizons
+    start_time = "JD" + str(epoch)
+    stop_time = "JD" + str(epoch + 1)
+    url = (
+        "https://ssd.jpl.nasa.gov/api/horizons.api"
+        + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER="
+        + "'@Sun'&OUT_UNITS='AU-D'&COMMAND="
+        + des
+        + "&START_TIME="
+        + start_time
+        + "&STOP_TIME="
+        + stop_time
+    )
+
+    # run the query and exit if it fails
+    response = requests.get(url)
+    try:
+        data = json.loads(response.text)
+    except ValueError:
+        logmessage = "horizons_api.query_horizons_planets failed\n"
+        logmessage += "Unable to decode JSON results from Horizons API request"
+        logmessage += str(response)
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, mass, rad, x, v
+    # pull the lines we need from the resulting plain text return
+    try:
+        xvline = data["result"].split("X =")[1].split("\n")
+    except:
+        logmessage = "horizons_api.query_horizons_planets failed\n"
+        logmessage += 'Unable to find "X =" in Horizons API request result:\n'
+        logmessage += data["result"]
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, mass, rad, x, v
+
+    try:
+        # heliocentric positions:
+        x[0] = float(xvline[0].split()[0])
+        x[1] = float(xvline[0].split("Y =")[1].split()[0])
+        x[2] = float(xvline[0].split("Z =")[1].split()[0])
+
+        # heliocentric velocities converted from au/d to au/yr
+        v[0] = float(xvline[1].split("VX=")[1].split()[0]) * 365.25
+        v[1] = float(xvline[1].split("VY=")[1].split()[0]) * 365.25
+        v[2] = float(xvline[1].split("VZ=")[1].split()[0]) * 365.25
+    except:
+        logmessage = "horizons_api.query_horizons_planets failed\n"
+        logmessage += "Unable to find Y,Y,Z, VX, VY, VZ in Horizons API request result: \n"
+        logmessage += data["result"]
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, mass, rad, x, v
+
+    # the query was successful, return the results!
+    flag = 1
+    return flag, mass, rad, x, v
+
+
+###############################################################################
+
+
+def query_sb_from_jpl(
+    des=None, clones=None, cloning_method="Gaussian", logfile=False, save_sbdb=False, datadir=""
+):
+    """
+    Get the orbit and covariance matrix of a small body from JPL's small
+    body database browser, query Horizons for the value of GM that goes
+    with that orbit, then convert the best-fit and clones (if desired)
+    to heliocentric cartesian positions and velocities
+
+    inputs:
+        des: string, the designation for the object in the SBDB
+        clones (optional): integer, number of times to clone using the
+                           covariance matrix
+        cloning_method (optional): string,  defaults to standard Guassian
+                           sampling if set to 'find_3_sigma' the first two
+                           returned clones will be approximately 3-sigma
+                           min and max semimajor axis clones
+                           if clones>2, the rest will be sampled in a
+                           Guassian manner
+        logfile (optional): boolean or string;
+                            if True:  will save some messages to adefault log file name
+                            or to a file with the name equal to the string passed or
+                            to the screen if 'screen' is passed
+                            (default) if False nothing is saved
+        save_sbdb (optional): boolean or string;
+                           if True:  will save a pickle file with the results of the
+                           JPL SBDB query either to a default file name or to a file
+                           with the name equal to the string passed
+                           (default) if False nothing is saved
+
+    outputs:
+        flag: integer, 1 if query worked, 0 otherwise)
+        x: np array (size clones+1), cartesian heliocentric x (au)
+        y: np array (size clones+1), cartesian heliocentric y (au)
+        z: np array (size clones+1), cartesian heliocentric z (au)
+        vx: np array (size clones+1), cartesian heliocentric vx (au)
+        vy: np array (size clones+1), cartesian heliocentric vy (au)
+        vz: np array (size clones+1), cartesian heliocentric vz (au)
+        weights:
+            numpy array of weights for the clones added to the simulation
+            in the default sampling method, clones are equally weighted,
+            so it's an array of ones
+            when cloning_method = 'find_3_sigma' and nclones > 2, the weights
+            of the two extreme clones are set to 0 and the rest to 1
+
+        all return values set to 0 if unsuccessful
+    """
+
+    if logfile == True:
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if datadir:
+        tools.check_datadir(datadir)
+
+    if datadir and logf and logf != "screen":
+        logf = datadir + "/" + logf
+
+    flag = 0
+    if cloning_method == "find_3_sigma":
+        find_3_sigma = True
+    else:
+        find_3_sigma = False
+
+    if not cloning_method == "find_3_sigma" and not cloning_method == "Gaussian":
+        logmessage = "unsupported cloning method!\n"
+        logmessage += "Right now only 'Gaussian' and 'find_3_sigma' are implemented"
+        logmessage += "horizons_api.query_sb_from_jpl failed"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    if find_3_sigma and clones < 2:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "if using cloning_method='find_3_sigma', clones must >= 2"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    pdes, destype = tools.mpc_designation_translation(des)
+
+    try:
+        # query the JPL small body database browser for the best-fit
+        # orbit and associated covariance matrix
+        obj = SBDB.query(pdes, full_precision=True, covariance="mat", phys=True)
+    except:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "first attempted JPL small body database browser query failed, returning:\n"
+        logmessage += obj
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # some objects can't be found with their packed designation,
+    # so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj["code"]
+    except KeyError:
+        errorcode = None
+
+    if errorcode == 200:
+        # try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "second attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # check to see if the user-provided designation is the same type as the primary one
+    # if the user gave a provisional designation, but the object is numbered, the SBDB
+    # query won't return the most up-to-date orbit (even though the darned system knows
+    # the provisional designation corresponds to the numbered object...grr
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj["object"]["des"])
+    if sbdbdestype != destype:
+        try:
+            newdes = obj["object"]["des"]
+            obj = SBDB.query(newdes, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "The user-provided designation was not the most up to date designation\n"
+            logmessage += "third attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # save the SBDB query results using pickle if that's desired
+    if save_sbdb:
+        if save_sbdb == True:
+            orbit_file = tools.orbit_solution_file(des)
+        else:
+            orbit_file = save_sbdb
+
+        if datadir:
+            orbit_file = datadir + "/" + orbit_file
+
+        try:
+            with open(orbit_file, "wb") as f:
+                dump(obj, f)
+        except:
+            logmessage = "unable to write the SBDB query results to a file"
+            logmessage += "tried to write to " + str(orbit_file)
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+        if logf:
+            logmessage = "SBDB query results saved to " + orbit_file + "\n"
+            tools.writelog(logf, logmessage)
+
+    deg2rad = np.pi / 180.0
+    try:
+        # pull the best-fit orbit that was calculated at the same
+        # epoch as the covariance matrix
+        objcov = obj["orbit"]["covariance"]
+        epoch = np.float64(str(objcov["epoch"]).split()[0])
+        bfecc = np.float64(str(objcov["elements"]["e"]).split()[0])
+        bfq = np.float64(str(objcov["elements"]["q"]).split()[0])
+        bfinc = np.float64(str(objcov["elements"]["i"]).split()[0])
+        bfnode = np.float64(str(objcov["elements"]["om"]).split()[0])
+        bfargperi = np.float64(str(objcov["elements"]["w"]).split()[0])
+        bftp = np.float64(str(objcov["elements"]["tp"]).split()[0])
+    except:
+        # the covariance matrix wasn't there or it didn't have a best
+        # fit orbit attached in the expected data structure
+        try:
+            # check if the best fit orbit reported higher-up in the
+            # data structure is for the same epoch as the covariance
+            # matrix
+            objcov = obj["orbit"]["covariance"]
+            try:
+                cepoch = np.float64(str(objcov["epoch"]).split()[0])
+            except:
+                # there isn't a covariance matrix
+                cepoch = 0.0
+            oepoch = np.float64(str(obj["orbit"]["epoch"]).split()[0])
+            if cepoch != oepoch and clones > 0 and cepoch != 0.0:
+                logmessage = "horizons_api.query_sb_from_jpl failed\n"
+                logmessage += "JPL small body database browser query did not\n"
+                logmessage += "return a best fit orbit at the same epoch as\n"
+                logmessage += "the covariance matrix. Query Failed."
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+            if cepoch != oepoch and clones > 0 and cepoch == 0.0:
+                logmessage = "horizons_api.query_sb_from_jpl failed\n"
+                logmessage += "JPL small body database browser query did not\n"
+                logmessage += "return the expected data for the orbit and covariance matrix"
+                logmessage += obj
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+                return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+            arc = np.float64(str(obj["orbit"]["data_arc"].split()[0]))
+            if arc < 30.0 and clones == 0:
+                logmessage = (
+                    "WARNING!!! The object's observational arc is \n"
+                    + "less than 30 days which probably means the \n"
+                    + "orbit is of too low quality for useful \n"
+                    + "dynamical analysis and it's not possible to \n"
+                    + "produce useful clones. \n"
+                    + "This best-fit orbit will still be run, but \n"
+                    + "the results should be used with caution"
+                )
+                flag = 2
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+            elif arc < 30.0:
+                logmessage = "horizons_api.query_sb_from_jpl failed\n"
+                logmessage += (
+                    "WARNING!!! The object's observational arc is \n"
+                    + "less than 30 days which probably means the \n"
+                    + "orbit is of too low quality for useful \n"
+                    + "dynamical analysis and it's not possible to \n"
+                    + "produce useful clones. \n"
+                    + "This object can be re-run, but only for \n"
+                    + "clones=0 and even then he results should be \n"
+                    + "used with caution."
+                )
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+                return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+            # no clones, so we can just use the other best-fit orbit instead
+            epoch = oepoch
+            objorbit = obj["orbit"]["elements"]
+            bfecc = np.float64(str(objorbit["e"]).split()[0])
+            bfq = np.float64(str(objorbit["q"]).split()[0])
+            bfinc = np.float64(str(objorbit["i"]).split()[0])
+            bfnode = np.float64(str(objorbit["om"]).split()[0])
+            bfargperi = np.float64(str(objorbit["w"]).split()[0])
+            bftp = np.float64(str(objorbit["tp"]).split()[0])
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += (
+                "JPL small body database browser query did not \n"
+                + "return the expected data for the orbit and/or \n"
+                + "covariance matrix"
+            )
+            logmessage += obj
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    if bfecc >= 1.0 or bfecc < 0.0:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "orbital eccentricity not between 0 and 1, cannot proceed"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # We have to query JPL horizons to find out what exact value of GM
+    # was used for the orbit fit above (this should be in the SBDB but
+    # alas it is not!)
+
+    # build the url to query horizons
+    # if the designation being used is a provisional one, we will
+    # translate it to a packed designation for cleaner searching
+    url = "https://ssd.jpl.nasa.gov/api/horizons.api"
+    start_time = "JD" + str(epoch)
+    stop_time = "JD" + str(epoch + 1)
+    url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'"
+    if destype == "provisional":
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    elif destype == "other":
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    else:
+        url += "&OUT_UNITS='AU-D'&COMMAND='"
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+
+    # run the query and exit if it fails
+    response = requests.get(url)
+    try:
+        data = json.loads(response.text)
+    except ValueError:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "Unable to decode JSON results from Horizons API request"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        flag = 0
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # this is the GM in au^2/day^2
+    try:
+        gmpart = data["result"].split("Keplerian GM")[1]
+        gm = np.float64(gmpart.split("\n")[0].split()[1])
+    except:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "unable to pull the GM value from the horizons results:\n"
+        logmessage += data["result"]
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        flag = 0
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # calculate the more standard orbital elements for the best-fit orbit
+    a0 = bfq / (1.0 - bfecc)
+    i0 = bfinc * deg2rad
+    O0 = bfnode * deg2rad
+    w0 = bfargperi * deg2rad
+    mm = gm / (a0 * a0 * a0)  # mean motion
+    mm = np.sqrt(mm)
+    ma0 = mm * (epoch - bftp)  # translate time of perihelion to mean anomaly
+
+    i, x0, y0, z0, vx0, vy0, vz0 = tools.aei_to_xv(GM=gm, a=a0, e=bfecc, inc=i0, node=O0, argperi=w0, ma=ma0)
+    if i < 1:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "failed to convert to cartesian inside query_sb_from_jpl"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        flag = 0
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    weights = np.ones(clones + 1)
+
+    if clones > 0:
+        covmat = obj["orbit"]["covariance"]["data"]
+        mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
+        # sample the covariance matrix into temporary arrays
+        if find_3_sigma:
+            # sample the covariance matrix 6000 times, sort by semimajor
+            # axis and pull the top and bottom ~0.1% as 3-sigma values
+            nsample = 6000
+            if clones > nsample:
+                nsample = clones
+
+            tecc, tq, ttp, tnode, targperi, tinc = np.random.multivariate_normal(mean, covmat, nsample).T
+
+            if (tecc < 0).any() or (tecc > 1).any() or (tinc < 0).any() or (tinc > 180).any():
+                logmessage = (
+                    "Warning: when sampling from the covariance matrix in horizons_api.query_sb_from_jpl, \n"
+                )
+                logmessage += (
+                    "either eccentricities outside the required 0-1 range were generated or inclinations\n"
+                )
+                logmessage += (
+                    "outside the range 0-180 degrees were generated. We will discard these and resample\n"
+                )
+                logmessage += (
+                    "until we have all clones meet constraints, but this means the clones are not a\n"
+                )
+                logmessage += "simple Gaussian distribution\n"
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+
+                # use a mask to select only the e and i ranges we want
+                mask1 = np.logical_and(tecc >= 0, tecc < 1)
+                tecc = tecc[mask1]
+                tq = tq[mask1]
+                ttp = ttp[mask1]
+                tnode = tnode[mask1]
+                targperi = targperi[mask1]
+                tinc = tinc[mask1]
+
+                mask2 = np.logical_and(tinc >= 0, tinc <= 180)
+                tecc = tecc[mask2]
+                tq = tq[mask2]
+                ttp = ttp[mask2]
+                tnode = tnode[mask2]
+                targperi = targperi[mask2]
+                tinc = tinc[mask2]
+
+                if len(tecc) < clones:
+                    # need to increase the sample size
+                    n_new = 10 * (clones - len(tecc))
+                    t2ecc, t2q, t2tp, t2node, t2argperi, t2inc = np.random.multivariate_normal(
+                        mean, covmat, n_new
+                    ).T
+
+                    mask1 = np.logical_and(t2ecc >= 0, t2ecc < 1)
+                    tecc = t2ecc[mask1]
+                    t2q = t2q[mask1]
+                    t2tp = t2tp[mask1]
+                    t2node = t2node[mask1]
+                    t2argperi = t2argperi[mask1]
+                    t2inc = t2inc[mask1]
+
+                    mask2 = np.logical_and(t2inc >= 0, t2inc <= 180)
+                    t2ecc = t2ecc[mask2]
+                    t2q = t2q[mask2]
+                    t2tp = t2tp[mask2]
+                    t2node = t2node[mask2]
+                    t2argperi = t2argperi[mask2]
+                    t2inc = t2inc[mask2]
+
+                    tecc = np.append(tecc, t2ecc)
+                    tq = np.append(tq, t2q)
+                    ttp = np.append(ttp, t2tp)
+                    tnode = np.append(tnode, t2node)
+                    targperi = np.append(targperi, t2argperi)
+                    tinc = np.append(tinc, t2inc)
+                    if len(tecc) < clones:
+                        logmessage = "The orbit covariance matrix produces too many  values outside\n"
+                        logmessage += (
+                            "the expected ranges for e and i. Failed in horizons_api.query_sb_from_jpl\n"
+                        )
+                        if logf != "screen":
+                            print(logmessage)
+                        if logf:
+                            tools.writelog(logf, logmessage)
+                        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+            # search for the 3-sigma min- and max-a clones
+            tempa = tq / (1.0 - tecc)
+            sorted_a_index = np.argsort(tempa)
+
+            n_outliers = int(np.rint(0.9973 * len(tempa)))
+            c1 = sorted_a_index[n_outliers - int(n_outliers / 2)]
+            c2 = sorted_a_index[len(tempa) - int(n_outliers / 2)]
+
+            ecc = np.array([tecc[c1], tecc[c2]])
+            q = np.array([tq[c1], tq[c2]])
+            tp = np.array([ttp[c1], ttp[c2]])
+            node = np.array([tnode[c1], tnode[c2]])
+            argperi = np.array([targperi[c1], targperi[c2]])
+            inc = np.array([tinc[c1], tinc[c2]])
+
+            if clones > 2:
+                # remove those outliers
+                tecc = np.delete(tecc, [c1, c2])
+                tq = np.delete(tq, [c1, c2])
+                ttp = np.delete(ttp, [c1, c2])
+                tnode = np.delete(tnode, [c1, c2])
+                targperi = np.delete(targperi, [c1, c2])
+                tinc = np.delete(tinc, [c1, c2])
+
+                # add in the number of desired additional clones
+                ecc = np.append(ecc, tecc[0 : clones - 2])
+                q = np.append(q, tq[0 : clones - 2])
+                tp = np.append(tp, ttp[0 : clones - 2])
+                node = np.append(node, tnode[0 : clones - 2])
+                argperi = np.append(argperi, targperi[0 : clones - 2])
+                inc = np.append(inc, tinc[0 : clones - 2])
+                # set the weights of the 3-sigma clones to zero so the gaussian
+                # clones can still be used later to calculate clone statistics
+                weights[1] = 0.0
+                weights[2] = 0.0
+        else:
+            ecc, q, tp, node, argperi, inc = np.random.multivariate_normal(mean, covmat, clones).T
+
+            if (ecc < 0).any() or (ecc > 1).any() or (inc < 0).any() or (inc > 180).any():
+                logmessage = (
+                    "Warning: when sampling from the covariance matrix in horizons_api.query_sb_from_jpl, \n"
+                )
+                logmessage += (
+                    "either eccentricities outside the required 0-1 range were generated or inclinations\n"
+                )
+                logmessage += (
+                    "outside the range 0-180 degrees were generated. We will discard these and resample\n"
+                )
+                logmessage += (
+                    "until we have all clones meet constraints, but this means the clones are not a\n"
+                )
+                logmessage += "simple Gaussian distribution\n"
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+
+                # use a mask to select only the e and i ranges we want
+                mask1 = np.logical_and(ecc >= 0, ecc < 1)
+                ecc = ecc[mask1]
+                q = q[mask1]
+                tp = tp[mask1]
+                node = node[mask1]
+                argperi = argperi[mask1]
+                inc = inc[mask1]
+
+                mask2 = np.logical_and(inc >= 0, inc <= 180)
+                ecc = ecc[mask2]
+                q = q[mask2]
+                tp = tp[mask2]
+                node = node[mask2]
+                argperi = argperi[mask2]
+                inc = inc[mask2]
+
+                # need to increase the sample size
+                n_new = 10 * (clones - len(ecc))
+                tecc, tq, ttp, tnode, targperi, tinc = np.random.multivariate_normal(mean, covmat, n_new).T
+
+                mask1 = np.logical_and(tecc >= 0, tecc < 1)
+                mask2 = np.logical_and(tinc >= 0, tinc <= 180)
+
+                tecc = tecc[mask1]
+                tq = tq[mask1]
+                ttp = ttp[mask1]
+                tnode = tnode[mask1]
+                targperi = targperi[mask1]
+                tinc = tinc[mask1]
+
+                tecc = tecc[mask2]
+                tq = tq[mask2]
+                ttp = ttp[mask2]
+                tnode = tnode[mask2]
+                targperi = targperi[mask2]
+                tinc = tinc[mask2]
+
+                ecc = np.append(ecc, tecc)
+                q = np.append(q, tq)
+                tp = np.append(tp, ttp)
+                node = np.append(node, tnode)
+                argperi = np.append(argperi, targperi)
+                inc = np.append(inc, tinc)
+                if len(ecc) < clones:
+                    logmessage = "The orbit covariance matrix produces too many  values outside\n"
+                    logmessage += (
+                        "the expected ranges for e and i. Failed in horizons_api.query_sb_from_jpl\n"
+                    )
+                    if logf != "screen":
+                        print(logmessage)
+                    if logf:
+                        tools.writelog(logf, logmessage)
+                    return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+                ecc = ecc[0:clones]
+                q = q[0:clones]
+                tp = tp[0:clones]
+                node = node[0:clones]
+                argperi = argperi[0:clones]
+                inc = inc[0:clones]
+
+        node = node * deg2rad
+        argperi = argperi * deg2rad
+        inc = inc * deg2rad
+
+        # set up output arrays
+        x = np.zeros(clones + 1)
+        y = np.zeros(clones + 1)
+        z = np.zeros(clones + 1)
+        vx = np.zeros(clones + 1)
+        vy = np.zeros(clones + 1)
+        vz = np.zeros(clones + 1)
+        x[0] = x0
+        y[0] = y0
+        z[0] = z0
+        vx[0] = vx0
+        vy[0] = vy0
+        vz[0] = vz0
+
+        # convert clones into standard elements then cartesian coordinates
+        for j in range(clones):
+            a = q[j] / (1.0 - ecc[j])
+            mm = gm / (a * a * a)  # mean motion
+            mm = np.sqrt(mm)
+            ma = mm * (epoch - tp[j])  # translate time of peri to mean anomaly
+            i, x[j + 1], y[j + 1], z[j + 1], vx[j + 1], vy[j + 1], vz[j + 1] = tools.aei_to_xv(
+                GM=gm, a=a, e=ecc[j], inc=inc[j], node=node[j], argperi=argperi[j], ma=ma
+            )
+            if i < 1:
+                logmessage = "horizons_api.query_sb_from_jpl failed\n"
+                logmessage += "failed to convert to cartesiann inside cloning\n"
+                logmessage += "part of query_sb_from_jpl for clone " + str(j) + "\n"
+                if logf != "screen":
+                    print(logmessage)
+                if logf:
+                    tools.writelog(logf, logmessage)
+                flag = 0
+                return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        # convert from au/d to au/yr
+        vx = vx * 365.25
+        vy = vy * 365.25
+        vz = vz * 365.25
+        if flag < 1:
+            flag = 1
+        return flag, epoch, x, y, z, vx, vy, vz, weights
+    else:
+        # send back just the best-fit
+        # after converting from au/d to au/yr
+        vx0 = vx0 * 365.25
+        vy0 = vy0 * 365.25
+        vz0 = vz0 * 365.25
+        if flag < 1:
+            flag = 1
+        return flag, epoch, x0, y0, z0, vx0, vy0, vz0, weights
+
+
+def query_sb_from_horizons(des=None, epoch=2459580.5, logfile="screen"):
+    """
+    Get the orbit of a small body (or list of small bodies) from
+    Horizons at a specific epoch, returning heliocentric cartesian
+    positions and velocities
+
+    inputs:
+        des: string or list of strings, the designation for the
+             object or list of objects
+        epoch (optional): (JD) defaults to Jan 1, 2022
+
+    outputs:
+        flag: integer, 1 if query worked, 0 otherwise
+        x: np array (size=len(des)), cartesian heliocentric x (au)
+        y: np array (size=len(des)), cartesian heliocentric y (au)
+        z: np array (size=len(des)), cartesian heliocentric z (au)
+        vx: np array (size=len(des)), cartesian heliocentric vx (au)
+        vy: np array (size=len(des)), cartesian heliocentric vy (au)
+        vz: np array (size=len(des)), cartesian heliocentric vz (au)
+        all return values set to 0 if unsuccessful
+    """
+
+    flag = 0
+
+    if des == None:
+        logmessage = "The designation of one or more small bodies must be provided\n"
+        logmessage += "failed in horizons_api.query_sb_from_horizons()"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+    # if the user provided just a single string as the designation
+    # turn it into a list
+    if not (type(des) is list):
+        des = [des]
+    ntp = len(des)
+    # initialize the position
+    x = np.zeros(ntp)
+    y = np.zeros(ntp)
+    z = np.zeros(ntp)
+    vx = np.zeros(ntp)
+    vy = np.zeros(ntp)
+    vz = np.zeros(ntp)
+
+    for n in range(0, ntp):
+        # build the url to query horizons
+        # if the designation being used is a provisional one, we will
+        # translate it to a packed designation for cleaner searching.
+        # Numbered objects and temporary designation objects have to
+        # be searched slightly differently
+
+        pdes, destype = tools.mpc_designation_translation(des[n])
+        start_time = "JD" + str(epoch)
+        stop_time = "JD" + str(epoch + 1)
+        url = (
+            "https://ssd.jpl.nasa.gov/api/horizons.api"
+            + "?format=json&EPHEM_TYPE=Vectors&OBJ_DATA=YES&CENTER='@Sun'"
+        )
+        if destype == "provisional":
+            url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+            url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        elif destype == "other":
+            url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+            url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+        else:
+            url += "&OUT_UNITS='AU-D'&COMMAND='"
+            url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+
+        # run the query and exit if it fails
+        response = requests.get(url)
+        try:
+            data = json.loads(response.text)
+        except ValueError:
+            logmessage = "horizons_api.query_sb_from_horizons failed\n"
+            logmessage += "Unable to decode JSON results from Horizons API request for: \n"
+            logmessage += str(des[n]) + "\n"
+            logmessage += str(response)
+            if logfile != "screen":
+                print(logmessage)
+            if logfile:
+                tools.writelog(logfile, logmessage)
+            return flag, x, y, z, vx, vy, vz
+
+        # pull the lines we need from the resulting plain text return
+        try:
+            xvline = data["result"].split("X =")[1].split("\n")
+        except:
+            logmessage = "horizons_api.query_sb_from_horizons failed\n"
+            logmessage += 'Unable to find "X =" in Horizons API request result for: \n'
+            logmessage += str(des[n]) + "\n"
+            logmessage += data["result"]
+            if logfile != "screen":
+                print(logmessage)
+            if logfile:
+                tools.writelog(logfile, logmessage)
+            return flag, x, y, z, vx, vy, vz
+
+        try:
+            # heliocentric positions:
+            x[n] = float(xvline[0].split()[0])
+            y[n] = float(xvline[0].split("Y =")[1].split()[0])
+            z[n] = float(xvline[0].split("Z =")[1].split()[0])
+
+            # heliocentric velocities converted from au/d to au/yr
+            vx[n] = float(xvline[1].split("VX=")[1].split()[0]) * 365.25
+            vy[n] = float(xvline[1].split("VY=")[1].split()[0]) * 365.25
+            vz[n] = float(xvline[1].split("VZ=")[1].split()[0]) * 365.25
+        except:
+            logmessage = "horizons_api.query_sb_from_horizons failed\n"
+            logmessage += "Unable to find Y,Y,Z, VX, VY, VZ in Horizons API\n"
+            logmessage += "request result for " + str(des[n]) + "\n"
+            logmessage += data["result"]
+            if logfile != "screen":
+                print(logmessage)
+            if logfile:
+                tools.writelog(logfile, logmessage)
+            return flag, x, y, z, vx, vy, vz
+
+    flag = 1
+    if ntp == 1:
+        # return just single values instead of numpy arrays
+        return flag, x[0], y[0], z[0], vx[0], vy[0], vz[0]
+    else:
+        return flag, x, y, z, vx, vy, vz
+
+
+def get_orbit_cov_from_jpl(des=None, clones=10000, logfile="screen"):
+    """
+    Get the orbit and covariance matrix of a small body from JPL's small
+    body database browser and query Horizons for the value of GM that goes
+    with that orbit
+
+    inputs:
+        des: string, the designation for the object in the SBDB
+        clones: integer, number of clones, default 10000
+    outputs:
+        flag: integer, 1=success, 0=problem
+        epoch: float, JD epoch of the orbits
+        gm: float, heliocentric gm associated with the orbits
+        meanorb: float, best-fit orbit from the SBDB
+        covorb: float array or arrays for cloned orbits
+                [a, e, inc, node, argpari, mean_anomaly]
+
+    """
+    flag = 0
+    pdes, destype = tools.mpc_designation_translation(des)
+
+    try:
+        # query the JPL small body database browser for the best-fit
+        # orbit and associated covariance matrix
+        obj = SBDB.query(pdes, full_precision=True, covariance="mat", phys=True)
+    except:
+        logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+        logmessage += "first attempted JPL small body database browser query failed, returning:\n"
+        logmessage += obj
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0
+
+    # some objects can't be found with their packed designation,
+    # so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj["code"]
+    except KeyError:
+        errorcode = None
+
+    if errorcode == 200:
+        # try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+            logmessage += "second attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logfile != "screen":
+                print(logmessage)
+            if logfile:
+                tools.writelog(logfile, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0
+
+    # check to see if the user-provided designation is the same type as the primary one
+    # if the user gave a provisional designation, but the object is numbered, the SBDB
+    # query won't return the most up-to-date orbit (even though the darned system knows
+    # the provisional designation corresponds to the numbered object...grr)
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj["object"]["des"])
+    if sbdbdestype != destype:
+        try:
+            newdes = obj["object"]["des"]
+            obj = SBDB.query(newdes, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.get_orbit_cov_from_jpl failed\n"
+            logmessage += "The user-provided designation was not the most up to date designation\n"
+            logmessage += "but the third attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logfile != "screen":
+                print(logmessage)
+            if logfile:
+                tools.writelog(logfile, logmessage)
+            return flag, 0.0, 0.0, 0.0, 0.0
+
+    # We have to query JPL horizons to find out what exact value of GM
+    # was used for the orbit fit above (this should be in the SBDB but
+    # alas it is not!)
+
+    # build the url to query horizons
+    # if the designation being used is a provisional one, we will
+    # translate it to a packed designation for cleaner searching
+    url = "https://ssd.jpl.nasa.gov/api/horizons.api"
+    start_time = "JD" + str(epoch)
+    stop_time = "JD" + str(epoch + 1)
+    url += "?format=json&EPHEM_TYPE=ELEMENTS&OBJ_DATA=YES&CENTER='@Sun'"
+    if destype == "provisional":
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    elif destype == "other":
+        url += "&OUT_UNITS='AU-D'&COMMAND='DES="
+        url += pdes + "%3BCAP%3BNOFRAG'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+    else:
+        url += "&OUT_UNITS='AU-D'&COMMAND='"
+        url += pdes + "%3B'&START_TIME=" + start_time + "&STOP_TIME=" + stop_time
+
+    # run the query and exit if it fails
+    response = requests.get(url)
+    try:
+        data = json.loads(response.text)
+    except ValueError:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "Unable to decode JSON results from Horizons API request\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0
+
+    # this is the GM in au^2/day^2
+    try:
+        gmpart = data["result"].split("Keplerian GM")[1]
+        gm = np.float64(gmpart.split("\n")[0].split()[1])
+    except:
+        logmessage = "horizons_api.query_sb_from_jpl failed\n"
+        logmessage += "unable to pull the GM value from the horizons results:\n"
+        logmessage += data["result"]
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, 0.0, 0.0, 0.0, 0.0
+
+    bfa = bfq / (1 - bfecc)
+    mean = [bfecc, bfq, bftp, bfnode, bfargperi, bfinc]
+    covmat = obj["orbit"]["covariance"]["data"]
+    tecc, tq, ttp, tnode, targperi, tinc = np.random.multivariate_normal(mean, covmat, clones).T
+
+    ta = tq / (1 - tecc)
+    tmm = gm / (ta * ta * ta)  # mean motion
+    tmm = np.sqrt(tmm)
+    tma = tmm * (epoch - ttp)
+
+    meanorb = [bfa, bfecc, i0, O0, w0, ma0]
+    clones_mat = np.array([ta, tecc, tinc * deg2rad, tnode * deg2rad, targperi * deg2rad, tma])
+    covorb = np.cov(clones_mat, rowvar=True)
+
+    flag = 1
+    return flag, epoch, gm, meanorb, covorb
+
+
+def query_sbbd_for_a(des=None, logfile="screen"):
+    """
+    Return the semimajor axis of an object to determine what kind of sb it is
+    """
+    flag = 0
+    pdes, destype = tools.mpc_designation_translation(des)
+
+    try:
+        # query the JPL small body database browser for the best-fit
+        # orbit and associated covariance matrix
+        obj = SBDB.query(pdes, full_precision=True, covariance="mat", phys=True)
+    except:
+        logmessage = "horizons_api.query_sb_type_from_jpl failed\n"
+        logmessage += "first attempted JPL small body database browser query failed, returning:\n"
+        logmessage += obj
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, 0.0
+    # some objects can't be found with their packed designation,
+    # so let's be sure the above didn't return an error code
+    errorcode = None
+    try:
+        errorcode = obj["code"]
+    except KeyError:
+        errorcode = None
+
+    if errorcode == 200:
+        # try querying from the user-input version of the designation
+        try:
+            # query the JPL small body database browser for the best-fit
+            # orbit and associated covariance matrix
+            obj = SBDB.query(des, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "second attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0
+
+    # check to see if the user-provided designation is the same type as the primary one
+    # if the user gave a provisional designation, but the object is numbered, the SBDB
+    # query won't return the most up-to-date orbit (even though the darned system knows
+    # the provisional designation corresponds to the numbered object...grr
+
+    sbdbpdes, sbdbdestype = tools.mpc_designation_translation(obj["object"]["des"])
+    if sbdbdestype != destype:
+        try:
+            newdes = obj["object"]["des"]
+            obj = SBDB.query(newdes, full_precision=True, covariance="mat", phys=True)
+        except:
+            logmessage = "horizons_api.query_sb_from_jpl failed\n"
+            logmessage += "The user-provided designation was not the most up to date designation\n"
+            logmessage += "third attempted JPL small body database browser query failed, returning:\n"
+            logmessage += obj
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, 0.0
+    a_sb = obj["orbit"]["elements"]["a"].value
+    return 1, a_sb
