@@ -24,6 +24,7 @@ dependencies = [
     "astroquery",
     "scikit-learn",
     "scikit-image",
+    "ipykernel",
 ]
 
 [project.urls]
@@ -38,6 +39,12 @@ dev = [
     "pre-commit", # Used to run checks before finalizing a git commit
     "pytest",
     "pytest-cov", # Used to report total code coverage
+    "sphinx", # Used to automatically generate documentation
+    "sphinx-rtd-theme", # Used to render documentation
+    "sphinx-exec-directive", # running sphinx python commands in documentation
+    "sphinx-autoapi", # Used to automatically generate api documentation
+    "nbsphinx", # Renders Jupyter notebooks in Sphinx docs
+    "sphinx-copybutton"
 ]
 
 [build-system]
