@@ -146,6 +146,11 @@ tmp/
 _results/
 _html/
 
+#Large simulation archive files
+**.bin
+#keep initial conditions binary files as examples
+!*-ic.bin
+
 # Project initialization script
 .initialize_new_project.sh
 
@@ -155,8 +160,6 @@ _html/
 **/MLdata/trained*.pkl
 
 #example output data
-
-
 **/example-notebooks/outputs-from-example-notebooks/
 **/example-notebooks/Advanced-Features-and-Tools/outputs-from-advanced-example-notebooks/
 **/example-notebooks/outputs-from-example-notebooks/*

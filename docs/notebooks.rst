@@ -3,7 +3,7 @@ Notebooks
 
 Demo Notebooks
 ------------------------
-.. toctree::
+..  toctree::
     :maxdepth: 1
 
 
@@ -17,10 +17,11 @@ Demo Notebooks
     stability indicators example <notebooks/example-notebooks/stability-indicators>
 
 
-Advances Features and Tools Notebooks
-------------------------
-.. toctree::
+Advanced Features and Tools Notebooks
+--------------------------------------
+..  toctree::
     :maxdepth: 1
+
     Computing proper elements with custom inputs <notebooks/example-notebooks/Advanced-Features-and-Tools/proper_elements_advanced>
     Additional simulation initialisation examples <notebooks/example-notebooks/Advanced-Features-and-Tools/additional-simulation-initialization-examples>
     Detailed examples of JPL and Horizons query functions <notebooks/example-notebooks/Advanced-Features-and-Tools/Detailed-examples-of-JPL-and-Horizons-query-functions>
