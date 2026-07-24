@@ -10,25 +10,26 @@ You can download the source code with:
 ```
 git clone https://github.com/small-body-dynamics/SBDynT
 ```
-Next, run
+Next, to install `SBDynT` to your env run:
 ```
-pip install -e .
+pip install .
 ```
-to create an editable install of `SBDynT` for devlopment work, you can install
+To install an editable version of `SBDynT`with all of the development packages run:
 ```
 pip install -e ".[dev]"
 ```
-to install all of the development packages as well.
 
-SBDynT can then be used by adding 
+
+SBDynT can then be used in any python script by adding: 
 ```
 import sbdynt as sbd
 ```
-in any python script.
+For examples on how to use `SBDynT` see [`demonstration notebooks`](docs/notebooks/example-notebooks) 
+
 
 The following packages will be installed from the pip command above:<br>
 python -- Version 3.9+<br>
-rebound -- Version 4+<br>
+rebound -- Version <5<br>
 numpy<br>
 scipy<br>
 pandas<br>
@@ -36,11 +37,6 @@ matplotlib<br>
 astroquery<br>
 scikit-learn<br>
 scikit-image<br>
-pickle<br>
-importlib<br>
-os<br>
-datetime<br>
-pytest<br>
 
 ### Contact information
 Kat Volk, kat.volk@gmail.com <br>
