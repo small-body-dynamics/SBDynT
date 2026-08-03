@@ -8,6 +8,64 @@ Welcome to sbdynt's documentation!
 
 The Small Body Dynamics Tool (SBDynT) is an open-source python tool that can be used to easily investigate a solar system small body’s orbital evolution.
 
+Installation
+=================
+
+Setup Your Conda Environment 
+------------------------------
+
+**Step 1** Create a conda or mamba environment.
+
+If using conda::
+
+   conda create -n sbdynt -c conda-forge "rebound<5" numpy numba pandas astropy scipy pandas matplotlib astroquery scikit-learn scikit-image ipykernel tqdm h5py importlib_resources python=3.11
+
+If using mamba::
+
+   mamba create -n sbdynt -c conda-forge "rebound<5" numpy numba pandas astropy scipy pandas matplotlib astroquery scikit-learn scikit-image ipykernel tqdm h5py importlib_resources python=3.11
+
+.. tip::
+   We recommend using python version 3.9 or higher with  ``SBDynT``. The conda/mamba install command uses python 3.11.
+
+**Step 2** Activate your conda/mamba environment
+
+On conda::
+
+   conda activate sbdynt
+
+On mamba::
+
+   mamba activate sbdynt
+
+
+
+Installing SBDynT
+---------------------------------------------------------------------
+
+**This is the installation method for adding/edit SBDynT's codebase, running unit tests, or working on/updating SBdynT's documentation.**
+
+
+**Step 1** Download the ``SBDynT`` source code via::
+
+   git clone https://github.com/small-body-dynamics/SBDynT
+
+**Step 2** Navigate to the  ``SBDynT`` repository directory::
+
+   cd SBDynT
+  
+**Step 3** Install an editable (in-place) development version of ``SBDynT``. This will allow you to run the code from the source directory.
+
+If you just want the source code installed so edits in the source code are automatically installed::
+
+   pip install -e .
+
+If you are going to be doing significant software development, editing documentation, running unit tests, modifying unit tests, or manually running all of the example demo notebooks, you will need to install the full development version::
+
+   pip install -e '.[dev]'
+
+**Step 4 (Optional unless working on documentation):** You will need to install the pandoc package (either via conda/pip or `direct download <https://pandoc.org/installing.html>`
+
+
 Dev Guide - Getting Started
 ---------------------------
 

@@ -10,20 +10,24 @@ You can download the source code with:
 ```
 git clone https://github.com/small-body-dynamics/SBDynT
 ```
-Next, to install `SBDynT` to your env run:
+Next cd into directory SBDynT:
+```
+cd SBDynT
+```
+Then, to install `SBDynT` in your environment, run:
 ```
 pip install .
 ```
-To install an editable version of `SBDynT`with all of the development packages run:
+To install an editable version of `SBDynT`with all of the development packages, run:
 ```
 pip install -e ".[dev]"
 ```
 
-
-SBDynT can then be used in any python script by adding: 
+SBDynT can then be used in any Python script by adding: 
 ```
 import sbdynt as sbd
 ```
+
 For examples on how to use `SBDynT` see [`demonstration notebooks`](docs/notebooks/example-notebooks) 
 
 

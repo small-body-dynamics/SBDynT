@@ -741,9 +741,9 @@ def run_tno(
             writelog(logf, logmessage)
             if logf != "screen":
                 print(logmessage)
-            tno_results.proper_elements.proper_elements.a = tno_class.features.a_mean
-            tno_results.proper_elements.proper_elements.e = tno_class.features.e_mean
-            tno_results.proper_elements.proper_elements.sinI = np.sin(tno_class.features.i_mean)
+            tno_results.proper_elements.proper_elements["a"] = tno_class.features.a_mean
+            tno_results.proper_elements.proper_elements["e"] = tno_class.features.e_mean
+            tno_results.proper_elements.proper_elements["sinI"] = np.sin(tno_class.features.i_mean)
 
             return 2, tno_results, sim
 
