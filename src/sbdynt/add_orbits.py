@@ -263,7 +263,6 @@ def initialize_from_heliocentric_DE440_orbit(
     # SS_r[0:9] all in au
     # reasonable integration timesteps for each planet:
     # dt[0:9]
-    import SBDynT.src.sbdynt.hard_coded_constants as const
 
     i, x, y, z, vx, vy, vz = tools.aei_to_xv(
         GM=const.SS_GM[0] * const.kmtoau**3 / const.stoyear**2,
@@ -468,8 +467,6 @@ def initialize_from_heliocentric_destnosim(
         planets = ["venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
     if planets == ["all"]:
         planets = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
-
-    import SBDynT.src.sbdynt.hard_coded_constants as const
 
     # First, we need to convert the DESTNOSIM orbit to heliocentric
     # cartesian variables using DESTNOSIM's assumed solar GM
