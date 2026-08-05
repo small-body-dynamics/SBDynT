@@ -27,6 +27,10 @@ dependencies = [
     "ipykernel",
 ]
 
+[project.scripts]
+sbdynt = "sbdynt_cmdline.main:main"
+
+
 [project.urls]
 "Source Code" = "https://github.com/small-body-dynamics/SBDynT"
 
