@@ -16,7 +16,7 @@ classifiers = [
 dynamic = ["version"]
 requires-python = ">=3.9"
 dependencies = [
-    "rebound<5",
+    "rebound<6",
     "numpy",
     "scipy",
     "pandas",
