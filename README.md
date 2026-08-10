@@ -3,6 +3,10 @@ The Small Body Dynamics Tool (SBDynT) is an open-source python tool that can be 
 
 [![ci](https://github.com/small-body-dynamics/SBDynT/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/small-body-dynamics/SBDynT/actions/workflows/smoke-test.yml)
 [![pytest](https://github.com/small-body-dynamics/SBDynT/actions/workflows/testing-and-coverage.yml/badge.svg)](https://github.com/small-body-dynamics/SBDynT/actions/workflows/testing-and-coverage.yml)
+[![pytest](https://github.com/small-body-dynamics/SBDynT/actions/workflows/pre-commit-ci.yml/badge.svg)](https://github.com/small-body-dynamics/SBDynT/actions/workflows/pre-commit-ci.yml)
+[![Template](https://img.shields.io/badge/Template-LINCC%20Frameworks%20Python%20Project%20Template-brightgreen)](https://lincc-ppt.readthedocs.io/en/latest/)
+
+
 
 
 ### SBDynT V1.0
