@@ -14,11 +14,11 @@ SBDynT has reached its first release. Available functions are shown in the demon
 
 ### Requirements and installation
 
-You can download the source code with:
-```
-git clone https://github.com/small-body-dynamics/SBDynT
-```
-Next cd into directory SBDynT:
+You can download the source code using the drop-down code menu above and either opening the repository in GitHub Desktop or downloading the repository as a Zip file:
+**Please note that ```git clone``` is currently not working for this repository!** (We are working on the problem, which is related to Git Large File Storage.)
+
+
+Next cd into directory SBDynT (or SBDynT-main, depending on download method):
 ```
 cd SBDynT
 ```
@@ -55,16 +55,18 @@ Kat Volk, kat.volk@gmail.com <br>
 Dallin Spencer, dallinspencer@gmail.com
 
 ### Publications
-When using any aspect of SBDynT, please cite Spencer et al., under review (will update with link upon paper acceptance)
+When using any aspect of SBDynT, please cite [Spencer et al. 2026](https://ui.adsabs.harvard.edu/abs/2026AJ....171..336S/abstract)
 
-The main TNO machine learning classifier is described in [Volk and Malhotra 2025](https://ui.adsabs.harvard.edu/abs/2025mlsm.book..173V/abstract). A follow-up paper is in the works to fully describe the resonant angle identification classifier.
+The main TNO machine learning classifier is described in [Volk and Malhotra 2025](https://ui.adsabs.harvard.edu/abs/2025mlsm.book..173V/abstract), which should be cited if this classifier is used. A follow-up paper is in the works to fully describe the resonant angle identification classifier.
 
-The proper elements and chaos indicators are described in Spencer et al., under review
+The proper elements and chaos indicator calculations are described in [Spencer et al. 2026](https://ui.adsabs.harvard.edu/abs/2026AJ....171..336S/abstract)
 
 ### Contributors
-Code has been directly contributed to this repository by:
+Dynamical analysis code has been contributed to this repository by:
 - [Kat Volk](https://github.com/katvolk)
 - [Dallin Spencer](https://github.com/dallinspencer)
+
+[Ryan Lyttle](https://github.com/Little-Ryugu) and [Meg Schwamb](https://github.com/mschwamb) are helping to improve documentation, testing, and code installation.
 
 We have also adapted some code originally written by [Rachel Smullen](https://github.com/rsmullen) from the [KBO_Classifier](https://github.com/rsmullen/KBO_Classifier) repository
 
