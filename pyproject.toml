@@ -25,6 +25,7 @@ dependencies = [
     "scikit-learn",
     "scikit-image",
     "ipykernel",
+    "jupyter",
 ]
 
 [project.scripts]
