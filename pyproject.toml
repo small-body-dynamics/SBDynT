@@ -1,0 +1,82 @@
+
+[project]
+name = "SBDynT"
+readme = "README.md"
+authors = [
+    { name = "Kat Volk", email = "kat.volk@gmail.com" }
+]
+description = "The Small Body Dynamics Tool (SBDynT) is an open-source python tool that can be used to easily investigate a solar system small body’s orbital evolution."
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+]
+dynamic = ["version"]
+requires-python = ">=3.9"
+dependencies = [
+    "rebound<5",
+    "numpy",
+    "scipy",
+    "pandas",
+    "matplotlib",
+    "astroquery",
+    "scikit-learn",
+    "scikit-image",
+    "ipykernel",
+    "jupyter",
+]
+
+[project.scripts]
+sbdynt = "sbdynt_cmdline.main:main"
+
+
+[project.urls]
+"Source Code" = "https://github.com/small-body-dynamics/SBDynT"
+
+# On a mac, install optional dependencies with `pip install '.[dev]'` (include the single quotes)
+[project.optional-dependencies]
+dev = [
+    "asv[virtualenv]==0.6.5", # Used to compute performance benchmarks
+    "black", # Used for static linting of files
+    "jupyter", # Clears output from Jupyter notebooks
+    "pre-commit", # Used to run checks before finalizing a git commit
+    "pytest",
+    "pytest-cov", # Used to report total code coverage
+    "sphinx", # Used to automatically generate documentation
+    "sphinx-rtd-theme", # Used to render documentation
+    "sphinx-exec-directive", # running sphinx python commands in documentation
+    "sphinx-autoapi", # Used to automatically generate api documentation
+    "nbsphinx", # Renders Jupyter notebooks in Sphinx docs
+    "sphinx-copybutton"
+]
+
+[build-system]
+requires = [
+    "setuptools>=62", # Used to build and package the Python project
+    "setuptools_scm>=6.2", # Gets release version from git. Makes it available programmatically
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "src/sbdynt/_version.py"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+    "src",
+    "docs",
+]
+addopts = "--doctest-modules --doctest-glob=*.rst"
+
+[tool.black]
+line-length = 110
+
+
+[tool.coverage.run]
+omit=["src/sbdynt/_version.py"]
+
+
+[tool.setuptools.package-data]
+sbdynt = ["PEdata/*.txt", "MLdata/*.pkl"]

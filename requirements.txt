@@ -1,0 +1,9 @@
+rebound<5
+numpy
+scipy
+pandas
+matplotlib
+astroquery
+scikit-learn
+scikit-image
+pytest

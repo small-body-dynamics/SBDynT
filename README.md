@@ -2,16 +2,38 @@
 The Small Body Dynamics Tool (SBDynT) is an open-source python tool that can be used to easily investigate a solar system small body’s orbital evolution.
 
 ### SBDynT V1.0
-SBDynT has reached its first release. Available functions are shown in the demonstration notebook in the example-notebooks directory. These include routines to easily run a standard set of dynamical analyses for main belt asteroids and transneptunian objects (TNOs). These routines initialize Rebound simualtions based on any observed small body, including producing clones that sample the small body's orbit-fit uncertainties as given by JPL's Small Body Database and automatically querying JPL Horizons for planet positions at the orbit-fit epoch. The Rebound simulations are then run over dynamically relevant timescales and the outputs are analyzed. The available analyses include synthetic proper orbital elements, stability indicators, and, for TNOs, detailed machine learning dynamical classifications including identification of mean motion resonant angles. The analyses can be run in an automated way with default choices, but they are also highly customizeable. Many of the available functions within SBDynT are highlighted in the demonstration notebooks in the example-notebooks directory. 
+SBDynT has reached its first release. Available functions are shown in the demonstration notebook in the example-notebooks directory. These include routines to easily run a standard set of dynamical analyses for main belt asteroids and transneptunian objects (TNOs). These routines initialize Rebound simualtions based on any observed small body, including producing clones that sample the small body's orbit-fit uncertainties as given by JPL's Small Body Database and automatically querying JPL Horizons for planet positions at the orbit-fit epoch. The Rebound simulations are then run over dynamically relevant timescales and the outputs are analyzed. The available analyses include synthetic proper orbital elements, stability indicators, and, for TNOs, detailed machine learning dynamical classifications including identification of mean motion resonant angles. The analyses can be run in an automated way with default choices, but they are also highly customizeable. Many of the available functions within SBDynT are highlighted in the demonstration notebooks in the [`example notebooks directory`](docs/notebooks/). 
 
 ### Requirements and installation
-Download the repository and either place it in your path or add the following to your python code where you will run SBDynT:<br>
-import sys<br>
-sys.path.insert(0,'path-to-where-you-downloaded-the-repository/SBDynT-main/src')<br>
 
-The following packages must be installed (note that the required rebound package has its own dependencies):<br>
+You can download the source code with:
+```
+git clone https://github.com/small-body-dynamics/SBDynT
+```
+Next cd into directory SBDynT:
+```
+cd SBDynT
+```
+Then, to install `SBDynT` in your environment, run:
+```
+pip install .
+```
+To install an editable version of `SBDynT`with all of the development packages, run:
+```
+pip install -e ".[dev]"
+```
+
+SBDynT can then be used in any Python script by adding: 
+```
+import sbdynt as sbd
+```
+
+For examples on how to use `SBDynT` see [`demonstration notebooks`](docs/notebooks/example-notebooks) 
+
+
+The following packages will be installed from the pip command above:<br>
 python -- Version 3.9+<br>
-rebound -- Version 4+<br>
+rebound -- Version <5<br>
 numpy<br>
 scipy<br>
 pandas<br>
@@ -19,11 +41,6 @@ matplotlib<br>
 astroquery<br>
 scikit-learn<br>
 scikit-image<br>
-pickle<br>
-importlib<br>
-os<br>
-datetime<br>
-pytest<br>
 
 ### Contact information
 Kat Volk, kat.volk@gmail.com <br>
