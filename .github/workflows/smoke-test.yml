@@ -42,7 +42,8 @@ jobs:
       run: |
         python -m pytest
     - name: Send status to author's email      
-      if: ${{ failure() }} && github.event_name != 'workflow_dispatch' }} # Only email if the workflow failed and was not manually started. Customize this as necessary.
+    # Only email if the workflow failed and was not manually started. Customize this as necessary.
+      if: failure() && github.event_name != 'workflow_dispatch' 
       uses: dawidd6/action-send-mail@v18
       with:
         # Required mail server address if not connection_url:
