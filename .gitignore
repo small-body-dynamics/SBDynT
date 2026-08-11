@@ -164,3 +164,7 @@ _html/
 **/Advanced-Features-and-Tools/outputs-from-advanced-example-notebooks/
 **/outputs-from-example-notebooks/*
 **/Advanced-Features-and-Tools/outputs-from-advanced-example-notebooks/*
+
+#misc
+*.swp
+

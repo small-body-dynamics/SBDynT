@@ -866,7 +866,7 @@ def run_res_angle_classifier(
             return flag, p_id, q_id, m_id, n_id, max_prob, sigma_phi_id, delta_phi_id, phi
         if prob > 0.5:
             flag = 1
-            return flag, 1, 1, 0, 0, prob, sigma_phi_id, delta_phi_id, phi
+            return flag, 1, 1, 0, 0, prob, sigma_phi, delta_phi, phi
         elif prob > max_prob:
             max_prob = prob
             sigma_phi_id = sigma_phi
