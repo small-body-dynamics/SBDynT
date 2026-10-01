@@ -1,4 +1,4 @@
-rebound<5
+rebound<6
 numpy
 scipy
 pandas
