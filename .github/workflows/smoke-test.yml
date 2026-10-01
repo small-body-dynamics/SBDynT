@@ -44,7 +44,7 @@ jobs:
     - name: Send status to author's email      
     # Only email if the workflow failed and was not manually started. Customize this as necessary.
       if: failure() && github.event_name != 'workflow_dispatch' 
-      uses: dawidd6/action-send-mail@v18
+      uses: dawidd6/action-send-mail@v22
       with:
         # Required mail server address if not connection_url:
         server_address: smtp.gmail.com
