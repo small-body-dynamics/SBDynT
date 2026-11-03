@@ -216,9 +216,6 @@ def initialize_from_mpc_cartesian(
         if datadir:
             orbit_file = datadir + "/" + orbit_file
 
-    if(datadir and logf and logf!='screen'):
-        logf = datadir + '/' + logf
-
     if clones == None:
         #no clones will be generated
         clones = 0
@@ -340,8 +337,13 @@ def initialize_from_mpc_cartesian(
 
     inputs:
         des (string): the designation for the object in the MPC
-        clones (optional, integer): number of clones to be generated in a Guassian
-            manner from the covariance matrix
+        epoch (real): JD epoch of the cartesian inputs
+        clones (integer): number of clones (must be set to zero if x,y,z etc are 
+            not integers
+        x, y, z (real or array of reals): heliocentric cartesian positions in 
+            units of au
+        vx, vy, vz (real or array of reals): heliocentric cartesian velocities in 
+            units of au/year
         datadir (optional, string): path for saving any files produced in this
             function; defaults to the current directory
         saveic (optional, boolean or string): default True which saves a rebound file with
@@ -374,6 +376,21 @@ def initialize_from_mpc_cartesian(
         print("failed at add_orbits.initialize_from_mpc_cartesian()")
         return flag, None, None, None, None, None
 
+    if epoch == None:
+        print("The JD epoch of the user-provided positions/velocities must be provided")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
+    if (x == None or y==None or z==None or vx==None or vy==None or vz==None):
+        print("The user must provide positions/velocities ")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
+    if (clones == None):
+        print("The user must provide a number of clones ")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
     if logfile == True:
         logf = tools.log_file_name(des=des)
     else:
@@ -385,55 +402,21 @@ def initialize_from_mpc_cartesian(
     if datadir and logf and logf != "screen":
         logf = datadir + "/" + logf
 
-    orbit_file = False
-    if save_sbdb:
-        if save_sbdb == True:
-            orbit_file = tools.orbit_solution_file(des)
-        else:
-            orbit_file = save_sbdb
-
-        if datadir:
-            orbit_file = datadir + "/" + orbit_file
-
     if clones == None:
         #no clones will be generated
-        clones = 0
+        clones = len(x) - 1
 
     #initialize empty rebound simulation
     sim = rebound.Simulation()
 
-
-    #pull data from the MPC
-    query_flag, xv, cov_mat, epoch = get_mpc_cartesian(des,logf,orbit_file)
-
-    if(query_flag < 1):
-        logmessage = "add_orbits.initialize_from_mpc_cartesian failed\n"
-        logmessage += "at the MPC API query\n"
-        if logf != "screen":
-            print(logmessage)
-        if logf:
-            tools.writelog(logf, logmessage)
-        return flag, None, None, None, None, None
-
-
     if(clones == 0):
-        x = np.array([xv[0]])
-        y = np.array([xv[1]])
-        z = np.array([xv[2]])
-        vx = np.array([xv[3]])
-        vy = np.array([xv[4]])
-        vz = np.array([xv[5]])
-    else:
-        #generate clones from the covariance matrix
-        x, y, z, vx, vy, vz = np.random.multivariate_normal(xv, xv_cov, clones).T
-        #put the best-fit orbit at the start of the array
-        x = np.insert(x, 0, xv[0], axis=0)
-        y = np.insert(y, 0, xv[1], axis=0)
-        z = np.insert(z, 0, xv[2], axis=0)
-        vx = np.insert(vx, 0, xv[3], axis=0)
-        vy = np.insert(vy, 0, xv[4], axis=0)
-        vz = np.insert(vz, 0, xv[5], axis=0)
-
+        x = np.array([x])
+        y = np.array([y])
+        z = np.array([z])
+        vx = np.array([vx])
+        vy = np.array([vy])
+        vz = np.array([vz])
+    
     # make sure planets is a list and make all planet names lowercase
     if not (type(planets) is list):
         planets = [planets]
@@ -458,13 +441,6 @@ def initialize_from_mpc_cartesian(
         if(logf):
             tools.writelog(logf,logmessage)        
         return 0, sim
-
-    # those velocities are au/day, so need to convert
-    # to au/year (defining a year as 365.25 days
-
-    vx=vx*365.25
-    vy=vy*365.25
-    vz=vz*365.25
 
     #now we can apply the corrections from add_planets to the particle
     x+=sx; y+=sy; z+=sz;
