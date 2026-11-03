@@ -324,19 +324,11 @@ def initialize_from_mpc_cartesian(
 
     return flag, sim, epoch
 
-
-
-def initialize_from_heliocentric_cartesian(
+def initialize_from_mpc_cartesian(
     des=None,
-    epoch = None,
     clones=None,
-    x = None,
-    y = None,
-    z = None,
-    vx = None,
-    vy = None,
-    vz = None,
     datadir="",
+    save_sbdb=True,
     saveic=True,
     planets=['all'],
     archivefile=None,
@@ -344,18 +336,12 @@ def initialize_from_heliocentric_cartesian(
 ):
 
     """
-    Initialize a small body simulation with user-input cartesian positions 
-    and velocities
+    Initialize a small body simulation using data from the MPC
 
     inputs:
         des (string): the designation for the object in the MPC
-        epoch (real): JD epoch of the cartesian inputs
-        clones (optional, integer): number of clones (if None, will be taken
-            from the length of the xv vectors
-        x, y, z (real or array of reals): heliocentric cartesian positions in 
-            units of au
-        vx, vy, vz (real or array of reals): heliocentric cartesian velocities in 
-            units of au/year
+        clones (optional, integer): number of clones to be generated in a Guassian
+            manner from the covariance matrix
         datadir (optional, string): path for saving any files produced in this
             function; defaults to the current directory
         saveic (optional, boolean or string): default True which saves a rebound file with
@@ -367,6 +353,10 @@ def initialize_from_heliocentric_cartesian(
         logfile (optional, boolean or string): if True, log messages will be saved to a
             default log file name; if a string is passed that string is the file name;
             if 'screen' is passed, logmessages are printed to screen
+        save_sbdb (optional, boolean or string): default True  will save a pickle file
+            with the results of the MPC query to a default file; of a string is
+            passed, that is the save-file name;
+            if False, nothing is saved
         planets (optional): string list, list of planet names - defaults to Mercury-Neptune
 
     outputs:
@@ -380,20 +370,9 @@ def initialize_from_heliocentric_cartesian(
 
     flag = 0
     if des == None:
-        print("The designation of the small body must be provided (used to label particles)")
-        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        print("The designation of a small body must be provided")
+        print("failed at add_orbits.initialize_from_mpc_cartesian()")
         return flag, None, None, None, None, None
-
-    if epoch == None:
-        print("The JD epoch of the user-provided positions/velocities must be provided")
-        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
-
-    if (x == None or y==None or z==None or vx==None or vy==None or:
-        print("The JD epoch of the user-provided positions/velocities must be provided")
-        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
-
 
     if logfile == True:
         logf = tools.log_file_name(des=des)
@@ -406,6 +385,7 @@ def initialize_from_heliocentric_cartesian(
     if datadir and logf and logf != "screen":
         logf = datadir + "/" + logf
 
+    orbit_file = False
     if save_sbdb:
         if save_sbdb == True:
             orbit_file = tools.orbit_solution_file(des)
@@ -414,9 +394,6 @@ def initialize_from_heliocentric_cartesian(
 
         if datadir:
             orbit_file = datadir + "/" + orbit_file
-
-    if(datadir and logf and logf!='screen'):
-        logf = datadir + '/' + logf
 
     if clones == None:
         #no clones will be generated
@@ -522,6 +499,7 @@ def initialize_from_heliocentric_cartesian(
     flag = 1
 
     return flag, sim, epoch
+
 
 
 def initialize_from_heliocentric_Find_Orb_orbit(
