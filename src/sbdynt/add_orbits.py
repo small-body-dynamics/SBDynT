@@ -206,6 +206,7 @@ def initialize_from_mpc_cartesian(
     if datadir and logf and logf != "screen":
         logf = datadir + "/" + logf
 
+    orbit_file = False
     if save_sbdb:
         if save_sbdb == True:
             orbit_file = tools.orbit_solution_file(des)
@@ -323,6 +324,204 @@ def initialize_from_mpc_cartesian(
 
     return flag, sim, epoch
 
+
+
+def initialize_from_heliocentric_cartesian(
+    des=None,
+    epoch = None,
+    clones=None,
+    x = None,
+    y = None,
+    z = None,
+    vx = None,
+    vy = None,
+    vz = None,
+    datadir="",
+    saveic=True,
+    planets=['all'],
+    archivefile=None,
+    logfile=False,
+):
+
+    """
+    Initialize a small body simulation with user-input cartesian positions 
+    and velocities
+
+    inputs:
+        des (string): the designation for the object in the MPC
+        epoch (real): JD epoch of the cartesian inputs
+        clones (optional, integer): number of clones (if None, will be taken
+            from the length of the xv vectors
+        x, y, z (real or array of reals): heliocentric cartesian positions in 
+            units of au
+        vx, vy, vz (real or array of reals): heliocentric cartesian velocities in 
+            units of au/year
+        datadir (optional, string): path for saving any files produced in this
+            function; defaults to the current directory
+        saveic (optional, boolean or string): default True which saves a rebound file with
+            the initial simulation state that can be used to restart it later to a default
+            file name; if a string is provided, that is the file name used
+            if False, nothing is saved
+        archivefile (optional, str): Name of the Simulationarchive binary file rebound saves
+            to. If nothing is passed, the default filename is <des>-simarchive.bin.
+        logfile (optional, boolean or string): if True, log messages will be saved to a
+            default log file name; if a string is passed that string is the file name;
+            if 'screen' is passed, logmessages are printed to screen
+        planets (optional): string list, list of planet names - defaults to Mercury-Neptune
+
+    outputs:
+        flag (integer, 0 or 1): 0 indicates a failure, while 1 indicates success.
+        sim (Rebound Simulation instance): the initialized Rebound Simulation containing
+            the planets and small bodies
+        epoch (real): JD date of the orbit fit
+
+    """
+
+
+    flag = 0
+    if des == None:
+        print("The designation of the small body must be provided (used to label particles)")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
+    if epoch == None:
+        print("The JD epoch of the user-provided positions/velocities must be provided")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
+    if (x == None or y==None or z==None or vx==None or vy==None or:
+        print("The JD epoch of the user-provided positions/velocities must be provided")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
+        return flag, None, None, None, None, None
+
+
+    if logfile == True:
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if datadir:
+        tools.check_datadir(datadir)
+
+    if datadir and logf and logf != "screen":
+        logf = datadir + "/" + logf
+
+    if save_sbdb:
+        if save_sbdb == True:
+            orbit_file = tools.orbit_solution_file(des)
+        else:
+            orbit_file = save_sbdb
+
+        if datadir:
+            orbit_file = datadir + "/" + orbit_file
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' + logf
+
+    if clones == None:
+        #no clones will be generated
+        clones = 0
+
+    #initialize empty rebound simulation
+    sim = rebound.Simulation()
+
+
+    #pull data from the MPC
+    query_flag, xv, cov_mat, epoch = get_mpc_cartesian(des,logf,orbit_file)
+
+    if(query_flag < 1):
+        logmessage = "add_orbits.initialize_from_mpc_cartesian failed\n"
+        logmessage += "at the MPC API query\n"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, None, None, None, None, None
+
+
+    if(clones == 0):
+        x = np.array([xv[0]])
+        y = np.array([xv[1]])
+        z = np.array([xv[2]])
+        vx = np.array([xv[3]])
+        vy = np.array([xv[4]])
+        vz = np.array([xv[5]])
+    else:
+        #generate clones from the covariance matrix
+        x, y, z, vx, vy, vz = np.random.multivariate_normal(xv, xv_cov, clones).T
+        #put the best-fit orbit at the start of the array
+        x = np.insert(x, 0, xv[0], axis=0)
+        y = np.insert(y, 0, xv[1], axis=0)
+        z = np.insert(z, 0, xv[2], axis=0)
+        vx = np.insert(vx, 0, xv[3], axis=0)
+        vy = np.insert(vy, 0, xv[4], axis=0)
+        vz = np.insert(vz, 0, xv[5], axis=0)
+
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
+    planets = [pl.lower() for pl in planets]
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['all']):
+        planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
+
+    # set up the rebound simulation, adding the planets first
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+
+    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(
+            sim,planets=planets,epoch=epoch,logfile=logf)
+    if(apflag < 1):
+        logmessage = "initialize_from_mpc_cartesian failed at run_reb.add_planets"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            tools.writelog(logf,logmessage)        
+        return 0, sim
+
+    # those velocities are au/day, so need to convert
+    # to au/year (defining a year as 365.25 days
+
+    vx=vx*365.25
+    vy=vy*365.25
+    vz=vz*365.25
+
+    #now we can apply the corrections from add_planets to the particle
+    x+=sx; y+=sy; z+=sz;
+    vx+=svx; vy+=svy; vz+=svz;
+
+    for n in range(0,clones+1):
+        #add a test particle to sim with that corrected orbit:
+        if(n == 0):
+            #first clone is always just the best-fit orbit
+            #and the hash is not numbered
+            sbhash = str(des)
+        else:
+            sbhash = str(des) + '_' + str(n)
+        sim.add(m=0., x=x[n], y=y[n], z=z[n], vx=vx[n], vy=vy[n], vz=vz[n], hash=sbhash)
+    
+    sim.move_to_com()
+
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+            sim.save_to_file(ic_file)
+        else:
+            ic_file = saveic
+
+        if(datadir):
+            ic_file = datadir + '/' +ic_file
+        sim.save_to_file(ic_file)
+        if(logf):
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            tools.writelog(logf,logmessage)       
+
+    flag = 1
+
+    return flag, sim, epoch
 
 
 def initialize_from_heliocentric_Find_Orb_orbit(
