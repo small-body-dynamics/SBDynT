@@ -1,11 +1,271 @@
 import numpy as np
 import rebound
+import time
+import requests
+
 
 # internal modules
 from sbdynt import tools
 from sbdynt import horizons_api
 from sbdynt import run_reb
 from sbdynt import hard_coded_constants as const
+
+
+def initialize_from_mpc_cartesian(
+    des=None,
+    des=None,
+    clones=None,
+    datadir="",
+    save_sbdb=True,
+
+
+                                  clones=0,
+                                  xv = [], xv_cov = [],
+                                  planets=['all'],
+                                  epoch=None,
+                                  datadir='', saveic=False,
+                                  logfile=False):
+"""
+    Initialize a small body simulation using 
+
+    inputs:
+        des (string): the designation for the object in the MPC
+        clones (optional, integer): number of clones. Default of None results in choosing
+            two clones at approximately 3-sigma variations in seimajor axis
+        datadir (optional, string): path for saving any files produced in this
+            function; defaults to the current directory
+        saveic (optional, boolean or string): default True which saves a rebound file with
+            the initial simulation state that can be used to restart it later to a default
+            file name; if a string is provided, that is the file name used
+            if False, nothing is saved
+        archivefile (optional, str): Name of the Simulationarchive binary file rebound saves
+            to. If nothing is passed, the default filename is <des>-simarchive.bin.
+        logfile (optional, boolean or string): if True, log messages will be saved to a
+            default log file name; if a string is passed that string is the file name;
+            if 'screen' is passed, logmessages are printed to screen
+        save_sbdb (optional, boolean or string): default True  will save a pickle file
+            with the results of the JPL SBDB query to a default file; of a string is
+            passed, that is the save-file name name;
+            if False, nothing is saved
+        planets (optional): string list, list of planet names - defaults to Jupiter-Neptune
+
+    outputs:
+        flag (integer, 0 or 1): 0 indicates a failure, while 1 indicates success.
+        sim (Rebound Simulation instance): the initialized Rebound Simulation containing
+            the planets and small bodies
+    """
+
+    if(logfile==True):
+        logf = sbd.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if(datadir):
+        sbd.check_datadir(datadir)
+
+    if(datadir and logf and logf!='screen'):
+        logf = datadir + '/' + logf
+
+    sim = rebound.Simulation()
+    if(des==None):
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage += "you must provide a designation (used to label the particle within rebound)"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            sbd.writelog(logf,logmessage)
+        return 0, sim
+  
+    if(clones == 0):
+        clones = 0
+        x = [xv[0]]
+        y = [xv[1]]
+        z = [xv[2]]
+        vx = [xv[3]]
+        vy = [xv[4]]
+        vz = [xv[5]]
+    else:
+        x, y, z, vx, vy, vz = np.random.multivariate_normal(xv, xv_cov, clones).T
+        x = np.insert(x, 0, xv[0], axis=0)
+        y = np.insert(y, 0, xv[1], axis=0)
+        z = np.insert(z, 0, xv[2], axis=0)
+        vx = np.insert(vx, 0, xv[3], axis=0)
+        vy = np.insert(vy, 0, xv[4], axis=0)
+        vz = np.insert(vz, 0, xv[5], axis=0)
+
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
+    planets = [pl.lower() for pl in planets]
+    if(planets == ['outer']):
+        planets = ['jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['inner+outer']):
+        planets = ['venus', 'earth', 'mars','jupiter', 'saturn', 'uranus', 'neptune']
+    if(planets == ['all']):
+        planets = ['mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune']    
+
+    # set up the rebound simulation, adding the planets first
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+
+    apflag, sim, sx, sy, sz, svx, svy, svz = sbd.add_planets(sim,planets=planets,epoch=epoch,logfile=logf)
+    if(apflag < 1):
+        logmessage = "initialize_from_mpc_cartesian failed at run_reb.add_planets"
+        if(logf!='screen'):
+            print(logmessage)
+        if(logf):
+            sbd.writelog(logf,logmessage)        
+        return 0, sim
+
+        # those velocities are au/day, so need to convert
+        # to au/year (defining a year as 365.25 days
+
+    vx=vx*365.25
+    vy=vy*365.25
+    vz=vz*365.25
+
+    #now we can apply the corrections from add_planets to the particle
+    x+=sx; y+=sy; z+=sz;
+    vx+=svx; vy+=svy; vz+=svz;
+
+    for n in range(0,clones+1):
+        #add a test particle to sim with that corrected orbit:
+        if(n == 0):
+            #first clone is always just the best-fit orbit
+            #and the hash is not numbered
+            sbhash = str(des)
+            print(sbhash)
+        else:
+            sbhash = str(des) + '_' + str(n)
+        sim.add(m=0., x=x[n], y=y[n], z=z[n], vx=vx[n], vy=vy[n], vz=vz[n], hash=sbhash)
+    
+    sim.move_to_com()
+
+    if(saveic):
+        if(saveic == True):
+            ic_file = tools.ic_file_name(des=des)
+            sim.save_to_file(ic_file)
+        else:
+            ic_file = saveic
+
+        if(datadir):
+            ic_file = datadir + '/' +ic_file
+        sim.save_to_file(ic_file)
+        if(logf):
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            sbd.writelog(logf,logmessage)       
+
+    return 1, sim
+
+
+
+def get_mpc_cartesian(desig = "None",logfile=False):
+    """
+    Get the heliocentric position and velocity with covariance matrix
+    from the Minor Planet Center via API request
+
+    inputs:
+        desig: string, minor planet designation
+
+    outputs:
+        flag: integer, 0 if nothing was queried,
+                       1 if query is successful
+        xv: np array, cartesian heliocentric positions
+            and velocities (in au and au/year)
+        cov_mat: np array, covariance matrix for xv
+        epoch: JD epoch of the MPC data
+    """
+
+    flag = 0
+    
+    pdes, destype = tools.mpc_designation_translation(desig)
+    response = requests.get(
+        "https://data.minorplanetcenter.net/api/get-orb",
+        json={"desig": pdes}  # Famous close-approach asteroid
+    )
+    #adding a sleep command to avoid violating the MPC's api query limits
+    time.sleep(0.25)
+    
+    cov_mat = None
+    xv = None
+    epoch = None
+    
+    if not response.ok:
+        logmessage = "add_orbits.get_mpc_cartesian failed\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, xv, cov_mat, epoch
+
+    try:
+        orbit = response.json()[0]['mpc_orb'][0]
+    except:
+        logmessage = "add_orbits.get_mpc_cartesian failed\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, xv, cov_mat, epoch
+
+    try:
+        coords = { name:value for name,value in 
+               zip(orbit["CAR"]['coefficient_names'],
+                   orbit["CAR"]['coefficient_values'])}
+    except:
+        logmessage = "add_orbits.get_mpc_cartesian failed\n"
+        logmessage += "couldn't extract orbit field values\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, xv, cov_mat, epoch        
+        
+    try:
+        cov = orbit["CAR"]['covariance']
+    except:
+        logmessage = "add_orbits.get_mpc_cartesian failed\n"
+        logmessage += "couldn't extract orbit covariance values\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, xv, cov_mat, epoch    
+
+    #put the covariance matrix into the format expected for the cloning
+    cov_mat = np.array([
+        [cov['cov00'],cov['cov01'],cov['cov02'],cov['cov03'],cov['cov04'],cov['cov05']],
+        [cov['cov01'],cov['cov11'],cov['cov12'],cov['cov13'],cov['cov14'],cov['cov15']],
+        [cov['cov02'],cov['cov12'],cov['cov22'],cov['cov23'],cov['cov24'],cov['cov25']],
+        [cov['cov03'],cov['cov13'],cov['cov23'],cov['cov33'],cov['cov34'],cov['cov35']],
+        [cov['cov04'],cov['cov14'],cov['cov24'],cov['cov34'],cov['cov44'],cov['cov45']],
+        [cov['cov05'],cov['cov15'],cov['cov25'],cov['cov35'],cov['cov45'],cov['cov55']]
+    ])
+
+    #put the cartesian position and velocity into the expected format
+    xv = np.array([coords['x'],coords['y'],coords['z'],coords['vx'],coords['vy'],coords['vz']])    
+
+    try:
+        MJD_epoch = orbit['epoch_data']['epoch']
+    except:
+        logmessage = "add_orbits.get_mpc_cartesian failed\n"
+        logmessage += "couldn't extract orbit epoch\n"
+        if logfile != "screen":
+            print(logmessage)
+        if logfile:
+            tools.writelog(logfile, logmessage)
+        return flag, xv, cov_mat, epoch 
+        
+    if(orbit['epoch_data']['timeform'] == 'MJD'):
+        epoch = MJD_epoch + 2400000.5
+    else:
+        epoch = MJD_epoch
+
+
+    flag = 1
+    
+    return flag, xv, cov_mat, epoch
+
 
 
 def initialize_from_heliocentric_Find_Orb_orbit(
@@ -178,6 +438,27 @@ def initialize_from_heliocentric_Find_Orb_orbit(
 
     return 1, sim
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+## Subroutines below are still in development. Use at your own risk!
+###############################################################################
+###############################################################################
 
 def initialize_from_heliocentric_DE440_orbit(
     des=None,
