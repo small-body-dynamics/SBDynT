@@ -321,11 +321,19 @@ def initialize_from_mpc_cartesian(
 
     return flag, sim, epoch
 
-def initialize_from_mpc_cartesian(
+
+
+def initialize_from_heliocentric_cartesian(
     des=None,
+    epoch = None,
     clones=None,
+    x = None,
+    y = None,
+    z = None,
+    vx = None,
+    vy = None,
+    vz = None,
     datadir="",
-    save_sbdb=True,
     saveic=True,
     planets=['all'],
     archivefile=None,
@@ -333,7 +341,8 @@ def initialize_from_mpc_cartesian(
 ):
 
     """
-    Initialize a small body simulation using data from the MPC
+    Initialize a small body simulation with user-input cartesian positions 
+    and velocities
 
     inputs:
         des (string): the designation for the object in the MPC
@@ -355,10 +364,6 @@ def initialize_from_mpc_cartesian(
         logfile (optional, boolean or string): if True, log messages will be saved to a
             default log file name; if a string is passed that string is the file name;
             if 'screen' is passed, logmessages are printed to screen
-        save_sbdb (optional, boolean or string): default True  will save a pickle file
-            with the results of the MPC query to a default file; of a string is
-            passed, that is the save-file name;
-            if False, nothing is saved
         planets (optional): string list, list of planet names - defaults to Mercury-Neptune
 
     outputs:
@@ -372,8 +377,8 @@ def initialize_from_mpc_cartesian(
 
     flag = 0
     if des == None:
-        print("The designation of a small body must be provided")
-        print("failed at add_orbits.initialize_from_mpc_cartesian()")
+        print("The designation of the small body must be provided (used to label particles)")
+        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
         return flag, None, None, None, None, None
 
     if epoch == None:
@@ -390,6 +395,7 @@ def initialize_from_mpc_cartesian(
         print("The user must provide a number of clones ")
         print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
         return flag, None, None, None, None, None
+
 
     if logfile == True:
         logf = tools.log_file_name(des=des)
@@ -475,7 +481,6 @@ def initialize_from_mpc_cartesian(
     flag = 1
 
     return flag, sim, epoch
-
 
 
 def initialize_from_heliocentric_Find_Orb_orbit(
