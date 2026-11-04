@@ -1,3 +1,4 @@
+from .external_data import *
 from .horizons_api import *
 from .tools import *
 from .resonances import *

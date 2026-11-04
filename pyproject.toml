@@ -26,6 +26,7 @@ dependencies = [
     "scikit-image",
     "ipykernel",
     "jupyter",
+    "pooch",
 ]
 
 [project.scripts]

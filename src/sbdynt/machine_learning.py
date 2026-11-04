@@ -24,6 +24,7 @@ from sbdynt import run_reb
 from sbdynt import MLdata
 from sbdynt import tno
 from sbdynt import resonances
+from sbdynt import external_data
 
 
 """
@@ -90,7 +91,8 @@ class TNO_ML_classifier:
                 print("Will try to load the training/testing data instead.")
         if self.G08_classifier is None:
             if self.G08_training_testing_data is None:
-                self.G08_training_testing_data = impresources.files(MLdata) / default_TNO_training_data
+                # self.G08_training_testing_data = impresources.files(MLdata) / default_TNO_training_data
+                self.G08_training_testing_data = external_data.G08_DATA.fetch("G08_TNO_training_test_set.pkl")
                 default = True
             if path.exists(self.G08_training_testing_data):
                 try:
@@ -163,7 +165,7 @@ class TNO_ML_classifier:
                 print("Will try to load the training/testing data instead.")
         if self.phi_classifier is None:
             if self.phi_training_testing_data is None:
-                self.phi_training_testing_data = impresources.files(MLdata) / default_phi_training_data
+                self.phi_training_testing_data = external_data.PHI_DATA.fetch("phi_TNO_training_test_set.pkl")
                 default = True
             if path.exists(self.phi_training_testing_data):
                 try:
