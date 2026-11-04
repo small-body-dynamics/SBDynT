@@ -1,15 +1,9 @@
-from importlib import resources as impresources
+import hashlib
 
 import numpy as np
 import pytest
 
-from sbdynt import MLdata
 from sbdynt import machine_learning as ml
-
-
-def _is_lfs_pointer(fn):
-    with open(fn, "rb") as f:
-        return f.read(40).startswith(b"version https://git-lfs")
 
 
 def _write_g08(fn, features_train):
@@ -48,22 +42,43 @@ def test_loaders_refuse_pickled_objects(tmp_path):
 
 def test_cache_dir_override(tmp_path, monkeypatch):
     monkeypatch.setenv("SBDYNT_CACHE_DIR", str(tmp_path / "cache"))
-    d = ml.trained_classifier_cache_dir()
+    d = ml.sbdynt_cache_dir()
     assert d == str(tmp_path / "cache")
     assert (tmp_path / "cache").is_dir()
 
 
-@pytest.mark.parametrize(
-    "name, loader, n",
-    [
-        (ml.default_TNO_training_data, ml.load_G08_training_testing_data, 5),
-        (ml.default_phi_training_data, ml.load_phi_training_testing_data, 4),
-    ],
-)
-def test_shipped_training_data_loads_without_pickle(name, loader, n):
-    fn = impresources.files(MLdata) / name
-    assert fn.is_file()
-    if _is_lfs_pointer(fn):
-        pytest.skip(f"{name} is a Git LFS pointer (checkout without LFS)")
-    data = loader(fn)
-    assert len(data) == n
+@pytest.fixture
+def mirror(tmp_path, monkeypatch):
+    """A local file:// mirror serving one small training-data file."""
+    mirror = tmp_path / "mirror"
+    mirror.mkdir()
+    payload = b"not really an npz"
+    (mirror / "data.npz").write_bytes(payload)
+    monkeypatch.setenv("SBDYNT_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("SBDYNT_DATA_URL", mirror.as_uri())
+    monkeypatch.setitem(ml.training_data_sha256, "data.npz", hashlib.sha256(payload).hexdigest())
+    return mirror, payload
+
+
+def test_fetch_training_data_downloads_and_caches(mirror, tmp_path):
+    mirror_dir, payload = mirror
+    fn = ml.fetch_training_data("data.npz")
+    assert fn == str(tmp_path / "cache" / "data.npz")
+    assert open(fn, "rb").read() == payload
+    # second call uses the cache, even if the mirror goes away
+    (mirror_dir / "data.npz").unlink()
+    assert ml.fetch_training_data("data.npz") == fn
+
+
+def test_fetch_training_data_rejects_bad_hash(mirror, tmp_path):
+    mirror_dir, _ = mirror
+    (mirror_dir / "data.npz").write_bytes(b"tampered")
+    with pytest.raises(RuntimeError, match="SHA-256 mismatch"):
+        ml.fetch_training_data("data.npz")
+    assert list((tmp_path / "cache").iterdir()) == []  # nothing left behind
+
+
+def test_default_training_data_is_pinned():
+    for name in (ml.default_TNO_training_data, ml.default_phi_training_data):
+        assert len(ml.training_data_sha256[name]) == 64
+    assert ml.training_data_base_url.startswith("https://")

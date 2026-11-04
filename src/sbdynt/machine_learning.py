@@ -4,6 +4,11 @@ from os import path
 from os import remove
 from os import environ
 from os import makedirs
+from os import fdopen
+from os import replace
+from tempfile import mkstemp
+from hashlib import sha256
+from urllib.request import urlopen
 from pickle import dump
 from pickle import load
 from pickle import Unpickler
@@ -19,7 +24,6 @@ from sklearn.linear_model import SGDClassifier
 from skimage.feature import hog
 from skimage.io import imread
 
-from importlib import resources as impresources
 import random
 import string
 from datetime import date
@@ -27,7 +31,6 @@ from datetime import date
 # internal
 from sbdynt import tools
 from sbdynt import run_reb
-from sbdynt import MLdata
 from sbdynt import tno
 from sbdynt import resonances
 
@@ -44,25 +47,35 @@ for overriding the pure machine learning results.
 
 # define the default file scheme for the machine learning datasets
 
-# these files are provided with the package. They are plain numpy .npz
-# archives and are always read with allow_pickle=False, so loading them
-# cannot execute code.
+# these files are downloaded on first use (see fetch_training_data) into the
+# per-user cache directory, and verified against the SHA-256 hashes below.
+# They are plain numpy .npz archives and are always read with
+# allow_pickle=False, so loading them cannot execute code.
 default_TNO_training_data = "G08_TNO_training_testing_set.npz"
 default_phi_training_data = "phi_TNO_training_testing_set.npz"
+
+# published files are immutable: a change to the training data must go to a
+# new versioned directory, with new hashes below.
+training_data_base_url = "https://epyc.astro.washington.edu/~mjuric/sbdynt-data/v1"
+training_data_sha256 = {
+    default_TNO_training_data: "67e1372a42a073466801292305f268232b8a9955aecacd682ed9597145539c1f",
+    default_phi_training_data: "6a5c5487d5df7920e9a7a9846de8b8d1b1f26867011bc72e76e901585fcf7096",
+}
 
 
 # these files will be generated the first time the ML is called
 # so that the trained classifiers can be saved and used later.
-# They are written to a per-user cache directory (see trained_classifier_cache_dir),
+# They are written to the per-user cache directory (see sbdynt_cache_dir),
 # never to the package installation directory.
 default_trained_classifier = "trained-G08-TNO-classifier.pkl"
 default_trained_phi_classifier = "trained-phi-TNO-classifier.pkl"
 
 
-def trained_classifier_cache_dir():
+def sbdynt_cache_dir():
     """
-    Return the per-user directory where trained classifiers are cached,
-    creating it (readable by the current user only) if needed.
+    Return the per-user directory where downloaded training data and trained
+    classifiers are cached, creating it (readable by the current user only)
+    if needed.
 
     Defaults to the platform's user cache directory (e.g., ~/.cache/sbdynt on
     Linux); set the SBDYNT_CACHE_DIR environment variable to override.
@@ -70,6 +83,40 @@ def trained_classifier_cache_dir():
     cache_dir = environ.get("SBDYNT_CACHE_DIR") or user_cache_dir("sbdynt")
     makedirs(cache_dir, mode=0o700, exist_ok=True)
     return cache_dir
+
+
+def fetch_training_data(name):
+    """
+    Return the local path to the named default training/testing data file,
+    downloading it into the cache directory on first use.
+
+    The download is written to a temporary file and only moved into place if
+    its SHA-256 hash matches training_data_sha256[name]. Set SBDYNT_DATA_URL
+    to download from a mirror instead of training_data_base_url.
+    """
+    expected_sha256 = training_data_sha256[name]
+    filename = path.join(sbdynt_cache_dir(), name)
+    if path.exists(filename):
+        return filename
+
+    url = (environ.get("SBDYNT_DATA_URL") or training_data_base_url).rstrip("/") + "/" + name
+    print(f"Downloading SBDynT training data from {url} (one-time download)")
+    fd, tmpname = mkstemp(dir=path.dirname(filename), prefix=name + ".", suffix=".part")
+    try:
+        h = sha256()
+        with fdopen(fd, "wb") as f, urlopen(url, timeout=60) as r:
+            while chunk := r.read(1 << 20):
+                h.update(chunk)
+                f.write(chunk)
+        if h.hexdigest() != expected_sha256:
+            raise RuntimeError(
+                f"SHA-256 mismatch for {url}: expected {expected_sha256}, got {h.hexdigest()}"
+            )
+        replace(tmpname, filename)
+    except BaseException:
+        remove(tmpname)
+        raise
+    return filename
 
 
 def load_G08_training_testing_data(filename):
@@ -176,7 +223,7 @@ class TNO_ML_classifier:
         # start with the Gladman et al 2008 classifier
         default = False
         if self.G08_classifier_file is None:
-            self.G08_classifier_file = path.join(trained_classifier_cache_dir(), default_trained_classifier)
+            self.G08_classifier_file = path.join(sbdynt_cache_dir(), default_trained_classifier)
         if path.exists(self.G08_classifier_file):
             try:
                 with open(self.G08_classifier_file, "rb") as f:
@@ -187,7 +234,12 @@ class TNO_ML_classifier:
                 print("Will try to load the training/testing data instead.")
         if self.G08_classifier is None:
             if self.G08_training_testing_data is None:
-                self.G08_training_testing_data = impresources.files(MLdata) / default_TNO_training_data
+                try:
+                    self.G08_training_testing_data = fetch_training_data(default_TNO_training_data)
+                except Exception as e:
+                    print("Could not download the training/testing data for the G08 classifier:")
+                    print(e)
+                    return 0
                 default = True
             if path.exists(self.G08_training_testing_data):
                 try:
@@ -250,7 +302,7 @@ class TNO_ML_classifier:
 
         # initialize the phi classifier
         if self.phi_classifier_file is None:
-            self.phi_classifier_file = path.join(trained_classifier_cache_dir(), default_trained_phi_classifier)
+            self.phi_classifier_file = path.join(sbdynt_cache_dir(), default_trained_phi_classifier)
         if path.exists(self.phi_classifier_file):
             try:
                 with open(self.phi_classifier_file, "rb") as f:
@@ -261,7 +313,12 @@ class TNO_ML_classifier:
                 print("Will try to load the training/testing data instead.")
         if self.phi_classifier is None:
             if self.phi_training_testing_data is None:
-                self.phi_training_testing_data = impresources.files(MLdata) / default_phi_training_data
+                try:
+                    self.phi_training_testing_data = fetch_training_data(default_phi_training_data)
+                except Exception as e:
+                    print("Could not download the training/testing data for the phi classifier:")
+                    print(e)
+                    return 0
                 default = True
             if path.exists(self.phi_training_testing_data):
                 try:
