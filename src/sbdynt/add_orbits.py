@@ -246,7 +246,7 @@ def initialize_from_mpc_cartesian(
         vz = np.array([xv[5]])
     else:
         #generate clones from the covariance matrix
-        x, y, z, vx, vy, vz = np.random.multivariate_normal(xv, xv_cov, clones).T
+        x, y, z, vx, vy, vz = np.random.multivariate_normal(xv, cov_mat, clones).T
         #put the best-fit orbit at the start of the array
         x = np.insert(x, 0, xv[0], axis=0)
         y = np.insert(y, 0, xv[1], axis=0)
@@ -306,7 +306,6 @@ def initialize_from_mpc_cartesian(
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des)
-            sim.save_to_file(ic_file)
         else:
             ic_file = saveic
 
@@ -347,8 +346,8 @@ def initialize_from_heliocentric_cartesian(
     inputs:
         des (string): the designation for the object in the MPC
         epoch (real): JD epoch of the cartesian inputs
-        clones (integer): number of clones (must be set to zero if x,y,z etc are 
-            not integers
+        clones (optional, integer): number of clones (if not set, will be
+            determined by the size of z,y,z
         x, y, z (real or array of reals): heliocentric cartesian positions in 
             units of au
         vx, vy, vz (real or array of reals): heliocentric cartesian velocities in 
@@ -370,7 +369,6 @@ def initialize_from_heliocentric_cartesian(
         flag (integer, 0 or 1): 0 indicates a failure, while 1 indicates success.
         sim (Rebound Simulation instance): the initialized Rebound Simulation containing
             the planets and small bodies
-        epoch (real): JD date of the orbit fit
 
     """
 
@@ -379,23 +377,12 @@ def initialize_from_heliocentric_cartesian(
     if des == None:
         print("The designation of the small body must be provided (used to label particles)")
         print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
+        return flag, None
 
     if epoch == None:
         print("The JD epoch of the user-provided positions/velocities must be provided")
         print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
-
-    if (x == None or y==None or z==None or vx==None or vy==None or vz==None):
-        print("The user must provide positions/velocities ")
-        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
-
-    if (clones == None):
-        print("The user must provide a number of clones ")
-        print("failed at add_orbits.initialize_from_heliocentric_cartesian()")
-        return flag, None, None, None, None, None
-
+        return flag, None
 
     if logfile == True:
         logf = tools.log_file_name(des=des)
@@ -408,21 +395,31 @@ def initialize_from_heliocentric_cartesian(
     if datadir and logf and logf != "screen":
         logf = datadir + "/" + logf
 
-    if clones == None:
-        #no clones will be generated
-        clones = len(x) - 1
-
-    #initialize empty rebound simulation
-    sim = rebound.Simulation()
-
-    if(clones == 0):
+    if np.isscalar(x):
+        # reshape the arrays since everything assumes arrays
         x = np.array([x])
         y = np.array([y])
         z = np.array([z])
         vx = np.array([vx])
         vy = np.array([vy])
         vz = np.array([vz])
-    
+
+    ntp_avail = len(x)
+    if clones == None:
+        clones = ntp_avail - 1
+    elif clones > ntp_avail - 1:
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage += "the number of clones specified is more than than the length of orbital\n"
+        logmessage += "element arrays that were provided."
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, None
+
+    #initialize empty rebound simulation
+    sim = rebound.Simulation()
+
     # make sure planets is a list and make all planet names lowercase
     if not (type(planets) is list):
         planets = [planets]
@@ -467,7 +464,6 @@ def initialize_from_heliocentric_cartesian(
     if(saveic):
         if(saveic == True):
             ic_file = tools.ic_file_name(des=des)
-            sim.save_to_file(ic_file)
         else:
             ic_file = saveic
 
@@ -480,22 +476,22 @@ def initialize_from_heliocentric_cartesian(
 
     flag = 1
 
-    return flag, sim, epoch
+    return flag, sim
 
 
-def initialize_from_heliocentric_Find_Orb_orbit(
+def initialize_from_heliocentric_orbit(
     des=None,
     clones=None,
-    a=1.0,
-    e=0.0,
-    inc=0.0,
-    node=0.0,
-    aperi=0.0,
-    ma=0.0,
+    a=None,
+    e=None,
+    inc=None,
+    node=None,
+    aperi=None,
+    ma=None,
     planets=["all"],
     epoch=None,
     datadir="",
-    saveic=False,
+    saveic=True,
     logfile=False,
 ):
     """
@@ -505,12 +501,12 @@ def initialize_from_heliocentric_Find_Orb_orbit(
         clones (integer, optional): number of clones,
             defaults to use all of the provided orbital elements
             if 0 only the first provided orbit is used
-        a (float): heliocentric semimajor axis (au)
-        e (float): heliocentric eccentricity
-        inc (float): heliocentric ecliptic inclination (rad)
-        node (float): heliocentric longitude of ascending node (rad)
-        aperi (float): heliocentric argument of perihelion (rad)
-        ma (float): heliocentric mean anomaly (rad)
+        a (float or array): heliocentric semimajor axis (au)
+        e (float or array): heliocentric eccentricity
+        inc (float or array): heliocentric ecliptic inclination (rad)
+        node (float or array): heliocentric longitude of ascending node (rad)
+        aperi (float or array): heliocentric argument of perihelion (rad)
+        ma (float or array): heliocentric mean anomaly (rad)
         planets (optional): string list, list of planet names - defaults to all
         epoch: float, epoch of the orbit fit in JD
     outputs:
@@ -519,6 +515,19 @@ def initialize_from_heliocentric_Find_Orb_orbit(
              a test particle with the desired heliocentric orbit added
              (all are adjusted for missing major perturbers)
     """
+
+
+    flag = 0
+    if des == None:
+        print("The designation of the small body must be provided (used to label particles)")
+        print("failed at add_orbits.initialize_from_heliocentric_orbit()")
+        return flag, None
+
+    if epoch == None:
+        print("The JD epoch of the user-provided positions/velocities must be provided")
+        print("failed at add_orbits.initialize_from_heliocentric_orbit()")
+        return flag, None
+
 
     if logfile == True:
         logf = tools.log_file_name(des=des)
@@ -532,14 +541,6 @@ def initialize_from_heliocentric_Find_Orb_orbit(
         logf = datadir + "/" + logf
 
     sim = rebound.Simulation()
-    if des == None:
-        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
-        logmessage += "you must provide a designation (used to label the particle within rebound)"
-        if logf != "screen":
-            print(logmessage)
-        if logf:
-            tools.writelog(logf, logmessage)
-        return 0, sim
 
     if np.isscalar(a):
         # reshape the arrays since everything assumes arrays
@@ -554,14 +555,14 @@ def initialize_from_heliocentric_Find_Orb_orbit(
     if clones == None:
         clones = ntp_avail - 1
     elif clones > ntp_avail - 1:
-        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage = "add_orbits.initialize_from_heliocentric_orbit failed\n"
         logmessage += "the number of clones specified is more than than the length of orbital\n"
         logmessage += "element arrays that were provided."
         if logf != "screen":
             print(logmessage)
         if logf:
             tools.writelog(logf, logmessage)
-        return 0, sim
+        return flag, sim
 
     # make sure planets is a list and make all planet names lowercase
     if not (type(planets) is list):
@@ -574,9 +575,6 @@ def initialize_from_heliocentric_Find_Orb_orbit(
     if planets == ["all"]:
         planets = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
 
-    # Note: the value of GM for the sun assumed in Find_orb (not the same as JPL!):
-    # is coded as const.find_orb_sunGM
-
     # set up the rebound simulation, adding the planets first
     # add the planets and return the position/velocity corrections for
     # missing planets
@@ -585,29 +583,32 @@ def initialize_from_heliocentric_Find_Orb_orbit(
         sim, planets=planets, epoch=epoch, logfile=logf
     )
     if apflag < 1:
-        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets"
+        logmessage = "add_orbits.initialize_from_heliocentric_orbit failed at run_reb.add_planets"
         if logf != "screen":
             print(logmessage)
         if logf:
             tools.writelog(logf, logmessage)
-        return 0, sim
+        return flag, sim
 
-    # First, we need to convert the Find_Orb orbit to heliocentric
-    # cartesian variables using Find_Orb's assumed solar GM
+    # First, we need to convert the orbit to heliocentric
+    # cartesian variables using JPL's assumed solar GM
     # which is in km^2/s^2, so have to convert a to km first
+
     a = a / const.kmtoau
+
     for n in range(0, clones + 1):
         i, x, y, z, vx, vy, vz = tools.aei_to_xv(
-            GM=const.find_orb_sunGM, a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n]
+            GM=const.SS_GM[0], a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n]
         )
         if i < 1:
-            logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+            logmessage = "add_orbits.initialize_from_heliocentric_orbit failed\n"
             logmessage += "at tools.aei_to_xv for clone" + str(n)
             if logf != "screen":
                 print(logmessage)
             if logf:
                 tools.writelog(logf, logmessage)
-            return 0, sim
+            return flag, sim
+
 
         # those positions and velocities are in km and km/s, so need to convert
         # to au/year (defining a year as 365.25 days
@@ -640,7 +641,189 @@ def initialize_from_heliocentric_Find_Orb_orbit(
     if saveic:
         if saveic == True:
             ic_file = tools.ic_file_name(des=des)
-            sim.save_to_file(ic_file)
+        else:
+            ic_file = saveic
+
+        if datadir:
+            ic_file = datadir + "/" + ic_file
+        
+        sim.save_to_file(ic_file)
+        
+        if logf:
+            logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
+            tools.writelog(logf, logmessage)
+
+    flag = 1
+
+    return flag, sim
+
+
+
+def initialize_from_heliocentric_Find_Orb_orbit(
+    des=None,
+    clones=None,
+    a=None,
+    e=None,
+    inc=None,
+    node=None,
+    aperi=None,
+    ma=None,
+    planets=["all"],
+    epoch=None,
+    datadir="",
+    saveic=True,
+    logfile=False,
+):
+    """
+    inputs:
+        sim: empty rebound simulation instance
+        des (string): designation/name for object
+        clones (integer, optional): number of clones,
+            defaults to use all of the provided orbital elements
+            if 0 only the first provided orbit is used
+        a (float): heliocentric semimajor axis (au)
+        e (float): heliocentric eccentricity
+        inc (float): heliocentric ecliptic inclination (rad)
+        node (float): heliocentric longitude of ascending node (rad)
+        aperi (float): heliocentric argument of perihelion (rad)
+        ma (float): heliocentric mean anomaly (rad)
+        planets (optional): string list, list of planet names - defaults to all
+        epoch: float, epoch of the orbit fit in JD
+    outputs:
+        flag: integer, 0 if failed, 1 if successful
+        sim: rebound simulation instance with the sun and planets added and
+             a test particle with the desired heliocentric orbit added
+             (all are adjusted for missing major perturbers)
+    """
+
+    flag = 0
+    if des == None:
+        print("The designation of the small body must be provided (used to label particles)")
+        print("failed at add_orbits.initialize_from_heliocentric_Find_Orb_orbit()")
+        return flag, None
+
+    if epoch == None:
+        print("The JD epoch of the user-provided positions/velocities must be provided")
+        print("failed at add_orbits.initialize_from_heliocentric_Find_Orb_orbit()")
+        return flag, None
+
+    if (a == None or e==None or inc==None or node==None or aperi==None or ma==None):
+        print("The user must provide positions/velocities ")
+        print("failed at add_orbits.initialize_from_heliocentric_Find_Orb_orbit()")
+        return flag, None
+
+    if logfile == True:
+        logf = tools.log_file_name(des=des)
+    else:
+        logf = logfile
+
+    if datadir:
+        tools.check_datadir(datadir)
+
+    if datadir and logf and logf != "screen":
+        logf = datadir + "/" + logf
+
+    sim = rebound.Simulation()
+
+    if np.isscalar(a):
+        # reshape the arrays since everything assumes arrays
+        a = np.array([a])
+        e = np.array([e])
+        inc = np.array([inc])
+        node = np.array([node])
+        aperi = np.array([aperi])
+        ma = np.array([ma])
+
+    ntp_avail = len(a)
+    if clones == None:
+        clones = ntp_avail - 1
+    elif clones > ntp_avail - 1:
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+        logmessage += "the number of clones specified is more than than the length of orbital\n"
+        logmessage += "element arrays that were provided."
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, sim
+
+    # make sure planets is a list and make all planet names lowercase
+    if not (type(planets) is list):
+        planets = [planets]
+    planets = [pl.lower() for pl in planets]
+    if planets == ["outer"]:
+        planets = ["jupiter", "saturn", "uranus", "neptune"]
+    if planets == ["inner+outer"]:
+        planets = ["venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
+    if planets == ["all"]:
+        planets = ["mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune"]
+
+    # Note: the value of GM for the sun assumed in Find_orb (not the same as JPL!):
+    # is coded as const.find_orb_sunGM
+
+    # set up the rebound simulation, adding the planets first
+    # add the planets and return the position/velocity corrections for
+    # missing planets
+
+    apflag, sim, sx, sy, sz, svx, svy, svz = run_reb.add_planets(
+        sim, planets=planets, epoch=epoch, logfile=logf
+    )
+    if apflag < 1:
+        logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed at run_reb.add_planets"
+        if logf != "screen":
+            print(logmessage)
+        if logf:
+            tools.writelog(logf, logmessage)
+        return flag, sim
+
+    # First, we need to convert the Find_Orb orbit to heliocentric
+    # cartesian variables using Find_Orb's assumed solar GM
+    # which is in km^2/s^2, so have to convert a to km first
+    a = a / const.kmtoau
+    for n in range(0, clones + 1):
+        i, x, y, z, vx, vy, vz = tools.aei_to_xv(
+            GM=const.find_orb_sunGM, a=a[n], e=e[n], inc=inc[n], node=node[n], argperi=aperi[n], ma=ma[n]
+        )
+        if i < 1:
+            logmessage = "add_orbits.initialize_from_heliocentric_Find_Orb_orbit failed\n"
+            logmessage += "at tools.aei_to_xv for clone" + str(n)
+            if logf != "screen":
+                print(logmessage)
+            if logf:
+                tools.writelog(logf, logmessage)
+            return flag, sim
+
+        # those positions and velocities are in km and km/s, so need to convert
+        # to au/year (defining a year as 365.25 days
+        x = x * const.kmtoau
+        y = y * const.kmtoau
+        z = z * const.kmtoau
+        vx = vx * const.kmtoau / const.stoyear
+        vy = vy * const.kmtoau / const.stoyear
+        vz = vz * const.kmtoau / const.stoyear
+
+        # now we can apply the corrections from add_planets to the particle
+        x += sx
+        y += sy
+        z += sz
+        vx += svx
+        vy += svy
+        vz += svz
+
+        # add a test particle to sim with that corrected orbit:
+        if n == 0:
+            # first clone is always just the best-fit orbit
+            # and the hash is not numbered
+            sbhash = str(des)
+        else:
+            sbhash = str(des) + "_" + str(n)
+        sim.add(m=0.0, x=x, y=y, z=z, vx=vx, vy=vy, vz=vz, hash=sbhash)
+
+    sim.move_to_com()
+
+    if saveic:
+        if saveic == True:
+            ic_file = tools.ic_file_name(des=des)
         else:
             ic_file = saveic
 
@@ -651,17 +834,8 @@ def initialize_from_heliocentric_Find_Orb_orbit(
             logmessage = "Rebound simulation initial conditions saved to " + ic_file + "\n"
             tools.writelog(logf, logmessage)
 
-    return 1, sim
-
-
-
-
-
-
-
-
-
-
+    flag = 1
+    return flag, sim
 
 
 
