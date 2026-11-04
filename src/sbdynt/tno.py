@@ -33,7 +33,7 @@ def setup_default_tno_integration(
             if 'screen' is passed, logmessages are printed to screen
         save_sbdb (optional, boolean or string): default True  will save a pickle file
             with the results of the JPL SBDB query to a default file; of a string is
-            passed, that is the save-file name name;
+            passed, that is the save-file name;
             if False, nothing is saved
         planets (optional): string list, list of planet names - defaults to Jupiter-Neptune
 
@@ -41,6 +41,11 @@ def setup_default_tno_integration(
         flag (integer, 0 or 1): 0 indicates a failure, while 1 indicates success.
         sim (Rebound Simulation instance): the initialized Rebound Simulation containing
             the planets and small bodies
+        epoch (real): JD date of the orbit fit
+        clones (integer): number of clones
+        cloning_method (string): "gaussian" or "find_3_sigma"
+        weights (real, array): weights of the clones (currently all 1, but placeholder for 
+            future development)
     """
 
     flag = 0
