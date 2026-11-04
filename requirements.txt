@@ -6,4 +6,5 @@ matplotlib
 astroquery
 scikit-learn
 scikit-image
+platformdirs
 pytest

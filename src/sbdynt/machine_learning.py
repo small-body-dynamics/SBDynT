@@ -2,8 +2,14 @@ import sys
 import numpy as np
 from os import path
 from os import remove
+from os import environ
+from os import makedirs
 from pickle import dump
 from pickle import load
+from pickle import Unpickler
+from pickle import UnpicklingError
+
+from platformdirs import user_cache_dir
 
 import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
@@ -38,15 +44,106 @@ for overriding the pure machine learning results.
 
 # define the default file scheme for the machine learning datasets
 
-# these files are provided with the package
-default_TNO_training_data = "G08_TNO_training_testing_set.pkl"
-default_phi_training_data = "phi_TNO_training_testing_set.pkl"
+# these files are provided with the package. They are plain numpy .npz
+# archives and are always read with allow_pickle=False, so loading them
+# cannot execute code.
+default_TNO_training_data = "G08_TNO_training_testing_set.npz"
+default_phi_training_data = "phi_TNO_training_testing_set.npz"
 
 
 # these files will be generated the first time the ML is called
-# so that the trained classifiers can be saved and used later
+# so that the trained classifiers can be saved and used later.
+# They are written to a per-user cache directory (see trained_classifier_cache_dir),
+# never to the package installation directory.
 default_trained_classifier = "trained-G08-TNO-classifier.pkl"
 default_trained_phi_classifier = "trained-phi-TNO-classifier.pkl"
+
+
+def trained_classifier_cache_dir():
+    """
+    Return the per-user directory where trained classifiers are cached,
+    creating it (readable by the current user only) if needed.
+
+    Defaults to the platform's user cache directory (e.g., ~/.cache/sbdynt on
+    Linux); set the SBDYNT_CACHE_DIR environment variable to override.
+    """
+    cache_dir = environ.get("SBDYNT_CACHE_DIR") or user_cache_dir("sbdynt")
+    makedirs(cache_dir, mode=0o700, exist_ok=True)
+    return cache_dir
+
+
+def load_G08_training_testing_data(filename):
+    """
+    Read the Gladman et al 2008 classifier training/testing set from a .npz file.
+
+    Returns [classes_dict, classes_train, features_train, classes_test, features_test]
+    """
+    with np.load(filename, allow_pickle=False) as d:
+        classes_dict = {int(k): str(v) for k, v in zip(d["class_ids"], d["class_names"])}
+        return [classes_dict, d["classes_train"], d["features_train"], d["classes_test"], d["features_test"]]
+
+
+class _TrainingDataUnpickler(Unpickler):
+    """Unpickler that only permits the numpy/pandas types found in legacy training sets."""
+
+    _allowed = {
+        ("numpy", "dtype"),
+        ("numpy", "ndarray"),
+        ("numpy.core.numeric", "_frombuffer"),
+        ("numpy._core.numeric", "_frombuffer"),
+        ("numpy.core.multiarray", "_reconstruct"),
+        ("numpy._core.multiarray", "_reconstruct"),
+        ("pandas.core.series", "Series"),
+        ("pandas.core.internals.managers", "SingleBlockManager"),
+        ("pandas.core.indexes.base", "_new_Index"),
+        ("pandas.core.indexes.base", "Index"),
+        ("builtins", "slice"),
+    }
+
+    def find_class(self, module, name):
+        if (module, name) not in self._allowed:
+            raise UnpicklingError(f"refusing to load {module}.{name} from a training-data pickle")
+        return super().find_class(module, name)
+
+
+def convert_legacy_training_data(pkl_file, npz_file, kind="G08"):
+    """
+    Convert a training/testing set saved by older SBDynT versions as a pickle
+    into the .npz format now required. Only plain numpy/pandas data is accepted;
+    any other object in the pickle raises pickle.UnpicklingError.
+
+    kind: "G08" for [classes_dict, classes_train, features_train, classes_test, features_test]
+          "phi" for [label_train, hog_train, label_test, hog_test]
+    """
+    with open(pkl_file, "rb") as f:
+        data = _TrainingDataUnpickler(f).load()
+    data = [d if isinstance(d, dict) else np.asarray(d) for d in data]
+    if kind == "G08":
+        classes_dict, ctr, ftr, cte, fte = data
+        np.savez_compressed(
+            npz_file,
+            class_ids=np.array(list(classes_dict.keys()), dtype=np.int64),
+            class_names=np.array(list(classes_dict.values()), dtype=str),
+            classes_train=ctr,
+            features_train=ftr,
+            classes_test=cte,
+            features_test=fte,
+        )
+    elif kind == "phi":
+        ltr, htr, lte, hte = data
+        np.savez_compressed(npz_file, label_train=ltr, hog_train=htr, label_test=lte, hog_test=hte)
+    else:
+        raise ValueError("kind must be 'G08' or 'phi'")
+
+
+def load_phi_training_testing_data(filename):
+    """
+    Read the resonant-angle (phi) classifier training/testing set from a .npz file.
+
+    Returns [label_train, hog_train, label_test, hog_test]
+    """
+    with np.load(filename, allow_pickle=False) as d:
+        return [d["label_train"], d["hog_train"], d["label_test"], d["hog_test"]]
 
 
 class TNO_ML_classifier:
@@ -79,7 +176,7 @@ class TNO_ML_classifier:
         # start with the Gladman et al 2008 classifier
         default = False
         if self.G08_classifier_file is None:
-            self.G08_classifier_file = impresources.files(MLdata) / default_trained_classifier
+            self.G08_classifier_file = path.join(trained_classifier_cache_dir(), default_trained_classifier)
         if path.exists(self.G08_classifier_file):
             try:
                 with open(self.G08_classifier_file, "rb") as f:
@@ -94,8 +191,9 @@ class TNO_ML_classifier:
                 default = True
             if path.exists(self.G08_training_testing_data):
                 try:
-                    with open(self.G08_training_testing_data, "rb") as f:
-                        [classes_dict, classes_train, features_train, classes_test, features_test] = load(f)
+                    [classes_dict, classes_train, features_train, classes_test, features_test] = (
+                        load_G08_training_testing_data(self.G08_training_testing_data)
+                    )
                 except:
                     print("Error loading the training/testind data for the G08 classifier from:")
                     print(self.G08_training_testing_data)
@@ -152,7 +250,7 @@ class TNO_ML_classifier:
 
         # initialize the phi classifier
         if self.phi_classifier_file is None:
-            self.phi_classifier_file = impresources.files(MLdata) / default_trained_phi_classifier
+            self.phi_classifier_file = path.join(trained_classifier_cache_dir(), default_trained_phi_classifier)
         if path.exists(self.phi_classifier_file):
             try:
                 with open(self.phi_classifier_file, "rb") as f:
@@ -167,8 +265,9 @@ class TNO_ML_classifier:
                 default = True
             if path.exists(self.phi_training_testing_data):
                 try:
-                    with open(self.phi_training_testing_data, "rb") as f:
-                        [label_train, hog_train, label_test, hog_test] = load(f)
+                    [label_train, hog_train, label_test, hog_test] = load_phi_training_testing_data(
+                        self.phi_training_testing_data
+                    )
                 except:
                     print("Error loading the training/testing data for the phi classifier from:")
                     print(self.phi_training_testing_data)
