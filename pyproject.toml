@@ -24,6 +24,7 @@ dependencies = [
     "astroquery",
     "scikit-learn",
     "scikit-image",
+    "platformdirs",
     "ipykernel",
     "jupyter",
 ]
@@ -79,4 +80,4 @@ omit=["src/sbdynt/_version.py"]
 
 
 [tool.setuptools.package-data]
-sbdynt = ["PEdata/*.txt", "MLdata/*.pkl"]
+sbdynt = ["PEdata/*.txt"]

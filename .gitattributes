@@ -22,4 +22,3 @@
 # *.png	filter=lfs diff=lfs merge=lfs -text
 .git_archival.txt export-subst
 
-*set.pkl filter=lfs diff=lfs merge=lfs -text
